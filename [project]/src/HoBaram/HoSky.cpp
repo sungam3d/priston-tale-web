@@ -1,4 +1,4 @@
-﻿#include "..\\HoBaram\\HoLinkHeader.h"
+#include "..\\HoBaram\\HoLinkHeader.h"
 #include "..\\field.h"
 #include "..\\HoBaram\\HoNewParticleLinkHeader.h"
 
@@ -62,9 +62,41 @@ HoSky::~HoSky()
 }
 
 
+#ifdef PT_WEB
+// Diagnostics for the web port (black sky in the world): every 15 s for the first
+// two minutes after entering the world, one line in the page's log.
+static int s_SkyRendered;
+void HoSky_WebDiag( HoSky &S, int x, int y, int z, int ax, int ay, int az )
+{
+	static DWORD s_Start = 0, s_Next = 0;
+	DWORD now = GetCurrentTime();
+	if ( !lpCurPlayer || lpCurPlayer->OnStageField<0 ) return;
+	if ( !s_Start ) { s_Start = now; s_Next = now + 5000; }
+	if ( now<s_Next || now-s_Start>125000 ) return;
+	s_Next = now + 15000;
+	sFIELD *f = StageField[lpCurPlayer->OnStageField];
+	int nObj = -1, nRes = -1;
+	if ( S.DrawIndex>=0 && S.DrawIndex<(int)S.SkyDrawInfoList.size() ) {
+		nRes = (int)S.SkyDrawInfoList[S.DrawIndex].SkyResInfoList.size();
+		nObj = 0;
+		for ( int i=0; i<nRes; i++ )
+			if ( S.SkyDrawInfoList[S.DrawIndex].SkyResInfoList[i].stageSky ) nObj += S.SkyDrawInfoList[S.DrawIndex].SkyResInfoList[i].stageSky->nObj3d;
+	}
+	printf( "[sky] field %d state %X back %d/%d/%d | code %d index %d (alpha %d next %d) old %d (alpha %d) | skies %d, layers %d, objects %d, drawn %d | test %d | cam %d,%d,%d ang %d,%d,%d | dark %d view %d\n",
+		f ? f->FieldCode : -1, f ? f->State : -1, f ? f->BackImageCode[0] : -1, f ? f->BackImageCode[1] : -1, f ? f->BackImageCode[2] : -1,
+		S.CodeID, S.DrawIndex, S.DrawAlphaCount, S.DrawNextAlphaCount, S.DrawOldIndex, S.DrawOldAlphaCount,
+		(int)S.SkyDrawInfoList.size(), nRes, nObj, s_SkyRendered, S.TestModeFlag,
+		x>>FLOATNS, y>>FLOATNS, z>>FLOATNS, ax, ay, az, DarkLevel, ViewPointLen );
+}
+#endif
+
 int HoSky::Draw(int x, int y, int z, int ax, int ay, int az)
-{ 
-	
+{
+#ifdef PT_WEB
+	HoSky_WebDiag( *this, x, y, z, ax, ay, az );
+	s_SkyRendered = 0;
+#endif
+
 	if(DrawIndex != -1)
 	 	Draw(x, y, z, ax, ay, az, DrawIndex, DrawAlphaCount, DrawNextAlphaCount);
 	
@@ -295,6 +327,9 @@ int HoSky::Draw(int x, int y, int z, int ax, int ay, int az, unsigned int drawIn
 					
 					//smRender.Init();
   					smRender.SetCameraPosi(x, y, z, ax, ay, az);
+#ifdef PT_WEB
+					s_SkyRendered +=
+#endif
 					SkyDrawInfoList[drawIndex].SkyResInfoList[index].stageSky->RenderD3D( &camera, &angle );
  					
 					lpD3DDevice->SetRenderState(D3DRENDERSTATE_ZWRITEENABLE, TRUE);

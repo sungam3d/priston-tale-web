@@ -84,6 +84,7 @@ public:
 
 class HoSky
 {
+	friend void HoSky_WebDiag( HoSky &S, int x, int y, int z, int ax, int ay, int az );	// HoSky.cpp (web port)
 private:
 	std::vector <HoSkyDrawInfo>		    SkyDrawInfoList;
 

@@ -3,6 +3,9 @@
 #include "..\\ptgfx\\ptgfx.h"			// shadow test view (?shadowtest)
 #include "..\\weather.h"				// the weather picked in the settings, behind the login
 #endif
+#ifdef PT_WEB
+#include <emscripten.h>
+#endif
 #include "..\\HoBaram\\HoLinkHeader.h"
 #include "..\\smreg.h"
 #include "..\\HoBaram\\HoTextFile.h"
@@ -549,6 +552,21 @@ int HoOpening::Draw()
 	anz = s_AutoCamera.m_iCameraRot_z;
 
 	smRender.OpenCameraPosi( x, y, z, &s_AutoCamera.m_eCameraRotMat );
+#ifdef PT_WEB
+	{	// sky test view (?skytest=N): field sky N (field.h FIELD_BACKIMAGE_*) behind the login
+		static int s_SkyTest = -2;
+		if ( s_SkyTest==-2 ) {
+			s_SkyTest = EM_ASM_INT({ var m = /[?&]skytest=([0-9]+)/.exec(location.search); return m ? +m[1] : -1; });
+			if ( s_SkyTest>=0 ) {
+				ChangeSky( s_SkyTest );
+				extern int ViewPointLen, ccDistZMin;
+				printf( "[web] sky test: field sky %d (view %d, colour fade from %d, field view %d step %d)\n", s_SkyTest,
+					ViewPointLen, ccDistZMin, smRender.m_GameFieldView, smRender.m_GameFieldViewStep );
+			}
+		}
+		if ( s_SkyTest>=0 ) MainSky();			// fades to it, as in the game
+	}
+#endif
 #ifdef PT_GFX_GL
 	PtWeather_Frame( TRUE );
 	PtGfx_WeatherWorld( TRUE );
