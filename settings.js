@@ -1,11 +1,12 @@
 // settings.js - the "Settings" panel under the game: image quality, shadows, draw
-// distance, music and sound effects. Loaded by the page (web\shell.html) after
+// distance, weather, music and sound effects. Loaded by the page (web\shell.html) after
 // Module is defined and before admin.js; copied next to it by web\make_site.py.
 // Kept in this browser (localStorage 'pt-settings').
 //
 // Live settings go through Module.ptOpts, which the game reads once per frame when
 // its version (v) changes (Winmain.cpp PtWeb_PollOptions): music / effects volume
-// (ptsound master volumes) and view (draw distance in map cells). Shadow strength
+// (ptsound master volumes), view (draw distance in map cells) and weather (weather.h
+// PTWX_SET_*: 0 changing, 1 clear, 2 rain, 3 storm, 4 snow, 5 fog). Shadow strength
 // is Module.ptShadowDark (read every frame by ptgfx_shadow.cpp).
 // Restart settings are read when the game starts: Module.ptShadows, and the image
 // quality lines in ptReg.rgx ("ColorBPP" 32 = 32-bit colour, "Graphic" 0 = full
@@ -16,7 +17,10 @@
 (function () {
 	if (!window.Module) return;
 	var KEY = 'pt-settings';
-	var DEF = { quality: 'max', shadows: true, shadowDark: 0.6, view: 38, music: 70, musicOn: true, effects: 80, effectsOn: true };
+	var DEF = { quality: 'max', shadows: true, shadowDark: 0.6, view: 38, music: 70, musicOn: true, effects: 80, effectsOn: true, weather: 0 };
+	// weather.h PTWX_SET_*
+	var WEATHER = [['Changing', 'Changes every few minutes, the same for everyone online. Snow in the ice fields, dust in the desert.'],
+		['Always clear', 'No weather.'], ['Rain', ''], ['Storm', 'Heavy rain, wind, lightning and thunder.'], ['Snow', ''], ['Fog', '']];
 	var VIEW_MIN = 16, VIEW_GAME = 38, VIEW_MAX = 110;		// map cells (64 world units); 110 = unlimited
 	var s = {};
 	try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) {}
@@ -28,7 +32,7 @@
 	function vol(v, on) { return on ? Math.pow(v/100, 2) : 0; }		// slider 0-100, felt as linear
 	function pushLive() {
 		Module.ptOpts = { v: ++version, music: vol(s.music, s.musicOn), effects: vol(s.effects, s.effectsOn),
-			view: s.view==VIEW_GAME ? 0 : s.view };
+			view: s.view==VIEW_GAME ? 0 : s.view, weather: s.weather|0 };
 		Module.ptShadowDark = s.shadowDark;
 	}
 	Module.ptShadows = !!s.shadows;
@@ -88,6 +92,7 @@
 		'.pt-row label{color:#d8d4c8}' +
 		'.pt-row .ctl{display:flex;align-items:center;gap:10px;min-width:0}' +
 		'.pt-row input[type=range]{flex:1;min-width:0;accent-color:#c9a14d}' +
+		'.pt-row select{background:#1d1c24;color:#d8d4c8;border:1px solid #34323c;border-radius:5px;padding:4px 8px;font:inherit}' +
 		'.pt-row .val{color:#a8a294;font-variant-numeric:tabular-nums;min-width:72px;text-align:right;font-size:12.5px}' +
 		'.pt-seg{display:inline-flex;border:1px solid #34323c;border-radius:5px;overflow:hidden}' +
 		'.pt-seg button{background:#1d1c24;color:#b8b2a4;border:0;padding:4px 12px;font:inherit;cursor:pointer}' +
@@ -131,6 +136,9 @@
 		'<div class="pt-row"><label for="setView">Draw distance</label><div class="ctl">' +
 			'<input type="range" id="setView" min="' + VIEW_MIN + '" max="' + VIEW_MAX + '" step="2"><span class="val" id="setViewV"></span></div></div>' +
 		'<p class="note">Further is slower: the game draws everything on the CPU. Changes as you drag.</p>' +
+		'<div class="pt-row"><label for="setWeather">Weather</label><div class="ctl"><select id="setWeather">' +
+			WEATHER.map(function (w, i) { return '<option value="' + i + '">' + w[0] + '</option>'; }).join('') + '</select></div></div>' +
+		'<p class="note" id="setWeatherN"></p>' +
 
 		'<h3>Sound</h3>' +
 		'<div class="pt-row"><label for="setMusic">Music</label><div class="ctl">' +
@@ -161,6 +169,8 @@
 		$('setShadowDark').disabled = !s.shadows;
 		$('setView').value = s.view;
 		$('setViewV').textContent = viewText(s.view);
+		$('setWeather').value = s.weather;
+		$('setWeatherN').textContent = (WEATHER[s.weather] || WEATHER[0])[1] || 'Outdoors; dungeons stay dry. Shows behind the login screen too.';
 		$('setMusicOn').checked = s.musicOn;
 		$('setMusic').value = s.music; $('setMusic').disabled = !s.musicOn;
 		$('setMusicV').textContent = s.musicOn ? s.music + '%' : 'Off';
@@ -181,6 +191,7 @@
 	slider('setView', function (v) { s.view = v; });
 	slider('setMusic', function (v) { s.music = v; });
 	slider('setEffects', function (v) { s.effects = v; });
+	$('setWeather').addEventListener('change', function () { s.weather = +this.value; change(); });
 	$('setMusicOn').addEventListener('change', function () { s.musicOn = this.checked; change(); });
 	$('setEffectsOn').addEventListener('change', function () { s.effectsOn = this.checked; change(); });
 	$('setRestartBtn').addEventListener('click', function () { this.disabled = true; location.reload(); });

@@ -33,6 +33,9 @@
 #include "AreaServer.h"
 
 #include "srcserver\onserver.h"
+#ifdef PT_GFX_GL
+#include "weather.h"			// rain, storms, fog, snow
+#endif
 
 extern int WinSizeX;
 extern int WinSizeY;
@@ -4074,7 +4077,11 @@ int DrawPat2D( int x, int y, int z, int ax, int ay, int az )
 	//광원 이미지 그리기
 	DrawLightImage();
 
+#ifdef PT_GFX_GL
+	PtWeather_Draw( FALSE, smGameStage[0], smGameStage[1] );	// rain and snow in the world (weather.cpp)
+#else
 	DrawWeather( ax );
+#endif
 
 
 	return TRUE;

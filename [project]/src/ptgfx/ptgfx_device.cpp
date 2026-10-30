@@ -53,6 +53,7 @@ static const char *s_FS =
 	"uniform int uSpecular; uniform int uColorKey;\n"
 	"uniform int uAlphaFunc; uniform float uAlphaRef;\n"
 	"uniform int uFogMode; uniform vec4 uFogColor; uniform vec2 uFogRange;\n"
+	"uniform int uWxMode; uniform vec3 uWxTint; uniform vec4 uWxFog;\n"		// weather (ptgfx_weather.cpp)
 	"out vec4 oColor;\n"
 	"vec2 coord( int i ) {\n"
 	"	if ( i==0 ) return vTex0; if ( i==1 ) return vTex1; if ( i==2 ) return vTex2; if ( i==3 ) return vTex3;\n"
@@ -149,6 +150,13 @@ static const char *s_FS =
 	"	else if ( uFogMode==2 ) {\n"																		// table fog (eye distance)
 	"		float f = clamp( (uFogRange.y - vEyeW) / max( uFogRange.y - uFogRange.x, 0.0001 ), 0.0, 1.0 );\n"
 	"		cur.rgb = mix( uFogColor.rgb, cur.rgb, f );\n"
+	"	}\n"
+	// weather: the world under the sky's colour, fogged with distance; glows (added
+	// colour) only fade into the fog
+	"	if ( uWxMode!=0 ) {\n"
+	"		float f = 1.0 - exp( -vEyeW*uWxFog.a );\n"
+	"		if ( uWxMode==2 ) cur.rgb *= 1.0 - f;\n"
+	"		else cur.rgb = mix( cur.rgb*uWxTint, uWxFog.rgb, f );\n"
 	"	}\n"
 	"	oColor = cur;\n"
 	"}\n";
@@ -255,6 +263,7 @@ public:
 	GLint		u_Screen, u_COp, u_CA1, u_CA2, u_AOp, u_AA1, u_AA2, u_TCI, u_HasTex, u_Keyed, u_TexAlpha;
 	GLint		u_TFactor, u_Specular, u_ColorKey, u_AlphaFunc, u_AlphaRef, u_FogMode, u_FogColor, u_FogRange;
 	GLint		u_SRecv, u_SRot, u_SProj, u_SEye, u_SLightR, u_SLightU, u_SLightD, u_ShadowDark;		// shadows
+	GLint		u_WxMode, u_WxTint, u_WxFog;		// weather
 
 	PtDevice()
 	{
@@ -328,6 +337,9 @@ public:
 		u_FogMode = glGetUniformLocation( m_Prog, "uFogMode" );
 		u_FogColor = glGetUniformLocation( m_Prog, "uFogColor" );
 		u_FogRange = glGetUniformLocation( m_Prog, "uFogRange" );
+		u_WxMode = glGetUniformLocation( m_Prog, "uWxMode" );
+		u_WxTint = glGetUniformLocation( m_Prog, "uWxTint" );
+		u_WxFog = glGetUniformLocation( m_Prog, "uWxFog" );
 
 		// shadows (ptgfx_shadow.cpp): the shadow map stays bound to its own texture unit
 		u_SRecv = glGetUniformLocation( m_Prog, "uSRecv" );
@@ -484,6 +496,15 @@ public:
 		glUniform4f( u_FogColor, ((fc>>16)&0xFF)/255.0f, ((fc>>8)&0xFF)/255.0f, (fc&0xFF)/255.0f, 1.0f );
 		float fs = *(float *)&m_RS[D3DRENDERSTATE_FOGTABLESTART], fe = *(float *)&m_RS[D3DRENDERSTATE_FOGTABLEEND];
 		glUniform2f( u_FogRange, fs, fe );
+
+		const PtWeatherState &W = g_PtWeather;
+		int wx = 0;
+		if ( W.bWorld && W.bLook ) wx = ( m_RS[D3DRENDERSTATE_ALPHABLENDENABLE] && m_RS[D3DRENDERSTATE_DESTBLEND]==D3DBLEND_ONE ) ? 2 : 1;
+		glUniform1i( u_WxMode, wx );
+		if ( wx ) {
+			glUniform3f( u_WxTint, W.Tint[0], W.Tint[1], W.Tint[2] );
+			glUniform4f( u_WxFog, W.Fog[0], W.Fog[1], W.Fog[2], W.Density );
+		}
 
 		m_bStateDirty = FALSE;
 	}
@@ -744,6 +765,18 @@ public:
 		return D3D_OK;
 	}
 };
+
+// Clips to the game's current viewport, as its own draws are (weather draws).
+void PtGfx_ScissorToViewport()
+{
+	PtDevice *d = g_PtGL.pDevice;
+	if ( d && d->m_pViewport && d->m_pViewport->m_VP.dwWidth ) {
+		const D3DVIEWPORT2 &vp = d->m_pViewport->m_VP;
+		glEnable( GL_SCISSOR_TEST );
+		glScissor( vp.dwX, vp.dwY, vp.dwWidth, vp.dwHeight );
+	}
+	else glDisable( GL_SCISSOR_TEST );
+}
 
 void PtGfx_InvalidateDeviceState()
 {

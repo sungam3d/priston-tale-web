@@ -5,6 +5,16 @@
 #endif
 
 #define SM_DIST_NEARZ				16
+
+// Far away (past ccDistZMin) the original fades vertex colours into the background
+// and also lowers vertex alpha. Solid surfaces ignore alpha, but cut-out textures
+// (leaves, fences) faded out of sight while the branches and posts stayed. The GL
+// build keeps alpha, so every surface fades into the distance the same way.
+#ifdef PT_GFX_GL
+#define SM_FAR_ALPHA_FADE			0
+#else
+#define SM_FAR_ALPHA_FADE			1
+#endif
 #define SMFLOAT_DIST_NEARZ			(SM_DIST_NEARZ<<FLOATNS)
 //#define SM_DIST_FARZ				64*26
 #define SM_DIST_FARZ				64*25
@@ -185,6 +195,29 @@ void SetDxProjection( float radians, int SizeX, int SizeY, float near_z, float f
 	g_fZoomInDiv_x = (float(SizeX) / (320.f * fWinSizeOffset_X));
 	g_fZoomInDiv_y = (float(SizeY) / (240.f * fWinSizeOffset_Y));
 }
+
+#ifdef PT_GFX_GL
+// The camera smRender draws with now and its projection, for what ptgfx draws in
+// the world itself (weather.cpp: rain and snow).
+void smRender_GetWeatherCamera( PtWeatherScene *s )
+{
+	const float k = 1.0f / (float)(1<<FLOATS_EM);
+	const smMATRIX &m = smRender.mCamera;
+	float r[9] = { m._11*k, m._12*k, m._13*k, m._21*k, m._22*k, m._23*k, m._31*k, m._32*k, m._33*k };
+	memcpy( s->Rot, r, sizeof(r) );
+	s->Cam[0] = (double)smRender.CameraPosiX/fONE;
+	s->Cam[1] = (double)smRender.CameraPosiY/fONE;
+	s->Cam[2] = (double)smRender.CameraPosiZ/fONE;
+	s->ProjW = s_DxProjection_w;
+	s->ProjH = s_DxProjection_h;
+	s->CenterX = (float)s_CenterX;
+	s->CenterY = (float)s_CenterY;
+	s->DepthQ1 = s_DxProjection_q1;
+	s->DepthQ2 = s_DxProjection_q2;
+	// faces are clipped where |y| * SMMULT_PERSPECTIVE_HEIGHT > z (the login screen's wide view)
+	s->ClipHalfH = smRender.SMMULT_PERSPECTIVE_HEIGHT>0 ? s_DxProjection_h*fONE/smRender.SMMULT_PERSPECTIVE_HEIGHT*s_CenterY : 0;
+}
+#endif
 
 //
 void DxProjectionWork( smRENDVERTEX *lpRendVer )
@@ -2496,7 +2529,9 @@ int smRENDER3D::ShiftLight( smRENDVERTEX *sv , int lev , int r,int g,int b, int 
 	// ALPHA
 	col = sv->bCol[3];
 	spe = sv->bSpe[3];
+#if SM_FAR_ALPHA_FADE
 	col -= ( col * dlev )>>8;
+#endif
 	spe += ( ( a-spe ) * dlev )>>8;
 	sv->bCol[3]=col;
 	sv->bSpe[3]=spe;
@@ -3272,7 +3307,7 @@ int smRENDER3D::SetD3DRendBuff( D3DVALUE *RenderBuff , int matrial , int TexClip
 				*(RenderBuff++) = (D3DVALUE)rv->rhw;
 
 
-				if ( RendAlphaFlag && rv->tz>(ccDistZMin<<FLOATNS) ) {
+				if ( SM_FAR_ALPHA_FADE && RendAlphaFlag && rv->tz>(ccDistZMin<<FLOATNS) ) {
 					*((DWORD *)dwColor) = *((DWORD *)rv->bCol);
 					*((DWORD *)dwSpecular) = *((DWORD *)rv->bSpe);
 					dwSpecular[3] = dwSpecular[3]/2 + dwSpecular[3]/3;
@@ -3632,7 +3667,7 @@ int smRENDER3D::SetD3DRendBuff3( D3DVALUE *RenderBuff , int matrial , int TexCli
 				*(RenderBuff++) = (D3DVALUE)rv->rhw;
 
 
-				if ( RendAlphaFlag && rv->tz>(ccDistZMin<<FLOATNS) )
+				if ( SM_FAR_ALPHA_FADE && RendAlphaFlag && rv->tz>(ccDistZMin<<FLOATNS) )
 				{
 					*((DWORD *)dwColor) = *((DWORD *)rv->bCol);
 					*((DWORD *)dwSpecular) = *((DWORD *)rv->bSpe);
@@ -4634,7 +4669,7 @@ int smRENDER3D::RenderD3D_OutLine( int MatNum )
 					*((DWORD*)(RenderBuff++)) = (*((DWORD*)rv->bCol)) | 0x00FFFFFF;
 				else
 				{
-					if( RendAlphaFlag && rv->tz > (ccDistZMin<<FLOATNS) )
+					if( SM_FAR_ALPHA_FADE && RendAlphaFlag && rv->tz > (ccDistZMin<<FLOATNS) )
 					{
 						*((DWORD*)dwColor) = *((DWORD*)rv->bCol);
 						dwColor[3] = dwColor[3]/2 + dwColor[3]/3;

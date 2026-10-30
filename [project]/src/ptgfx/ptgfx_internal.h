@@ -165,6 +165,7 @@ void	PtText_Install();					// ptgfx_text.cpp: own text rasterizer in place of GD
 #define PT_OVERLAY_KEY	0x00FF00FF
 void	PtGfx_Present( const RECT *lpSrc );
 void	PtGfx_InvalidateDeviceState();		// device must re-apply its GL state
+void	PtGfx_ScissorToViewport();			// clip to the game's current viewport
 
 //////////////////////////////////////////////////////////////////////////////
 // Real-time shadows (ptgfx_shadow.cpp)
@@ -227,6 +228,17 @@ BOOL	PtShadow_Init();									// GL objects (device Init)
 // a caster draw (triangle list): uvOfs = byte offset of the texture coordinates
 // in a vertex (-1: none), tex = cut-out texture or 0
 void	PtShadow_Capture( const BYTE *v, DWORD count, int stride, int uvOfs, GLuint tex );
+
+// Weather (ptgfx_weather.cpp). The device shader gives the world's draws (bWorld)
+// the weather's look: multiplied by Tint, fogged towards Fog by eye distance.
+struct PtWeatherState {
+	BOOL	bWorld;					// the world is being drawn
+	BOOL	bLook;					// Tint / Fog differ from clear weather
+	float	Tint[3], Fog[3], Density;
+	GLuint	Prog, SplashProg, VAO, VBO;
+	BOOL	bInitTried;
+};
+extern PtWeatherState g_PtWeather;
 
 // GLSL shared by the device and caster shaders: screen vertex (x, y pixels, z, rhw)
 // -> world position relative to the shadow centre -> sun space [-1,1].

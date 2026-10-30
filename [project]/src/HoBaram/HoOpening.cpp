@@ -1,6 +1,7 @@
 ﻿#include "..\\sinbaram\\SinLinkHeader.h"
 #ifdef PT_GFX_GL
 #include "..\\ptgfx\\ptgfx.h"			// shadow test view (?shadowtest)
+#include "..\\weather.h"				// the weather picked in the settings, behind the login
 #endif
 #include "..\\HoBaram\\HoLinkHeader.h"
 #include "..\\smreg.h"
@@ -548,6 +549,10 @@ int HoOpening::Draw()
 	anz = s_AutoCamera.m_iCameraRot_z;
 
 	smRender.OpenCameraPosi( x, y, z, &s_AutoCamera.m_eCameraRotMat );
+#ifdef PT_GFX_GL
+	PtWeather_Frame( TRUE );
+	PtGfx_WeatherWorld( TRUE );
+#endif
 	DrawOpeningSky(x, y, z, anx, any, anz);
 	if(CinemaFadeState != STATE_FADE_OUT)
 	{
@@ -558,8 +563,14 @@ int HoOpening::Draw()
 		Stage->DrawOpeningStage( x,y,z, anx, any, anz, s_AutoCamera.m_Frame );
 #ifdef PT_GFX_GL
 		PtGfx_ShadowTestEnd();
+		PtGfx_WeatherWorld( FALSE );
+		smRender.OpenCameraPosi( x, y, z, &s_AutoCamera.m_eCameraRotMat );		// the camera the scene was drawn with
+		PtWeather_Draw( TRUE, Stage, NULL );
 #endif
 	}
+#ifdef PT_GFX_GL
+	PtGfx_WeatherWorld( FALSE );
+#endif
 
 	DrawCinemaFadeEffect();
 

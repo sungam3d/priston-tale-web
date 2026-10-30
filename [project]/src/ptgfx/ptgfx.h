@@ -68,6 +68,33 @@ void PtGfx_ShadowSkipCapture( BOOL bSkip );
 BOOL PtGfx_ShadowTestBegin( float camX, float camY, float camZ );		// TRUE: test view on
 void PtGfx_ShadowTestEnd();
 
+// Weather (ptgfx_weather.cpp): rain and snow falling in the world around the
+// camera, splashes where rain lands, and the look of the sky over the world: a
+// colour the world is multiplied by (darker under storm clouds, bright in a
+// lightning flash) and fog.
+//   PtGfx_WeatherLook( ... )       every frame, before the world is drawn
+//   PtGfx_WeatherWorld( on )       around the world's drawing (sky, map, characters):
+//                                  those draws get the look
+//   PtGfx_WeatherDraw( scene )     the falling rain or snow and the splashes, after
+//                                  the world (tested against its depth)
+struct PtWeatherScene {
+	double	Cam[3];				// camera position, world units
+	float	Rot[9];				// world-to-camera rotation, as PtGfx_ShadowCamera
+	float	ProjW, ProjH, CenterX, CenterY;		// as PtGfx_ShadowCamera
+	float	DepthQ1, DepthQ2;	// depth buffer value = q1 + q2/z (z: distance along the view)
+	float	ClipHalfH;			// the engine clips the scene to CenterY +- this many pixels
+	float	Time;				// seconds
+	float	Rain, Snow;			// amount, 0..1
+	float	Wind[2];			// x, z in world units per second
+	float	Light;				// 0 night .. 1 day: how bright drops and flakes look
+	const float *Splashes;		// per splash: x, y, z (world units, relative to Cam), age 0..1
+	int		nSplashes;
+};
+// tint: colour the world is multiplied by; fog: colour and density (per world unit)
+void PtGfx_WeatherLook( const float tint[3], const float fog[3], float density );
+void PtGfx_WeatherWorld( BOOL bOn );
+void PtGfx_WeatherDraw( const PtWeatherScene *s );
+
 // Fonts are forced to non-antialiased so GDI text has no colour fringes when
 // drawn into the transparent text overlay.
 HFONT WINAPI PtGfx_CreateFontA( int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight,

@@ -11,12 +11,14 @@
 #include "ptgfx\\ptgfx.h"			// real-time shadows (PtGfx_Shadow*)
 #include <dsound.h>
 #include "ptsound\\ptsound.h"		// master music / sound effect volumes
+#include "weather.h"				// rain, storms, fog, snow
 #endif
 
 #ifdef PT_WEB
 #include <emscripten.h>
 // Page settings (web\settings.js): Module.ptOpts = { v: version, music, effects
-// (0 = off .. 1), view (draw distance in map cells, 0 = the game's own) }. Read
+// (0 = off .. 1), view (draw distance in map cells, 0 = the game's own), weather
+// (weather.h PTWX_SET_*) }. Read
 // once per frame (PlayD3D), and only when the version changed - the page never
 // calls into the game itself.
 static int s_WebViewCells = 0;
@@ -30,6 +32,7 @@ static void PtWeb_PollOptions()
 	double effects = EM_ASM_DOUBLE({ var o = Module['ptOpts']; return o && typeof o.effects=='number' ? o.effects : 1; });
 	s_WebViewCells = EM_ASM_INT({ var o = Module['ptOpts']; return o && o.view ? (o.view|0) : 0; });
 	if ( s_WebViewCells>110 ) s_WebViewCells = 110;		// the map table is 256 cells across
+	PtWeather_Setting = EM_ASM_INT({ var o = Module['ptOpts']; return o && o.weather ? (o.weather|0) : 0; });
 	PtSound_SetMasterVolume( (float)music, (float)effects );
 }
 #endif
@@ -5695,8 +5698,13 @@ void _stdcall smPlayD3D( int x, int y, int z, int ax, int ay, int az )
 	DynLightApply();	//동적 광원 렌더러에 적용
 
 
-	//DrawBG( x,  y,  z,  ax, ay, az );	
-	DrawSky( x,  y,  z,  ax, ay, az );	
+#ifdef PT_GFX_GL
+	// weather (weather.cpp): the sky, the map and the characters get its look
+	PtWeather_Frame( FALSE );
+	PtGfx_WeatherWorld( TRUE );
+#endif
+	//DrawBG( x,  y,  z,  ax, ay, az );
+	DrawSky( x,  y,  z,  ax, ay, az );
 
 	smRender.DeviceRendMode = FALSE;
 	lpD3DDevice->BeginScene();
@@ -5738,6 +5746,9 @@ void _stdcall smPlayD3D( int x, int y, int z, int ax, int ay, int az )
 
 	smRender.bApplyRendObjLight = TRUE;
 	DrawPat3D_Alpha();
+#ifdef PT_GFX_GL
+	PtGfx_WeatherWorld( FALSE );
+#endif
 
 	smRender.ClearObjLight();
 	//######################################################################################
