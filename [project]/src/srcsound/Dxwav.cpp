@@ -9,6 +9,9 @@
 #include <windowsx.h>
 #include <mmsystem.h>
 #include <conio.h>
+#ifdef PT_GFX_GL
+#include "../ptsound/ptsound.h"		// the music stream gets the master music volume
+#endif
 //#include "..\cl_main\defines.h"
 //#include "..\cl_main\initgd.h"
 
@@ -1749,6 +1752,9 @@ HRESULT SetupStreamBuffer(LPSTR lpszFilename)
 
 	//ktj 고침
     dsRetVal = lpDirectSound->CreateSoundBuffer(&dsbd, &lpDSBStreamBuffer, NULL);
+#ifdef PT_GFX_GL
+	if ( dsRetVal==DS_OK ) PtSound_MarkMusic( lpDSBStreamBuffer );
+#endif
 
     if(dsRetVal != DS_OK){
         return ERR_CREATEDSB_FAILED;

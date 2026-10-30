@@ -95,7 +95,7 @@ def main():
     shutil.copy(os.path.join(OUTDIR, 'game.html'), os.path.join(site, 'index.html'))
     for f in ('game.html', 'game.js', 'game.wasm', 'server_worker.js', 'data_startup.pack'):
         shutil.copy(os.path.join(OUTDIR, f), site)
-    for f in ('sw.js', 'progress.js', 'admin.js'):
+    for f in ('sw.js', 'progress.js', 'settings.js', 'admin.js'):
         shutil.copy(os.path.join(HERE, f), site)
     for f in ('ws.ashx', 'web.config'):
         shutil.copy(os.path.join(HERE, 'site', f), site)

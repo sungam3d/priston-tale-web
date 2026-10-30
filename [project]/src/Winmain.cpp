@@ -9,6 +9,29 @@
 #include "smlib3d\\smd3d.h"
 #ifdef PT_GFX_GL
 #include "ptgfx\\ptgfx.h"			// real-time shadows (PtGfx_Shadow*)
+#include <dsound.h>
+#include "ptsound\\ptsound.h"		// master music / sound effect volumes
+#endif
+
+#ifdef PT_WEB
+#include <emscripten.h>
+// Page settings (web\settings.js): Module.ptOpts = { v: version, music, effects
+// (0 = off .. 1), view (draw distance in map cells, 0 = the game's own) }. Read
+// once per frame (PlayD3D), and only when the version changed - the page never
+// calls into the game itself.
+static int s_WebViewCells = 0;
+static void PtWeb_PollOptions()
+{
+	static int s_Version = -1;
+	int v = EM_ASM_INT({ var o = Module['ptOpts']; return o ? (o.v|0) : 0; });
+	if ( v==s_Version ) return;
+	s_Version = v;
+	double music = EM_ASM_DOUBLE({ var o = Module['ptOpts']; return o && typeof o.music=='number' ? o.music : 1; });
+	double effects = EM_ASM_DOUBLE({ var o = Module['ptOpts']; return o && typeof o.effects=='number' ? o.effects : 1; });
+	s_WebViewCells = EM_ASM_INT({ var o = Module['ptOpts']; return o && o.view ? (o.view|0) : 0; });
+	if ( s_WebViewCells>110 ) s_WebViewCells = 110;		// the map table is 256 cells across
+	PtSound_SetMasterVolume( (float)music, (float)effects );
+}
 #endif
 #include "smwsock.h"
 #include "smreg.h"
@@ -2563,6 +2586,14 @@ int RendSightOffset = 0;
 //////////////////// 렌더링 뷰 거리 설정 ////////////////////
 int SetRendSight()
 {
+#ifdef PT_WEB
+	if ( s_WebViewCells>0 ) {					// page draw distance setting (map cells)
+		ViewPointLen = s_WebViewCells * SizeMAPCELL;
+		ccDistZMin   = ViewPointLen - (20 + s_WebViewCells/8) * SizeMAPCELL;	// far colour fade starts here
+		if ( ccDistZMin<ViewPointLen/3 ) ccDistZMin = ViewPointLen/3;
+		return TRUE;
+	}
+#endif
 	if( smRender.m_GameFieldView ) {
 		ViewPointLen = 38 * SizeMAPCELL + RendSightPos ;
 		ccDistZMin   = ViewPointLen - (20*SizeMAPCELL+RendSightPos/4);
@@ -2953,6 +2984,9 @@ void PlayD3D()
 {
 	DWORD dwTime;
 
+#ifdef PT_WEB
+	PtWeb_PollOptions();			// page settings: sound volumes, draw distance
+#endif
 	dwTime = GetCurrentTime();
 	if ( dwLastPlayTime ) {
 		//스피드핵 경고
@@ -5676,9 +5710,15 @@ void _stdcall smPlayD3D( int x, int y, int z, int ax, int ay, int az )
 	//######################################################################################
 	//작 성 자 : 오 영 석
 #ifdef PT_GFX_GL
-	// Real-time shadows (ptgfx_shadow.cpp): the characters drawn by DrawPat3D and the
-	// map drawn by DisplayStage cast (the map a frame late), the map receives. Not in
-	// dungeons (no sun there). The shadowed square is centred on the player.
+	// Real-time shadows (ptgfx_shadow.cpp): the characters drawn by DrawPat3D, the
+	// loaded maps' meshes and the map's objects (a frame late) cast, the map
+	// receives. Not in dungeons (no sun there). The shadowed square is centred on
+	// the player.
+	{
+		extern smSTAGE3D *smGameStage[2];
+		smStage_ShadowMesh( smGameStage[0], 0 );
+		smStage_ShadowMesh( smGameStage[1], 1 );
+	}
 	PtGfx_ShadowFrame( lpCurPlayer && lpCurPlayer->OnStageField>=0 && StageField[lpCurPlayer->OnStageField] &&
 		StageField[lpCurPlayer->OnStageField]->State!=FIELD_STATE_DUNGEON,
 		(double)x/fONE, (double)y/fONE, (double)z/fONE,

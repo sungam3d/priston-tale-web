@@ -165,6 +165,12 @@ public:
 
 };
 
+#ifdef PT_GFX_GL
+// Real-time shadows: uploads the map's mesh for casting once per loaded map
+// (shadow mesh slot 0/1); call every frame before PtGfx_ShadowFrame.
+int smStage_ShadowMesh( smSTAGE3D *st, int slot );
+#endif
+
 
 
 

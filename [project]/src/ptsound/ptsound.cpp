@@ -33,6 +33,7 @@ static inline LONG Clamp( LONG v, LONG lo, LONG hi ) { return v<lo ? lo : v>hi ?
 
 static SDL_AudioDeviceID			s_Device = 0;
 static std::vector<PtSoundBuffer *>	s_Buffers;		// every secondary buffer (mixed when playing)
+static float s_MusicGain = 1.0f, s_EffectsGain = 1.0f;	// master volumes (PtSound_SetMasterVolume)
 
 static void Log( const char *szFormat, ... )
 {
@@ -60,6 +61,7 @@ public:
 	BOOL	m_bPlaying, m_bLooping;
 	LONG	m_Volume, m_Pan;	// DirectSound units: hundredths of a dB
 	float	m_GainL, m_GainR;
+	BOOL	m_bMusic;			// background music (master music volume) or a sound effect
 
 	PtSoundBuffer( BOOL bPrimary, const WAVEFORMATEX *pwfx, DWORD dwBytes )
 	{
@@ -74,6 +76,7 @@ public:
 		m_Pos = 0;
 		m_bPlaying = m_bLooping = FALSE;
 		m_Volume = 0; m_Pan = 0;
+		m_bMusic = FALSE;
 		UpdateGains();
 		if ( !bPrimary ) {
 			SDL_LockAudioDevice( s_Device );
@@ -111,6 +114,8 @@ public:
 	void Mix( float *mix, int frames )
 	{
 		if ( !m_bPlaying || !m_Frames ) return;
+		float master = m_bMusic ? s_MusicGain : s_EffectsGain;
+		float gainL = m_GainL*master, gainR = m_GainR*master;
 		double step = (double)m_Freq / PT_MIX_RATE;
 		for ( int i=0; i<frames; i++ ) {
 			if ( m_Pos>=m_Frames ) {
@@ -124,8 +129,8 @@ public:
 			float l = Sample( f0, 0 ) + ( Sample( f1, 0 ) - Sample( f0, 0 ) ) * t;
 			float r = l;
 			if ( m_Channels>1 ) r = Sample( f0, 1 ) + ( Sample( f1, 1 ) - Sample( f0, 1 ) ) * t;
-			mix[i*2]   += l * m_GainL;
-			mix[i*2+1] += r * m_GainR;
+			mix[i*2]   += l * gainL;
+			mix[i*2+1] += r * gainR;
 			m_Pos += step;
 		}
 	}
@@ -273,6 +278,19 @@ public:
 	STDMETHODIMP_(HRESULT) Compact() override { return DS_OK; }
 	STDMETHODIMP_(HRESULT) Initialize( LPCGUID ) override { return DS_OK; }
 };
+
+void PtSound_SetMasterVolume( float music, float effects )
+{
+	if ( music<0 ) music = 0; if ( music>1 ) music = 1;
+	if ( effects<0 ) effects = 0; if ( effects>1 ) effects = 1;
+	s_MusicGain = music;			// read by the mixer (a float store: no lock needed)
+	s_EffectsGain = effects;
+}
+
+void PtSound_MarkMusic( LPDIRECTSOUNDBUFFER lpBuffer )
+{
+	if ( lpBuffer ) ((PtSoundBuffer *)lpBuffer)->m_bMusic = TRUE;
+}
 
 HRESULT WINAPI PtSound_DirectSoundCreate( LPCGUID, LPDIRECTSOUND *ppDS, LPUNKNOWN )
 {

@@ -50,9 +50,22 @@ void PtGfx_ShadowRole( int role );
 // _11.._33); w, h, cx, cy: the perspective projection (screen x = (1 + w*x/z) * cx)
 void PtGfx_ShadowCamera( const float m[9], float w, float h, float cx, float cy );
 BOOL PtGfx_ShadowActive();
+// The loaded maps' meshes cast directly from their world coordinates (so map
+// shadows do not depend on what the camera sees). One mesh per slot (the game
+// keeps two map areas loaded); vertices are x, y, z (world units relative to
+// origin), u, v. Batches: triangles of one material in one tile, with the tile's
+// x/z extent (relative to origin) and the address of the material's texture
+// pointer (read when drawing: leaves and fences are cut out by its alpha).
+struct PtShadowMeshBatch { int First, Count; LPDIRECT3DTEXTURE2 *ppTex; float MinX, MinZ, MaxX, MaxZ; };
+BOOL PtGfx_ShadowHasMesh( int slot, const void *key, int keyN );		// TRUE: up to date (or shadows off)
+void PtGfx_ShadowSetMesh( int slot, const void *key, int keyN, const double origin[3],
+	const float *verts, int nVerts, const PtShadowMeshBatch *batches, int nBatches );
+// Around the map mesh's own drawing: not kept from the screen (the mesh casts itself).
+void PtGfx_ShadowSkipCapture( BOOL bSkip );
+
 // Test view (browser page with ?shadowtest): the intro scene casts onto itself,
 // one frame late. cam = camera position in world units.
-void PtGfx_ShadowTestBegin( float camX, float camY, float camZ );
+BOOL PtGfx_ShadowTestBegin( float camX, float camY, float camZ );		// TRUE: test view on
 void PtGfx_ShadowTestEnd();
 
 // Fonts are forced to non-antialiased so GDI text has no colour fringes when

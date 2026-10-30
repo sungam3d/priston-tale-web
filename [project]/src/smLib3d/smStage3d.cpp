@@ -1,5 +1,9 @@
 ﻿
 #include "smd3d.h"
+#ifdef PT_GFX_GL
+#include <stdlib.h>
+#include "../ptgfx/ptgfx.h"			// real-time shadows: the map mesh casts (smStage_ShadowMesh)
+#endif
 
 
 #define SMSFACE_MAX		1000
@@ -2184,7 +2188,13 @@ int smSTAGE3D::DrawStage(int x , int y, int z, int angX, int angY, int angZ , sm
 
 		RenderGeom();
 		// smRender D3D렌더링
+#ifdef PT_GFX_GL
+		PtGfx_ShadowSkipCapture( TRUE );				// the mesh casts from smStage_ShadowMesh
+#endif
 		smRender.RenderD3D();
+#ifdef PT_GFX_GL
+		PtGfx_ShadowSkipCapture( FALSE );
+#endif
 
 		StageObject->Draw( x, y, z, angX, angY, angZ );
 	}
@@ -2251,7 +2261,13 @@ int smSTAGE3D::DrawStage2(int x , int y, int z, int angX, int angY, int angZ , s
 
 		RenderGeom();
 		// smRender D3D렌더링
+#ifdef PT_GFX_GL
+		PtGfx_ShadowSkipCapture( TRUE );				// the mesh casts from smStage_ShadowMesh
+#endif
 		smRender.RenderD3D();
+#ifdef PT_GFX_GL
+		PtGfx_ShadowSkipCapture( FALSE );
+#endif
 
 		return TRUE;
 	}
@@ -2302,14 +2318,122 @@ int smSTAGE3D::DrawOpeningStage(int x, int y, int z, int angX, int angY, int ang
 
 		RenderGeom();
 		// smRender D3D렌더링
+#ifdef PT_GFX_GL
+		PtGfx_ShadowSkipCapture( TRUE );				// the mesh casts from smStage_ShadowMesh
+#endif
 		smRender.RenderD3D();
+#ifdef PT_GFX_GL
+		PtGfx_ShadowSkipCapture( FALSE );
+#endif
 
-		StageObject->DrawOpening( x, y, z, angX, angY, angZ, FrameStep );		
+		StageObject->DrawOpening( x, y, z, angX, angY, angZ, FrameStep );
 	}
 
 	return FALSE;
 }
 //######################################################################################
+
+#ifdef PT_GFX_GL
+// Real-time shadows: this map's mesh in world units, uploaded once for the shadow
+// map (ptgfx_shadow.cpp), so the map casts from where the player is rather than
+// from what the camera sees. Only what the engine draws as solid (depth written:
+// Transparency <= 0.2, not a glow/shadow blend) or cut-out; sorted into square
+// tiles and materials so a frame draws only the tiles near the player.
+#define SHADOWMESH_TILE		1024			// tile size, world units
+
+struct smShadowFaceKey { DWORD Key; int Face; };
+static int CompareShadowFaceKey( const void *a, const void *b )
+{
+	DWORD ka = ((const smShadowFaceKey *)a)->Key, kb = ((const smShadowFaceKey *)b)->Key;
+	return ka<kb ? -1 : ka>kb ? 1 : 0;
+}
+
+int smStage_ShadowMesh( smSTAGE3D *st, int slot )
+{
+	if ( !st || !st->Head || !st->Vertex || !st->Face || st->nFace<=0 ) {
+		if ( !PtGfx_ShadowHasMesh( slot, NULL, 0 ) ) PtGfx_ShadowSetMesh( slot, NULL, 0, NULL, NULL, 0, NULL, 0 );
+		return FALSE;
+	}
+	if ( PtGfx_ShadowHasMesh( slot, st->Face, st->nFace ) ) return TRUE;
+
+	smMATERIAL *mats = st->smMaterialGroup ? st->smMaterialGroup->smMaterial : st->smMaterial;
+	int nMats = st->smMaterialGroup ? (int)st->smMaterialGroup->MaterialCount : 0x10000;
+
+	// map extent (world units) and tile grid
+	double minX = 1e30, minZ = 1e30, maxX = -1e30, maxZ = -1e30, minY = 1e30, maxY = -1e30;
+	for ( int i=0; i<st->nVertex; i++ ) {
+		double x = (double)st->Vertex[i].x/fONE, y = (double)st->Vertex[i].y/fONE, z = (double)st->Vertex[i].z/fONE;
+		if ( x<minX ) minX = x; if ( x>maxX ) maxX = x;
+		if ( y<minY ) minY = y; if ( y>maxY ) maxY = y;
+		if ( z<minZ ) minZ = z; if ( z>maxZ ) maxZ = z;
+	}
+	double origin[3] = { (minX+maxX)/2, (minY+maxY)/2, (minZ+maxZ)/2 };
+	int tilesX = (int)((maxX-minX)/SHADOWMESH_TILE)+1, tilesZ = (int)((maxZ-minZ)/SHADOWMESH_TILE)+1;
+	if ( tilesX>255 ) tilesX = 255;
+	if ( tilesZ>255 ) tilesZ = 255;
+
+	// faces that cast, keyed by tile then material
+	smShadowFaceKey *keys = (smShadowFaceKey *)malloc( sizeof(smShadowFaceKey)*st->nFace );
+	if ( !keys ) return FALSE;
+	int nKeys = 0;
+	for ( int f=0; f<st->nFace; f++ ) {
+		smSTAGE_FACE &face = st->Face[f];
+		int m = face.Vertex[3];
+		if ( !mats || m>=nMats ) continue;
+		smMATERIAL &mat = mats[m];
+		if ( !mat.TextureCounter && !mat.AnimTexCounter ) continue;			// never drawn (collision only)
+		if ( mat.Transparency>0.2f ) continue;								// see-through: no depth written
+		if ( mat.BlendType!=SMMAT_BLEND_NONE && mat.BlendType!=SMMAT_BLEND_ALPHA ) continue;	// glows, shadows
+		if ( face.Vertex[0]>=st->nVertex || face.Vertex[1]>=st->nVertex || face.Vertex[2]>=st->nVertex ) continue;
+		smSTAGE_VERTEX &v0 = st->Vertex[face.Vertex[0]], &v1 = st->Vertex[face.Vertex[1]], &v2 = st->Vertex[face.Vertex[2]];
+		double cx = (double)(v0.x+v1.x+v2.x)/(3*fONE), cz = (double)(v0.z+v1.z+v2.z)/(3*fONE);
+		int tx = (int)((cx-minX)/SHADOWMESH_TILE), tz = (int)((cz-minZ)/SHADOWMESH_TILE);
+		if ( tx<0 ) tx = 0; if ( tx>=tilesX ) tx = tilesX-1;
+		if ( tz<0 ) tz = 0; if ( tz>=tilesZ ) tz = tilesZ-1;
+		keys[nKeys].Key = ((DWORD)(tz*tilesX+tx)<<16) | (DWORD)(m & 0xFFFF);
+		keys[nKeys].Face = f;
+		nKeys++;
+	}
+	qsort( keys, nKeys, sizeof(smShadowFaceKey), CompareShadowFaceKey );
+
+	float *verts = (float *)malloc( sizeof(float)*5*3*(nKeys ? nKeys : 1) );
+	PtShadowMeshBatch *batches = (PtShadowMeshBatch *)malloc( sizeof(PtShadowMeshBatch)*(nKeys ? nKeys : 1) );
+	if ( !verts || !batches ) { free( keys ); free( verts ); free( batches ); return FALSE; }
+	int nVerts = 0, nBatches = 0;
+	for ( int k=0; k<nKeys; k++ ) {
+		smSTAGE_FACE &face = st->Face[keys[k].Face];
+		if ( !nBatches || keys[k].Key!=keys[k-1].Key ) {
+			smMATERIAL &mat = mats[face.Vertex[3]];
+			smTEXTUREHANDLE *th = mat.TextureCounter ? mat.smTexture[0] : mat.smAnimTexture[0];
+			PtShadowMeshBatch &b = batches[nBatches++];
+			b.First = nVerts;
+			b.Count = 0;
+			b.ppTex = th ? &th->lpD3DTexture : NULL;
+			b.MinX = b.MinZ = 1e30f;
+			b.MaxX = b.MaxZ = -1e30f;
+		}
+		PtShadowMeshBatch &b = batches[nBatches-1];
+		for ( int c=0; c<3; c++ ) {
+			smSTAGE_VERTEX &v = st->Vertex[face.Vertex[c]];
+			float *o = verts + nVerts*5;
+			o[0] = (float)((double)v.x/fONE - origin[0]);
+			o[1] = (float)((double)v.y/fONE - origin[1]);
+			o[2] = (float)((double)v.z/fONE - origin[2]);
+			o[3] = face.lpTexLink ? face.lpTexLink->u[c] : 0;
+			o[4] = face.lpTexLink ? face.lpTexLink->v[c] : 0;
+			if ( o[0]<b.MinX ) b.MinX = o[0]; if ( o[0]>b.MaxX ) b.MaxX = o[0];
+			if ( o[2]<b.MinZ ) b.MinZ = o[2]; if ( o[2]>b.MaxZ ) b.MaxZ = o[2];
+			nVerts++;
+		}
+		b.Count += 3;
+	}
+	PtGfx_ShadowSetMesh( slot, st->Face, st->nFace, origin, verts, nVerts, batches, nBatches );
+	free( keys );
+	free( verts );
+	free( batches );
+	return TRUE;
+}
+#endif
 
 
 static char *szSMDFileHeader = "SMD Stage data Ver 0.72";

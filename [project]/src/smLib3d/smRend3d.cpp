@@ -328,6 +328,13 @@ smRENDER3D::~smRENDER3D()
 
 //######################################################################################
 //작 성 자 : 오 영 석
+// Size of RendVertex / RendFace (AddStageFace stops short of it: nothing else checks).
+// The web build has a draw distance setting up to ~3x the default view, so its
+// buffers are bigger.
+static int s_RendVertexCap = 0, s_RendFaceCap = 0;
+#define WEB_REND_MAX		160000
+#define REND_ROOM			8192			// left for the faces/vertices clipping adds
+
 void smRENDER3D::CreateRenderBuff( int FieldViewType )
 {
 	//
@@ -345,6 +352,14 @@ void smRENDER3D::CreateRenderBuff( int FieldViewType )
 
 	//
 	m_GameFieldView = FieldViewType;
+#ifdef PT_WEB
+	RendVertex = new smRENDVERTEX[ WEB_REND_MAX ];
+	::ZeroMemory( RendVertex, sizeof(smRENDVERTEX) * WEB_REND_MAX );
+	RendFace   = new smRENDFACE[ WEB_REND_MAX ];
+	::ZeroMemory( RendFace, sizeof(smRENDFACE) * WEB_REND_MAX );
+	s_RendVertexCap = s_RendFaceCap = WEB_REND_MAX;
+	return;
+#endif
 	if( m_GameFieldView )
 	{
 		// 게임 필드 확장 시야.
@@ -353,6 +368,7 @@ void smRENDER3D::CreateRenderBuff( int FieldViewType )
 
 		RendFace   = new smRENDFACE[ 40000 ];
 		::ZeroMemory( RendFace, sizeof(smRENDFACE) * 40000 );
+		s_RendVertexCap = s_RendFaceCap = 40000;
 	}
 	else
 	{
@@ -362,6 +378,8 @@ void smRENDER3D::CreateRenderBuff( int FieldViewType )
 
 		RendFace   = new smRENDFACE[ RENDER_FACE_MAX ];
 		::ZeroMemory( RendFace, sizeof(smRENDFACE) * RENDER_FACE_MAX );
+		s_RendVertexCap = RENDER_VERTEX_MAX;
+		s_RendFaceCap = RENDER_FACE_MAX;
 	}
 }
 
@@ -1210,6 +1228,11 @@ smRENDFACE *smRENDER3D::AddStageFace ( smSTAGE_FACE *face )
 	smMATERIAL *lpMaterial;
 
 	if ( SumCount!=face->sum ) {
+
+		// buffers nearly full (long draw distance): leave the rest of the map out
+		// rather than writing past their end
+		if ( s_RendFaceCap && ( nRendFace>=s_RendFaceCap-REND_ROOM || nRendVertex>=s_RendVertexCap-REND_ROOM ) )
+			return NULL;
 
 		ClipStatus = 0;
 		lpMaterial = &smRendMaterial[ face->Vertex[3] ];

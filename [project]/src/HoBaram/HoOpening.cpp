@@ -552,7 +552,8 @@ int HoOpening::Draw()
 	if(CinemaFadeState != STATE_FADE_OUT)
 	{
 #ifdef PT_GFX_GL
-		PtGfx_ShadowTestBegin( (float)x/fONE, (float)y/fONE, (float)z/fONE );	// only with ?shadowtest
+		if ( PtGfx_ShadowTestBegin( (float)x/fONE, (float)y/fONE, (float)z/fONE ) )	// only with ?shadowtest
+			smStage_ShadowMesh( Stage, 0 );		// the intro map casts from its mesh (from the next frame)
 #endif
 		Stage->DrawOpeningStage( x,y,z, anx, any, anz, s_AutoCamera.m_Frame );
 #ifdef PT_GFX_GL

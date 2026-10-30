@@ -8,16 +8,13 @@
 // the game asks the server for admin level 1 at login (SendAdminMode). Levels 2-4
 // stay behind the passwords in server.ini (*ADMIN_NAME / *ADMIN_COMMAND).
 // The setting is kept in this browser (localStorage); the game reads hotuk.ini when
-// it starts, so switching reloads the page.
-//
-// Also the "Shadows" switch: real-time character shadows (ptgfx_shadow.cpp) read
-// Module.ptShadows once at start-up; off = the old round shadows (slower PCs).
+// it starts, so switching reloads the page. The line is added through
+// Module.ptFilePatches (settings.js, loaded before this file).
 (function () {
 	if (!window.Module) return;
-	var KEY = 'pt-admin-mode', SHADOW_KEY = 'pt-shadows';
-	var on = false, shadows = true;
-	try { on = localStorage.getItem(KEY) == '1'; shadows = localStorage.getItem(SHADOW_KEY) != 'off'; } catch (e) {}
-	Module.ptShadows = shadows;
+	var KEY = 'pt-admin-mode';
+	var on = false;
+	try { on = localStorage.getItem(KEY) == '1'; } catch (e) {}
 
 	// ---- the hotuk.ini line (cp949 bytes, exactly as in fileread.cpp) ----
 	var CMD21 = [0xC6, 0xC4, 0xBE, 0xC6, 0xB6, 0xF5];
@@ -34,25 +31,9 @@
 		Module.print('[web] admin mode on');
 	}
 
-	if (on) {
-		// hotuk.ini arrives in the start-up pack, which web\pre.js unpacks in its own
-		// preRun; when done it writes /game_saves_restored.txt. Hold the start until
-		// then (only this dependency left), and add the line before the game reads it.
-		Module.preRun = Module.preRun || [];
-		Module.preRun.unshift(function () {
-			var done = false;
-			var orig = Module.monitorRunDependencies;
-			Module.monitorRunDependencies = function (left) {
-				if (orig) orig.call(Module, left);
-				if (left != 1 || done) return;
-				try { if (!FS.analyzePath('/game_saves_restored.txt').exists) return; } catch (e) { return; }
-				done = true;
-				try { addAdminLine(); } catch (e) { Module.printErr('[web] admin mode not set: ' + e); }
-				removeRunDependency('pt-admin');
-			};
-			addRunDependency('pt-admin');
-		});
-	}
+	// hotuk.ini arrives in the start-up pack: settings.js runs this once it is unpacked,
+	// before the game reads it
+	if (on) (Module.ptFilePatches = Module.ptFilePatches || []).push(addAdminLine);
 
 	// ---- bar buttons and help panel ----
 	var css = document.createElement('style');
@@ -98,22 +79,8 @@
 	btnHelp.textContent = 'Commands';
 	btnHelp.title = 'Admin hotkeys and chat commands';
 
-	var btnShadows = document.createElement('button');
-	btnShadows.id = 'btnShadows';
-	btnShadows.type = 'button';
-	btnShadows.textContent = shadows ? 'Shadows: on' : 'Shadows: off';
-	btnShadows.title = shadows ? 'Use the simple round shadows instead (faster on old PCs; restarts the game)' :
-		'Turn on real-time character shadows (restarts the game)';
-	btnShadows.addEventListener('click', function () {
-		try { if (shadows) localStorage.setItem(SHADOW_KEY, 'off'); else localStorage.removeItem(SHADOW_KEY); }
-		catch (e) { Module.setStatus('This setting needs browser storage, which is blocked here'); return; }
-		btnShadows.disabled = true;
-		location.reload();
-	});
-
 	bar.insertBefore(btnAdmin, anchor);
 	bar.insertBefore(btnHelp, anchor);
-	bar.insertBefore(btnShadows, anchor);
 
 	var panel = document.createElement('div');
 	panel.className = 'pt-help';
