@@ -84,6 +84,15 @@
 		var rate = d.got / secs, left = d.size ? (d.size - d.got) / rate : 0;
 		return ' · ' + mb(rate) + '/s' + (left > 2 ? ' · about ' + (left < 90 ? Math.round(left) + ' s' : Math.round(left / 60) + ' min') + ' left' : '');
 	}
+	// a crash: the full error and where in the game it happened, into the log under
+	// the game (copy it from there to report it)
+	function logError(what, err) {
+		var text = err && err.stack ? err.stack : String(err && err.message || err);
+		if (Module.printErr) Module.printErr('[web] ' + what + ': ' + text);
+	}
+	window.addEventListener('error', function (e) { logError('error', e.error || e.message); });
+	window.addEventListener('unhandledrejection', function (e) { logError('error (promise)', e.reason); });
+
 	var origSetStatus = Module.setStatus;
 	Module.setStatus = function (t) {
 		if (origSetStatus) origSetStatus.call(Module, t);

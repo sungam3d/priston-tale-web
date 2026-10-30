@@ -16,7 +16,7 @@
 (function () {
 	if (!window.Module) return;
 	var KEY = 'pt-settings';
-	var DEF = { quality: 'max', shadows: true, shadowDark: 0.6, view: 38, music: 70, musicOn: true, effects: 80, effectsOn: true };
+	var DEF = { quality: 'standard', shadows: true, shadowDark: 0.6, view: 38, music: 70, musicOn: true, effects: 80, effectsOn: true };
 	var VIEW_MIN = 16, VIEW_GAME = 38, VIEW_MAX = 110;		// map cells (64 world units); 110 = unlimited
 	var s = {};
 	try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) {}
@@ -122,8 +122,8 @@
 
 		'<h3>Graphics</h3>' +
 		'<div class="pt-row"><label>Image quality</label><div class="ctl"><span class="pt-seg" id="setQuality">' +
-			'<button type="button" data-v="standard">Standard</button><button type="button" data-v="max">Max</button></span></div></div>' +
-		'<p class="note">Max: 32-bit colour (no banding) and full-size textures. Standard: the original 16-bit colour.</p>' +
+			'<button type="button" data-v="standard">Standard</button><button type="button" data-v="max">Max (test)</button></span></div></div>' +
+		'<p class="note">Max: 32-bit colour (no banding) and full-size textures - still being tested in game; switch back to Standard if the game has problems. Standard: the original 16-bit colour.</p>' +
 		'<div class="pt-row"><label>Shadows</label><div class="ctl"><span class="pt-seg" id="setShadows">' +
 			'<button type="button" data-v="0">Round</button><button type="button" data-v="1">Real-time</button></span></div></div>' +
 		'<div class="pt-row"><label for="setShadowDark">Shadow darkness</label><div class="ctl">' +
@@ -173,18 +173,27 @@
 
 	$('setQuality').addEventListener('click', function (e) { var v = e.target.dataset && e.target.dataset.v; if (v) { s.quality = v; change(); } });
 	$('setShadows').addEventListener('click', function (e) { var v = e.target.dataset && e.target.dataset.v; if (v) { s.shadows = v == '1'; change(); } });
-	$('setShadowDark').addEventListener('input', function () { s.shadowDark = this.value/100; change(); });
-	$('setView').addEventListener('input', function () { s.view = +this.value; change(); });
+	// sliders: while dragging (input) and when let go (change)
+	function slider(id, set) {
+		['input', 'change'].forEach(function (t) { $(id).addEventListener(t, function () { set(+this.value); change(); }); });
+	}
+	slider('setShadowDark', function (v) { s.shadowDark = v/100; });
+	slider('setView', function (v) { s.view = v; });
+	slider('setMusic', function (v) { s.music = v; });
+	slider('setEffects', function (v) { s.effects = v; });
 	$('setMusicOn').addEventListener('change', function () { s.musicOn = this.checked; change(); });
-	$('setMusic').addEventListener('input', function () { s.music = +this.value; change(); });
 	$('setEffectsOn').addEventListener('change', function () { s.effectsOn = this.checked; change(); });
-	$('setEffects').addEventListener('input', function () { s.effects = +this.value; change(); });
 	$('setRestartBtn').addEventListener('click', function () { this.disabled = true; location.reload(); });
 
 	function show(v) { panel.hidden = !v; if (v) { render(); $('setClose').focus(); } else btn.focus(); }
 	btn.addEventListener('click', function () { show(true); });
 	panel.addEventListener('click', function (e) { if (e.target === panel || e.target.id == 'setClose') show(false); });
 	document.addEventListener('keydown', function (e) { if (e.key == 'Escape' && !panel.hidden) { e.stopPropagation(); show(false); } }, true);
-	// keys typed in the panel are for the panel, not the game
-	panel.addEventListener('keydown', function (e) { e.stopPropagation(); });
+	// Mouse, touch and keys in the panel are for the panel, not the game: SDL listens
+	// on the whole page (mouse-up on the document) and blocks the browser's own
+	// handling of what it takes, which fought the sliders.
+	['keydown', 'keyup', 'keypress', 'mousedown', 'mouseup', 'mousemove', 'click', 'dblclick', 'wheel', 'contextmenu',
+	 'pointerdown', 'pointerup', 'pointermove', 'touchstart', 'touchmove', 'touchend'].forEach(function (t) {
+		panel.addEventListener(t, function (e) { e.stopPropagation(); });
+	});
 })();

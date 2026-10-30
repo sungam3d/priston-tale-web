@@ -129,4 +129,9 @@
 	btnHelp.addEventListener('click', function () { show(true); });
 	panel.addEventListener('click', function (e) { if (e.target === panel || e.target.id == 'btnHelpClose') show(false); });
 	document.addEventListener('keydown', function (e) { if (e.key == 'Escape' && !panel.hidden) { e.stopPropagation(); show(false); } }, true);
+	// mouse, touch and keys in the panel are for the panel, not the game (SDL listens on the whole page)
+	['keydown', 'keyup', 'keypress', 'mousedown', 'mouseup', 'mousemove', 'click', 'dblclick', 'wheel', 'contextmenu',
+	 'pointerdown', 'pointerup', 'pointermove', 'touchstart', 'touchmove', 'touchend'].forEach(function (t) {
+		panel.addEventListener(t, function (e) { e.stopPropagation(); });
+	});
 })();
