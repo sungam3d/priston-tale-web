@@ -28,6 +28,37 @@ static BOOL ReserveDibImageBuff( DWORD dwSize )
 int		g_DibLastReadWidth;
 int		g_DibLastReadHeight;
 int		g_TgaLastBitCnt;
+
+#ifdef PT_WEB
+#include <emscripten.h>
+#include <string>
+// Browser: the texture files a map or model needs next, one path per line, to the
+// service worker (web\sw.js), which downloads them several at once while the game
+// reads them one by one. Without a service worker (no 204 back) it stops asking.
+// Worker threads send it synchronously (so it is there before the files are asked
+// for); the page's own thread with fetch (Chrome does not pass a synchronous request
+// from the page through the service worker), without waiting for the answer.
+EM_JS( void, PtWeb_PrefetchHint, ( const char *list ), {
+	if ( Module['ptNoPrefetch'] ) return;
+	var body = UTF8ToString( list );
+	if ( typeof window != 'undefined' ) {
+		fetch( '__pt_prefetch', { method: 'POST', body: body } )
+			.then( function ( r ) { if ( r.status != 204 ) Module['ptNoPrefetch'] = 1; },
+				   function () { Module['ptNoPrefetch'] = 1; } );
+		return;
+	}
+	try {
+		var xhr = new XMLHttpRequest();
+		xhr.open( 'POST', '__pt_prefetch', false );
+		xhr.send( body );
+		if ( xhr.status != 204 ) Module['ptNoPrefetch'] = 1;
+	} catch ( e ) { Module['ptNoPrefetch'] = 1; }
+} );
+static void PrefetchHint( const std::string &list, int count )
+{
+	if ( count>=3 ) PtWeb_PrefetchHint( list.c_str() );		// one or two: not worth a request
+}
+#endif
 int		g_TgaLastSwapHeight;
 
 int						new_smCreateTexture( smTEXTUREHANDLE *lpTexHandle, int MipMap = 0 );
@@ -1385,6 +1416,25 @@ int smMATERIAL_GROUP::ReadTextures( int MipMap )
 	smEnterTextureCriticalSection();
 
 	ReadCount = 0;
+
+#ifdef PT_WEB
+	{	// every texture this loop will read, to the service worker first (downloads in parallel)
+		std::string list;
+		int n = 0;
+		for( cnt=0;cnt<MaterialCount;cnt++ ) {
+			if ( !smMaterial[cnt].InUse ) continue;
+			for( tcnt=0; tcnt<smMaterial[cnt].TextureCounter; tcnt++ ) {
+				lpTexture = smMaterial[cnt].smTexture[tcnt];
+				if ( lpTexture && lpTexture->UseCounter && !lpTexture->lpD3DTexture && lpTexture->Name[0] ) { list += lpTexture->Name; list += '\n'; n++; }
+			}
+			for( tcnt=0; tcnt<smMaterial[cnt].AnimTexCounter; tcnt++ ) {
+				lpTexture = smMaterial[cnt].smAnimTexture[tcnt];
+				if ( lpTexture && lpTexture->UseCounter && !lpTexture->lpD3DTexture && lpTexture->Name[0] ) { list += lpTexture->Name; list += '\n'; n++; }
+			}
+		}
+		PrefetchHint( list, n );
+	}
+#endif
 
 	for( cnt=0;cnt<MaterialCount;cnt++ ) {
 		if ( smMaterial[cnt].InUse ) {

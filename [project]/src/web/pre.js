@@ -138,13 +138,22 @@ Module['preRun'].push(function () {
 		.then(function (r) {
 			if (!r.ok) return null;
 			var total = +r.headers.get('Content-Length') || 0, got = 0, chunks = [];
-			var reader = r.body.getReader();
+			var reader = r.body.getReader(), lastPaint = Date.now();
+			// the page's loading panel (web\progress.js) shows these figures
+			Module['ptPack'] = { got: 0, size: total, t0: Date.now() };
 			function pump() {
 				return reader.read().then(function (res) {
 					if (res.done) return;
 					chunks.push(res.value);
 					got += res.value.length;
+					Module['ptPack'].got = got;
 					if (Module.setStatus) Module.setStatus('Downloading game data... ' + (total ? Math.floor(got * 100 / total) + '%' : (got >> 20) + ' MB'));
+					// already-buffered data resolves at once: without a pause now and then the
+					// page would not repaint (or handle anything else) until the download ends
+					if (Date.now() - lastPaint > 100) {
+						lastPaint = Date.now();
+						return new Promise(function (ok) { setTimeout(ok, 0); }).then(pump);
+					}
 					return pump();
 				});
 			}

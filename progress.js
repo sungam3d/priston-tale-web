@@ -66,6 +66,10 @@
 		var m = /Downloading game data\.\.\. (\d+)%/.exec(startText), m2 = /Downloading game data\.\.\. (\d+) MB/.exec(startText);
 		if (m || m2) {
 			var frac = m ? +m[1] / 100 : null, detail = m ? m[1] + '%' : m2[1] + ' MB';
+			// web\pre.js counts the pack as it reads it; the service worker's messages about it
+			// can arrive late (the page is busy reading), so the page's own figures come first
+			var own = Module.ptPack;
+			if (own && own.size) pack = { size: own.size, got: own.got, t0: own.t0 };
 			if (pack && pack.size) {
 				frac = pack.got / pack.size;
 				detail = mb(pack.got) + ' of ' + mb(pack.size) + speedText(pack);
@@ -104,16 +108,26 @@
 	drawStart();
 
 	// ---- while playing: downloads announced by the service worker ----
+	// A batch (the textures of a map or model, web\sw.js) is announced with its file
+	// count and size before its downloads start, so the bar knows the whole amount.
 	var active = {}, burst = null, hideTimer = 0, showTimer = 0;
+	function newBurst() { return { done: 0, total: 0, left: 0 }; }
 	function drawPlay() {
 		if (starting || !burst) return;
 		var ids = Object.keys(active);
 		if (!ids.length) return;
 		var got = burst.done, total = burst.total, name = '';
 		ids.forEach(function (id) { got += Math.min(active[id].got, active[id].size || active[id].got); name = active[id].rel; });
-		var left = ids.length;
-		show('small', 'Downloading game files', total ? got / total : null,
-			name.split('/').pop() + ' · ' + mb(got) + ' of ' + mb(total) + (left > 1 ? ' · ' + left + ' files at once' : ''), '');
+		if (burst.left > 0)
+			show('small', 'Loading the area', total ? got / total : null,
+				mb(got) + ' of ' + mb(total) + ' · ' + burst.left + ' file' + (burst.left > 1 ? 's' : '') + ' left', '');
+		else
+			show('small', 'Downloading game files', total ? got / total : null,
+				name.split('/').pop() + ' · ' + mb(got) + ' of ' + mb(total) + (ids.length > 1 ? ' · ' + ids.length + ' files at once' : ''), '');
+	}
+	function later() {			// quick downloads come and go without a flash: show after 300 ms
+		if (!box.hidden) drawPlay();
+		else if (!showTimer) showTimer = setTimeout(function () { showTimer = 0; drawPlay(); }, 300);
 	}
 	function idle() {
 		clearTimeout(showTimer);
@@ -133,20 +147,26 @@
 				drawStart();
 				return;
 			}
-			if (m.t == 'start') {
+			if (m.t == 'batch') {
 				clearTimeout(hideTimer);
-				if (!burst) burst = { done: 0, total: 0 };
-				active[m.id] = { rel: m.rel, size: m.size, got: 0, seen: Date.now() };
+				if (!burst) burst = newBurst();
 				burst.total += m.size;
-				// quick downloads come and go without a flash: show after 300 ms
-				if (!box.hidden) drawPlay();
-				else if (!showTimer) showTimer = setTimeout(function () { showTimer = 0; drawPlay(); }, 300);
+				burst.left += m.files;
+				later();
+			}
+			else if (m.t == 'start') {
+				clearTimeout(hideTimer);
+				if (!burst) burst = newBurst();
+				active[m.id] = { rel: m.rel, size: m.size, got: 0, seen: Date.now(), batch: m.batch };
+				if (!m.batch) burst.total += m.size;		// a batch's files are counted already
+				later();
 			}
 			else if (active[m.id]) {
 				active[m.id].seen = Date.now();
 				if (m.t == 'bytes') { active[m.id].got = m.got; if (!showTimer) drawPlay(); }
 				else if (m.t == 'end') {
 					burst.done += active[m.id].size || active[m.id].got;
+					if (active[m.id].batch && burst.left > 0) burst.left--;
 					delete active[m.id];
 					if (Object.keys(active).length) { if (!showTimer) drawPlay(); } else idle();
 				}
