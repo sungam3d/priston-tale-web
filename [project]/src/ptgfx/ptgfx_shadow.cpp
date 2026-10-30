@@ -1,16 +1,20 @@
-// ptgfx_shadow.cpp - real-time shadows of characters on the map.
+// ptgfx_shadow.cpp - real-time shadows of characters and the world.
 //
 // The engine sends screen-space vertices (x, y in pixels, z, rhw) and does its
 // 3D maths on the CPU, but each vertex's 3D position can be rebuilt from them:
 // camera z = 1/rhw, x and y from the perspective divide (PtGfx_ShadowCamera gives
-// the projection), then the inverse camera rotation and the eye position give the
-// world position. That happens in the shaders (PTSHADOW_GLSL).
-//  - casters: while the game draws the characters (DrawPat3D, PTSHADOW_CASTER),
-//    their triangles are kept; before the map is drawn they are rendered from the
-//    sun into a depth texture - orthographic, centred on the player
-//  - receivers: while the map is drawn (DisplayStage, PTSHADOW_RECEIVER), the
-//    device shader looks every pixel up in that texture and darkens it where a
-//    character is between it and the sun (ptgfx_device.cpp)
+// the projection), then the inverse camera rotation and the camera position give
+// the world position. That happens in the shaders (PTSHADOW_GLSL).
+//
+// Each frame the game draws the characters first (DrawPat3D), then the map
+// (DisplayStage):
+//  - PTSHADOW_CASTER: the characters' triangles are kept (Chars)
+//  - PTSHADOW_RECEIVER: first the shadow map is drawn from the sun - this frame's
+//    characters plus the map triangles kept in the frame before (static, so a
+//    frame late does not show) - orthographic, centred on the player. Then the map
+//    is drawn: the device shader darkens every pixel that something stands between
+//    it and the sun (ptgfx_device.cpp), and its triangles are kept for next frame.
+// Cut-out textures (leaves, fences) are alpha-tested in the shadow map too.
 // World positions are relative to the shadow centre to keep the floats small.
 
 #include <stdio.h>
@@ -27,17 +31,23 @@ PtShadowState g_PtShadow;
 // Sun: direction the light travels (y is up), half size of the shadowed square
 // around the player and depth range of the shadow map, in world units.
 static const float s_SunDir[3] = { 0.35f, -1.0f, 0.50f };
-#define PTSHADOW_HALF_SIZE	700.0f
-#define PTSHADOW_DEPTH		2000.0f
+#define PTSHADOW_HALF_SIZE	1000.0f
+#define PTSHADOW_DEPTH		3000.0f
 
 static const char *s_CasterVS =
-	"in vec4 aPos;\n"
+	"in vec4 aPos; in vec2 aUV;\n"
+	"out vec2 vUV;\n"
 	PTSHADOW_GLSL
-	"void main() { gl_Position = vec4( ptSunPos( aPos ), 1.0 ); }\n";
+	"void main() { vUV = aUV; gl_Position = vec4( ptSunPos( aPos ), 1.0 ); }\n";
 
 static const char *s_CasterFS =
+	"in vec2 vUV;\n"
+	"uniform sampler2D uTex; uniform int uAlphaTest;\n"
 	"out vec4 oColor;\n"
-	"void main() { oColor = vec4( 1.0 ); }\n";
+	"void main() {\n"
+	"	if ( uAlphaTest!=0 && texture( uTex, vUV ).a<0.5 ) discard;\n"
+	"	oColor = vec4( 1.0 );\n"
+	"}\n";
 
 static void Normalize( float v[3] )
 {
@@ -70,6 +80,16 @@ static void ReadDark()
 #endif
 }
 
+static BOOL AllocList( PtShadowList &L, int nVerts, int nBatches )
+{
+	L.nMaxVerts = nVerts;
+	L.pVerts = (float *)malloc( sizeof(float)*PTSHADOW_VERT_FLOATS*nVerts );
+	L.nMaxBatches = nBatches;
+	L.pBatches = (PtShadowBatch *)malloc( sizeof(PtShadowBatch)*nBatches );
+	L.nVerts = L.nBatches = 0;
+	return L.pVerts && L.pBatches;
+}
+
 BOOL PtShadow_Init()
 {
 	PtShadowState &S = g_PtShadow;
@@ -79,8 +99,8 @@ BOOL PtShadow_Init()
 	S.bAllowed = EM_ASM_INT({ return Module['ptShadows']===false ? 0 : 1; });		// page setting
 	S.bTestAllowed = EM_ASM_INT({ return /[?&]shadowtest=2/.test(location.search) ? 2 : /[?&]shadowtest/.test(location.search) ? 1 : 0; });
 #endif
-	const char *attribs[] = { "aPos" };
-	S.Prog = PtGfx_CompileProgram( s_CasterVS, s_CasterFS, attribs, 1 );
+	const char *attribs[] = { "aPos", "aUV" };
+	S.Prog = PtGfx_CompileProgram( s_CasterVS, s_CasterFS, attribs, 2 );
 	if ( !S.Prog ) { PtGL_Log( "shadows: caster shader failed, shadows off" ); return FALSE; }
 	S.u_Rot  = glGetUniformLocation( S.Prog, "uSRot" );
 	S.u_Proj = glGetUniformLocation( S.Prog, "uSProj" );
@@ -88,6 +108,9 @@ BOOL PtShadow_Init()
 	S.u_R    = glGetUniformLocation( S.Prog, "uSLightR" );
 	S.u_U    = glGetUniformLocation( S.Prog, "uSLightU" );
 	S.u_D    = glGetUniformLocation( S.Prog, "uSLightD" );
+	S.u_AlphaTest = glGetUniformLocation( S.Prog, "uAlphaTest" );
+	glUseProgram( S.Prog );
+	glUniform1i( glGetUniformLocation( S.Prog, "uTex" ), 0 );
 
 	glGenVertexArrays( 1, &S.VAO );
 	glGenBuffers( 1, &S.VBO );
@@ -116,26 +139,48 @@ BOOL PtShadow_Init()
 	PtGfx_BindRenderTarget( g_PtGL.pRenderTarget );
 	if ( !ok ) { PtGL_Log( "shadows: shadow map framebuffer incomplete, shadows off" ); S.Prog = 0; return FALSE; }
 
-	S.nMaxVerts = 400000;
-	S.pVerts = (float *)malloc( sizeof(float)*4*S.nMaxVerts );
-	S.nMaxBatches = 4096;
-	S.pBatches = (PtShadowBatch *)malloc( sizeof(PtShadowBatch)*S.nMaxBatches );
-	if ( !S.pVerts || !S.pBatches ) { S.Prog = 0; return FALSE; }
+	if ( !AllocList( S.Chars, 300000, 4096 ) || !AllocList( S.World[0], 600000, 8192 ) || !AllocList( S.World[1], 600000, 8192 ) ) {
+		S.Prog = 0;
+		return FALSE;
+	}
 	SetSun();
 	PtGL_Log( "shadows: %s (map %dx%d)", S.bAllowed ? "on" : "off (page setting)", PTSHADOW_MAP_SIZE, PTSHADOW_MAP_SIZE );
 	return TRUE;
 }
 
-void PtGfx_ShadowFrame( BOOL bOn, float eyeX, float eyeY, float eyeZ )
+// Start of a shadowed frame: the map kept while drawing the last frame becomes
+// "the frame before"; new casters start empty.
+static void BeginFrame( const double cam[3], const double centre[3] )
 {
 	PtShadowState &S = g_PtShadow;
-	S.bFrame = bOn && S.bAllowed && S.Prog;
-	S.Role = S.bFrame ? PTSHADOW_CASTER : PTSHADOW_OFF;
-	if ( S.bFrame ) ReadDark();
+	S.WorldCur ^= 1;
+	S.World[S.WorldCur].nVerts = S.World[S.WorldCur].nBatches = 0;
+	S.Chars.nVerts = S.Chars.nBatches = 0;
+	for ( int i=0; i<3; i++ ) {
+		S.World[S.WorldCur].Cam[i] = S.Chars.Cam[i] = cam[i];
+		S.Centre[i] = centre[i];
+		S.Eye[i] = (float)(cam[i] - centre[i]);
+	}
+	S.bFrame = TRUE;
 	S.bMapReady = FALSE;
 	S.bCamera = FALSE;
-	S.nVerts = S.nBatches = 0;
-	S.Eye[0] = eyeX; S.Eye[1] = eyeY; S.Eye[2] = eyeZ;
+	ReadDark();
+}
+
+void PtGfx_ShadowFrame( BOOL bOn, double camX, double camY, double camZ, double centreX, double centreY, double centreZ )
+{
+	PtShadowState &S = g_PtShadow;
+	if ( !( bOn && S.bAllowed && S.Prog ) ) {
+		// nothing to carry over into a later frame
+		S.bFrame = FALSE;
+		S.Role = PTSHADOW_OFF;
+		S.World[0].nVerts = S.World[0].nBatches = S.World[1].nVerts = S.World[1].nBatches = 0;
+		PtGfx_InvalidateDeviceState();
+		return;
+	}
+	double cam[3] = { camX, camY, camZ }, centre[3] = { centreX, centreY, centreZ };
+	BeginFrame( cam, centre );
+	S.Role = PTSHADOW_CASTER;
 	PtGfx_InvalidateDeviceState();
 }
 
@@ -163,33 +208,63 @@ void PtGfx_ShadowCamera( const float m[9], float w, float h, float cx, float cy 
 	S.bCamera = TRUE;
 }
 
-void PtShadow_Capture( const BYTE *v, DWORD count, int stride )
+void PtShadow_Capture( const BYTE *v, DWORD count, int stride, int uvOfs, GLuint tex )
 {
 	PtShadowState &S = g_PtShadow;
+	PtShadowList &L = S.Role==PTSHADOW_CASTER ? S.Chars : S.World[S.WorldCur];
 	count -= count % 3;
-	if ( !count || S.nVerts + (int)count > S.nMaxVerts ) return;
-	PtShadowBatch *b = S.nBatches ? &S.pBatches[S.nBatches-1] : NULL;
-	if ( !b || memcmp( b->Rot, S.Rot, sizeof(S.Rot) ) || memcmp( b->Proj, S.Proj, sizeof(S.Proj) ) ) {
-		if ( S.nBatches>=S.nMaxBatches ) return;
-		b = &S.pBatches[S.nBatches++];
-		b->First = S.nVerts;
+	if ( !count || L.nVerts + (int)count > L.nMaxVerts ) return;
+	PtShadowBatch *b = L.nBatches ? &L.pBatches[L.nBatches-1] : NULL;
+	if ( !b || b->Tex!=tex || memcmp( b->Rot, S.Rot, sizeof(S.Rot) ) || memcmp( b->Proj, S.Proj, sizeof(S.Proj) ) ) {
+		if ( L.nBatches>=L.nMaxBatches ) return;
+		b = &L.pBatches[L.nBatches++];
+		b->First = L.nVerts;
 		b->Count = 0;
+		b->Tex = tex;
 		memcpy( b->Rot, S.Rot, sizeof(S.Rot) );
 		memcpy( b->Proj, S.Proj, sizeof(S.Proj) );
 	}
-	float *dst = S.pVerts + S.nVerts*4;
-	for ( DWORD i=0; i<count; i++, dst += 4 )
-		memcpy( dst, v + i*stride, 16 );				// x, y, z, rhw
-	S.nVerts += count;
+	float *dst = L.pVerts + L.nVerts*PTSHADOW_VERT_FLOATS;
+	for ( DWORD i=0; i<count; i++, dst += PTSHADOW_VERT_FLOATS ) {
+		const BYTE *p = v + i*stride;
+		memcpy( dst, p, 16 );							// x, y, z, rhw
+		if ( uvOfs>=0 ) memcpy( dst+4, p+uvOfs, 8 );	// u, v
+		else dst[4] = dst[5] = 0;
+	}
+	L.nVerts += count;
 	b->Count += count;
 }
 
-// The casters of this frame, drawn from the sun into the shadow map.
+static void DrawList( const PtShadowList &L )
+{
+	PtShadowState &S = g_PtShadow;
+	if ( !L.nVerts ) return;
+	// camera of these triangles relative to this frame's shadow centre
+	glUniform3f( S.u_Eye, (float)(L.Cam[0]-S.Centre[0]), (float)(L.Cam[1]-S.Centre[1]), (float)(L.Cam[2]-S.Centre[2]) );
+	glBufferData( GL_ARRAY_BUFFER, sizeof(float)*PTSHADOW_VERT_FLOATS*L.nVerts, L.pVerts, GL_STREAM_DRAW );
+	glVertexAttribPointer( 0, 4, GL_FLOAT, GL_FALSE, sizeof(float)*PTSHADOW_VERT_FLOATS, (void *)0 );
+	glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, sizeof(float)*PTSHADOW_VERT_FLOATS, (void *)16 );
+	GLuint boundTex = 0xFFFFFFFF;
+	for ( int i=0; i<L.nBatches; i++ ) {
+		const PtShadowBatch &b = L.pBatches[i];
+		glUniformMatrix3fv( S.u_Rot, 1, GL_FALSE, b.Rot );
+		glUniform4f( S.u_Proj, b.Proj[0], b.Proj[1], b.Proj[2], b.Proj[3] );
+		if ( b.Tex!=boundTex ) {
+			glBindTexture( GL_TEXTURE_2D, b.Tex );
+			glUniform1i( S.u_AlphaTest, b.Tex ? 1 : 0 );
+			boundTex = b.Tex;
+		}
+		glDrawArrays( GL_TRIANGLES, b.First, b.Count );
+	}
+}
+
+// This frame's characters and the frame before's map, drawn from the sun.
 static void BuildMap()
 {
 	PtShadowState &S = g_PtShadow;
+	const PtShadowList &prev = S.World[S.WorldCur^1];
 	S.bMapReady = FALSE;
-	if ( !S.nVerts ) return;
+	if ( !S.Chars.nVerts && !prev.nVerts ) return;
 
 	glBindFramebuffer( GL_FRAMEBUFFER, S.FBO );
 	glViewport( 0, 0, PTSHADOW_MAP_SIZE, PTSHADOW_MAP_SIZE );
@@ -202,26 +277,27 @@ static void BuildMap()
 	glColorMask( 0, 0, 0, 0 );
 	glClearDepth( 1.0f );
 	glClear( GL_DEPTH_BUFFER_BIT );
+	// the map also receives its own shadow: push its depth back a little more where it
+	// slopes away from the sun, so surfaces do not shadow themselves in stripes
+	glEnable( GL_POLYGON_OFFSET_FILL );
+	glPolygonOffset( 1.5f, 4.0f );
 
 	glUseProgram( S.Prog );
-	glUniform3f( S.u_Eye, S.Eye[0], S.Eye[1], S.Eye[2] );
 	glUniform3f( S.u_R, S.LightR[0], S.LightR[1], S.LightR[2] );
 	glUniform3f( S.u_U, S.LightU[0], S.LightU[1], S.LightU[2] );
 	glUniform3f( S.u_D, S.LightD[0], S.LightD[1], S.LightD[2] );
+	glActiveTexture( GL_TEXTURE0 );
 	glBindVertexArray( S.VAO );
 	glBindBuffer( GL_ARRAY_BUFFER, S.VBO );
-	glBufferData( GL_ARRAY_BUFFER, sizeof(float)*4*S.nVerts, S.pVerts, GL_STREAM_DRAW );
 	glEnableVertexAttribArray( 0 );
-	glVertexAttribPointer( 0, 4, GL_FLOAT, GL_FALSE, 16, (void *)0 );
-	for ( int i=0; i<S.nBatches; i++ ) {
-		PtShadowBatch &b = S.pBatches[i];
-		glUniformMatrix3fv( S.u_Rot, 1, GL_FALSE, b.Rot );
-		glUniform4f( S.u_Proj, b.Proj[0], b.Proj[1], b.Proj[2], b.Proj[3] );
-		glDrawArrays( GL_TRIANGLES, b.First, b.Count );
-	}
+	glEnableVertexAttribArray( 1 );
+	DrawList( S.Chars );
+	DrawList( prev );
+
+	glDisable( GL_POLYGON_OFFSET_FILL );
 	glColorMask( 1, 1, 1, 0 );
 	PtGfx_BindRenderTarget( g_PtGL.pRenderTarget );			// also restores the viewport
-	PtGfx_InvalidateDeviceState();
+	PtGfx_InvalidateDeviceState();						// the device re-binds its textures
 	S.bMapReady = TRUE;
 }
 
@@ -229,7 +305,7 @@ void PtGfx_ShadowRole( int role )
 {
 	PtShadowState &S = g_PtShadow;
 	if ( !S.bFrame ) { S.Role = PTSHADOW_OFF; return; }
-	if ( S.Role==PTSHADOW_CASTER && role!=PTSHADOW_CASTER ) BuildMap();
+	if ( S.Role==PTSHADOW_CASTER && role==PTSHADOW_RECEIVER ) BuildMap();
 	S.Role = role;
 	PtGfx_InvalidateDeviceState();
 }
@@ -239,59 +315,33 @@ BOOL PtGfx_ShadowActive()
 	return g_PtShadow.bFrame;
 }
 
-// Test view: the intro scene is drawn in one go (no characters-then-map order), so
-// it casts and receives at once: the map is made from the previous frame's
-// triangles, centred 400 units in front of that frame's camera.
+// Test view (?shadowtest): the intro has no characters-then-map order, so the
+// whole scene is "the map": it casts a frame late and receives. The shadow centre
+// is 400 units in front of the camera.
 void PtGfx_ShadowTestBegin( float camX, float camY, float camZ )
 {
 	PtShadowState &S = g_PtShadow;
 	if ( !S.Prog || !S.bAllowed || !S.bTestAllowed ) return;
-	S.bMapReady = FALSE;
+	const PtShadowList &last = S.World[S.WorldCur];
+	float fwd[3] = { 0, 0, 1 };
+	if ( last.nBatches ) memcpy( fwd, &last.pBatches[0].Rot[6], sizeof(fwd) );	// camera forward (third column)
+	double cam[3] = { camX, camY, camZ }, centre[3];
+	for ( int i=0; i<3; i++ ) centre[i] = cam[i] + fwd[i]*400.0;
+	BeginFrame( cam, centre );
+	S.Role = PTSHADOW_CASTER;			// no characters: builds from the frame before only
+	PtGfx_ShadowRole( PTSHADOW_RECEIVER );
+
 	static int s_Calls = 0;
-	s_Calls++;
-	if ( S.nVerts && S.nBatches ) {
-		const float *f = &S.pBatches[0].Rot[6];				// camera forward (third column)
-		for ( int i=0; i<3; i++ ) {
-			S.MapCentre[i] = S.TestCam[i] + f[i]*400.0f;
-			S.Eye[i] = S.TestCam[i] - S.MapCentre[i];
-		}
-		BuildMap();
-	}
-	if ( s_Calls%300==0 ) {
-		// what the shader computes for the middle kept vertex (PTSHADOW_GLSL), on the CPU
-		char sz[512] = "no casters";
-		if ( S.nVerts && S.nBatches ) {
-			PtShadowBatch &b = S.pBatches[S.nBatches/2];
-			const float *p = S.pVerts + (b.First + b.Count/2)*4, *r = b.Rot;
-			float cz = p[3]>0 ? 1/p[3] : 1;
-			float c[3] = { (p[0]/b.Proj[2]-1)*cz/b.Proj[0], (1-p[1]/b.Proj[3])*cz/b.Proj[1], cz };
-			float w[3], l[3];
-			for ( int i=0; i<3; i++ ) w[i] = r[i]*c[0] + r[3+i]*c[1] + r[6+i]*c[2] + S.Eye[i];
-			l[0] = w[0]*S.LightR[0]+w[1]*S.LightR[1]+w[2]*S.LightR[2];
-			l[1] = w[0]*S.LightU[0]+w[1]*S.LightU[1]+w[2]*S.LightU[2];
-			l[2] = w[0]*S.LightD[0]+w[1]*S.LightD[1]+w[2]*S.LightD[2];
-			sprintf( sz, "verts %d batches %d | proj %.3f %.3f %.0f %.0f | rot %.3f %.3f %.3f / %.3f %.3f %.3f / %.3f %.3f %.3f | "
-				"cam %.0f %.0f %.0f | v %.1f %.1f %.4f %.6f -> camspace %.1f %.1f %.1f -> world-rel %.1f %.1f %.1f -> sun %.3f %.3f %.3f",
-				S.nVerts, S.nBatches, b.Proj[0], b.Proj[1], b.Proj[2], b.Proj[3], r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8],
-				S.TestCam[0], S.TestCam[1], S.TestCam[2], p[0], p[1], p[2], p[3], c[0], c[1], c[2], w[0], w[1], w[2], l[0], l[1], l[2] );
-		}
-		PtGL_Log( "shadow test %d: %s | map %s | cameras %d (bad %d) draws %d skipped %d", s_Calls, sz, S.bMapReady ? "ready" : "not built",
+	if ( ++s_Calls%300==0 )
+		PtGL_Log( "shadow test %d: world verts %d (batches %d) | map %s | cameras %d (bad %d) draws %d skipped %d", s_Calls,
+			S.World[S.WorldCur^1].nVerts, S.World[S.WorldCur^1].nBatches, S.bMapReady ? "ready" : "not built",
 			S.DbgCam, S.DbgCamBad, S.DbgDraws, S.DbgSkipped );
-	}
-	S.bFrame = TRUE;
-	S.bCamera = FALSE;
-	S.nVerts = S.nBatches = 0;
-	ReadDark();
-	S.TestCam[0] = camX; S.TestCam[1] = camY; S.TestCam[2] = camZ;
-	for ( int i=0; i<3; i++ ) S.Eye[i] = S.TestCam[i] - S.MapCentre[i];		// receivers this frame
-	S.Role = PTSHADOW_TEST;
-	PtGfx_InvalidateDeviceState();
 }
 
 void PtGfx_ShadowTestEnd()
 {
 	PtShadowState &S = g_PtShadow;
-	if ( S.Role!=PTSHADOW_TEST ) return;
+	if ( !S.bTestAllowed || S.Role!=PTSHADOW_RECEIVER ) return;
 	S.Role = PTSHADOW_OFF;
 	S.bFrame = FALSE;
 	PtGfx_InvalidateDeviceState();

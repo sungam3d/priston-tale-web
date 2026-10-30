@@ -172,33 +172,45 @@ void	PtGfx_InvalidateDeviceState();		// device must re-apply its GL state
 #define PTSHADOW_MAP_SIZE	2048
 #define PTSHADOW_TEX_UNIT	8			// texture unit of the shadow map (stages use 0-7)
 
-struct PtShadowBatch { int First, Count; float Rot[9], Proj[4]; };
+#define PTSHADOW_VERT_FLOATS	6		// kept per caster vertex: x, y, z, rhw, u, v
+
+// Caster triangles of one draw camera; Tex = cut-out texture (alpha-tested), or 0.
+struct PtShadowBatch { int First, Count; GLuint Tex; float Rot[9], Proj[4]; };
+
+// Caster triangles kept from one frame's drawing.
+struct PtShadowList {
+	float	*pVerts;
+	int		nVerts, nMaxVerts;
+	PtShadowBatch *pBatches;
+	int		nBatches, nMaxBatches;
+	double	Cam[3];					// camera position when they were drawn (world units)
+};
 
 struct PtShadowState {
 	BOOL	bAllowed;				// setting (browser: Module.ptShadows)
 	BOOL	bTestAllowed;			// test view in the intro (browser: ?shadowtest)
-	float	TestCam[3];				// test view: camera of the kept triangles
-	float	MapCentre[3];			// test view: world centre of the shadow map
 	BOOL	bFrame;					// shadows drawn this frame
 	int		Role;					// PTSHADOW_*
-	BOOL	bMapReady;				// shadow map holds this frame's casters
+	BOOL	bMapReady;				// shadow map built for this frame
 	BOOL	bCamera;				// Rot/Proj set for the current draws
 	float	Rot[9];					// camera -> world rotation (GLSL mat3, column-major)
 	float	Proj[4];				// w, h, centre x, centre y
+	double	Centre[3];				// shadow centre (the player), world units
 	float	Eye[3];					// camera position relative to the shadow centre
 	float	Dark;					// how much a shadow darkens (0..1; browser: Module.ptShadowDark)
 	float	LightR[3], LightU[3], LightD[3];	// sun axes, scaled to the shadow map's [-1,1] box
 	GLuint	Prog, VAO, VBO, FBO, DepthTex;
-	GLint	u_Rot, u_Proj, u_Eye, u_R, u_U, u_D;
-	float	*pVerts;				// casters this frame: x, y, z, rhw per vertex
-	int		nVerts, nMaxVerts;
-	PtShadowBatch *pBatches;
-	int		nBatches, nMaxBatches;
+	GLint	u_Rot, u_Proj, u_Eye, u_R, u_U, u_D, u_AlphaTest;
+	PtShadowList Chars;				// characters of this frame
+	PtShadowList World[2];			// the map: [WorldCur] being drawn now, the other from the frame before
+	int		WorldCur;
 	int		DbgCam, DbgCamBad, DbgDraws, DbgSkipped;	// counters for the test log
 };
 extern PtShadowState g_PtShadow;
 BOOL	PtShadow_Init();									// GL objects (device Init)
-void	PtShadow_Capture( const BYTE *v, DWORD count, int stride );	// a caster draw (triangle list)
+// a caster draw (triangle list): uvOfs = byte offset of the texture coordinates
+// in a vertex (-1: none), tex = cut-out texture or 0
+void	PtShadow_Capture( const BYTE *v, DWORD count, int stride, int uvOfs, GLuint tex );
 
 // GLSL shared by the device and caster shaders: screen vertex (x, y pixels, z, rhw)
 // -> world position relative to the shadow centre -> sun space [-1,1].

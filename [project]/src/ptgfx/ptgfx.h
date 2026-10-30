@@ -32,17 +32,19 @@
 HRESULT PtGfx_DirectDrawCreate( LPDIRECTDRAW4 *lplpDD );
 
 // Real-time shadows (ptgfx_shadow.cpp). Each frame the game draws the characters,
-// then the map: the characters' triangles are drawn from the sun into a shadow
-// map, and the map's pixels are darkened where a character blocks the sun.
-//   PtGfx_ShadowFrame( on, eye )   before the characters: starts casting. eye = camera
-//                                  position minus the shadow centre (the player), in
-//                                  world units (fixed point / fONE)
+// then the map: the characters of this frame and the map of the frame before are
+// drawn from the sun into a shadow map, and the map's pixels are darkened where
+// something blocks the sun.
+//   PtGfx_ShadowFrame( on, cam, centre )  before the characters: starts casting.
+//                                  cam = camera position, centre = shadow centre (the
+//                                  player), in world units (fixed point / fONE)
 //   PtGfx_ShadowRole( role )       PTSHADOW_RECEIVER before the map (builds the shadow
-//                                  map from the casters), PTSHADOW_OFF after it
+//                                  map; the map then receives and is kept for the
+//                                  next frame), PTSHADOW_OFF after it
 //   PtGfx_ShadowCamera( ... )      the camera of the vertices that follow (smRENDER3D)
 //   PtGfx_ShadowActive()           shadows drawn this frame (skip the old round ones)
-enum { PTSHADOW_OFF = 0, PTSHADOW_CASTER, PTSHADOW_RECEIVER, PTSHADOW_TEST };
-void PtGfx_ShadowFrame( BOOL bOn, float eyeX, float eyeY, float eyeZ );
+enum { PTSHADOW_OFF = 0, PTSHADOW_CASTER, PTSHADOW_RECEIVER };
+void PtGfx_ShadowFrame( BOOL bOn, double camX, double camY, double camZ, double centreX, double centreY, double centreZ );
 void PtGfx_ShadowRole( int role );
 // m: world-to-camera rotation as the engine applies it (camera = offset * m, rows
 // _11.._33); w, h, cx, cy: the perspective projection (screen x = (1 + w*x/z) * cx)

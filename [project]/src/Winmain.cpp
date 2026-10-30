@@ -5676,12 +5676,13 @@ void _stdcall smPlayD3D( int x, int y, int z, int ax, int ay, int az )
 	//######################################################################################
 	//작 성 자 : 오 영 석
 #ifdef PT_GFX_GL
-	// Real-time shadows (ptgfx_shadow.cpp): the characters drawn by DrawPat3D cast,
-	// the map drawn by DisplayStage receives. Not in dungeons (no sun there). The
-	// shadowed square is centred on the player.
+	// Real-time shadows (ptgfx_shadow.cpp): the characters drawn by DrawPat3D and the
+	// map drawn by DisplayStage cast (the map a frame late), the map receives. Not in
+	// dungeons (no sun there). The shadowed square is centred on the player.
 	PtGfx_ShadowFrame( lpCurPlayer && lpCurPlayer->OnStageField>=0 && StageField[lpCurPlayer->OnStageField] &&
 		StageField[lpCurPlayer->OnStageField]->State!=FIELD_STATE_DUNGEON,
-		(float)(x - lpCurPlayer->pX)/fONE, (float)(y - lpCurPlayer->pY)/fONE, (float)(z - lpCurPlayer->pZ)/fONE );
+		(double)x/fONE, (double)y/fONE, (double)z/fONE,
+		(double)lpCurPlayer->pX/fONE, (double)lpCurPlayer->pY/fONE, (double)lpCurPlayer->pZ/fONE );
 #endif
 	smRender.bApplyRendObjLight = TRUE;
 	DrawPat3D( x, y, z, ax, ay, az );

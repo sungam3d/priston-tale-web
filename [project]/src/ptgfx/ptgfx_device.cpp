@@ -363,7 +363,7 @@ public:
 	void ApplyShadow( BOOL bScreenVerts )
 	{
 		PtShadowState &S = g_PtShadow;
-		BOOL on = ( S.Role==PTSHADOW_RECEIVER || S.Role==PTSHADOW_TEST ) && S.bMapReady && S.bCamera && bScreenVerts;
+		BOOL on = S.Role==PTSHADOW_RECEIVER && S.bMapReady && S.bCamera && bScreenVerts;
 		glUniform1i( u_SRecv, on ? 1 : 0 );
 		if ( !on ) return;
 		glUniformMatrix3fv( u_SRot, 1, GL_FALSE, S.Rot );
@@ -701,14 +701,21 @@ public:
 
 		if ( m_bStateDirty ) ApplyState();
 
-		// shadows: keep caster triangles, or receive on the map. Solid models write
-		// depth (the engine leaves alpha blending on for them too); glows and other
-		// effects do not, or add their colour (DESTBLEND ONE).
-		if ( g_PtShadow.Role==PTSHADOW_CASTER || g_PtShadow.Role==PTSHADOW_TEST ) {
+		// shadows: keep caster triangles (characters while casting, the map while it
+		// receives - for the next frame). Solid models write depth (the engine leaves
+		// alpha blending on for them too); glows and other effects do not, or add
+		// their colour (DESTBLEND ONE). Textures with alpha / colour key (leaves,
+		// fences) are cut out in the shadow map too.
+		if ( g_PtShadow.Role==PTSHADOW_CASTER || g_PtShadow.Role==PTSHADOW_RECEIVER ) {
 			g_PtShadow.DbgDraws++;
 			if ( g_PtShadow.bCamera && mode==GL_TRIANGLES && posSize==4 && m_RS[D3DRENDERSTATE_ZWRITEENABLE] &&
-				!( m_RS[D3DRENDERSTATE_ALPHABLENDENABLE] && m_RS[D3DRENDERSTATE_DESTBLEND]==D3DBLEND_ONE ) )
-				PtShadow_Capture( (const BYTE *)lpVerts, count, stride );
+				!( m_RS[D3DRENDERSTATE_ALPHABLENDENABLE] && m_RS[D3DRENDERSTATE_DESTBLEND]==D3DBLEND_ONE ) ) {
+				int tci = m_TSS[0][D3DTSS_TEXCOORDINDEX] & 0xFFFF;
+				int uvOfs = tci<nTex ? texOfs + tci*8 : -1;
+				PtSurface *t = m_pTex[0];
+				GLuint cut = ( uvOfs>=0 && t && ( t->m_Format.mask[3] || t->m_bHasSrcKey ) ) ? t->GetGLTexture() : 0;
+				PtShadow_Capture( (const BYTE *)lpVerts, count, stride, uvOfs, cut );
+			}
 			else g_PtShadow.DbgSkipped++;
 		}
 		ApplyShadow( posSize==4 );
