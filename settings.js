@@ -16,7 +16,7 @@
 (function () {
 	if (!window.Module) return;
 	var KEY = 'pt-settings';
-	var DEF = { quality: 'standard', shadows: true, shadowDark: 0.6, view: 38, music: 70, musicOn: true, effects: 80, effectsOn: true };
+	var DEF = { quality: 'max', shadows: true, shadowDark: 0.6, view: 38, music: 70, musicOn: true, effects: 80, effectsOn: true };
 	var VIEW_MIN = 16, VIEW_GAME = 38, VIEW_MAX = 110;		// map cells (64 world units); 110 = unlimited
 	var s = {};
 	try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) {}
@@ -122,8 +122,8 @@
 
 		'<h3>Graphics</h3>' +
 		'<div class="pt-row"><label>Image quality</label><div class="ctl"><span class="pt-seg" id="setQuality">' +
-			'<button type="button" data-v="standard">Standard</button><button type="button" data-v="max">Max (test)</button></span></div></div>' +
-		'<p class="note">Max: 32-bit colour (no banding) and full-size textures - still being tested in game; switch back to Standard if the game has problems. Standard: the original 16-bit colour.</p>' +
+			'<button type="button" data-v="standard">Standard</button><button type="button" data-v="max">Max</button></span></div></div>' +
+		'<p class="note">Max: 32-bit colour (no banding) and full-size textures. Standard: the original 16-bit colour.</p>' +
 		'<div class="pt-row"><label>Shadows</label><div class="ctl"><span class="pt-seg" id="setShadows">' +
 			'<button type="button" data-v="0">Round</button><button type="button" data-v="1">Real-time</button></span></div></div>' +
 		'<div class="pt-row"><label for="setShadowDark">Shadow darkness</label><div class="ctl">' +
