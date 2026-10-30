@@ -729,9 +729,11 @@ void HoSky::Create()
 
 	if(fp)
 		fclose(fp);
-	
+
+#ifndef PT_WEB
 	LoadRes();
-	
+#endif		// browser: each sky loads when it is first shown (SetDrawIndex), not all 35 at start-up
+
 	if(DrawIndex != -1 && TestModeFlag)
 	{
 		//이미지를 처음 읽을 때만..
@@ -855,7 +857,10 @@ unsigned int HoSky::SetDrawIndex(unsigned drawIndex, int codeID)
 		DrawNextOldAlphaCount = 100;
 		DrawNextFlag = FALSE;
 	}
-	
+
+#ifdef PT_WEB
+	if ( DrawIndex>=0 && DrawIndex<(int)SkyDrawInfoList.size() ) SkyDrawInfoList[DrawIndex].LoadRes();
+#endif
 	if(DrawIndex != -1)
  	{
 		if(SkyDrawInfoList[DrawIndex].FogFlag)
@@ -905,6 +910,9 @@ unsigned int HoSky::SetNextDrawIndex()
 	DrawIndex++;
 	if(DrawIndex >= (int)SkyDrawInfoList.size())
 		DrawIndex = 0;
+#ifdef PT_WEB
+	if ( DrawIndex>=0 && DrawIndex<(int)SkyDrawInfoList.size() ) SkyDrawInfoList[DrawIndex].LoadRes();
+#endif
 	if(DrawIndex != -1)
  	{
 		/*

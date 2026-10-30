@@ -1709,6 +1709,11 @@ int InitPat3D()
 	//캐릭터 파일 리스트 설정
 	SetNpcFileList( szNpcInfoPath );
 
+#ifndef PT_WEB
+	// The browser downloads each file the first time it is opened: these preloads
+	// (every armour, face and dropped-item model of every class, ~280 MB) would all
+	// download before the game starts. Without them each model loads when it is
+	// first needed (smPattern.LoadCharactor via the model loader).
 	//자주쓰는 갑옷 미리 로딩
 	LoadOftenArmor();
 	//얼굴파일 미리 로딩
@@ -1717,6 +1722,7 @@ int InitPat3D()
 	LoadOftenItem();
 	//NPC 미리 로딩
 	LoadOftenNpc();
+#endif
 
 	LoadOftenModels();		//기타 모델 로딩
 
@@ -1933,8 +1939,10 @@ int InitPat3D()
 	MatMonBroodImage[3] = CreateTextureMaterial( "image\\M_D.tga" ,0 , TRUE ,FALSE , FALSE , SMMAT_BLEND_ALPHA );
 	MatMonBroodImage[4] = CreateTextureMaterial( "image\\M_mc.tga" ,0 , TRUE ,FALSE , FALSE , SMMAT_BLEND_ALPHA );
 
+#ifndef PT_GFX_GL			// the GL build draws its own weather (weather.cpp): no rain pictures
 	//날씨 초기화
 	InitWeatherSystem();
+#endif
 
 	//파티클 초기화
 	InitParticle();
