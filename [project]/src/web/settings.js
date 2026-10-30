@@ -5,8 +5,8 @@
 //
 // Live settings go through Module.ptOpts, which the game reads once per frame when
 // its version (v) changes (Winmain.cpp PtWeb_PollOptions): music / effects volume
-// (ptsound master volumes), view (draw distance in map cells) and weather (weather.h
-// PTWX_SET_*: 0 changing, 1 clear, 2 rain, 3 storm, 4 snow, 5 fog). Shadow strength
+// (ptsound master volumes), view (draw distance in map cells) and weather (0 = the
+// server's, 1 + weather.h PTWX_* = your own). Shadow strength
 // is Module.ptShadowDark (read every frame by ptgfx_shadow.cpp).
 // Restart settings are read when the game starts: Module.ptShadows, and the image
 // quality lines in ptReg.rgx ("ColorBPP" 32 = 32-bit colour, "Graphic" 0 = full
@@ -17,10 +17,10 @@
 (function () {
 	if (!window.Module) return;
 	var KEY = 'pt-settings';
-	var DEF = { quality: 'max', shadows: true, shadowDark: 0.6, view: 38, music: 70, musicOn: true, effects: 80, effectsOn: true, weather: 0 };
-	// weather.h PTWX_SET_*
-	var WEATHER = [['Changing', 'Changes every few minutes, the same for everyone online. Snow in the ice fields, dust in the desert.'],
-		['Always clear', 'No weather.'], ['Rain', ''], ['Storm', 'Heavy rain, wind, lightning and thunder.'], ['Snow', ''], ['Fog', '']];
+	var DEF = { quality: 'max', shadows: true, shadowDark: 0.6, view: 38, music: 70, musicOn: true, effects: 80, effectsOn: true,
+		wxOwn: false, wxKind: 2 };
+	// weather.h PTWX_* order
+	var WEATHER = ['Clear', 'Cloudy', 'Rain', 'Storm', 'Fog', 'Snow', 'Blizzard', 'Dust haze'];
 	var VIEW_MIN = 16, VIEW_GAME = 38, VIEW_MAX = 110;		// map cells (64 world units); 110 = unlimited
 	var s = {};
 	try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) {}
@@ -32,7 +32,7 @@
 	function vol(v, on) { return on ? Math.pow(v/100, 2) : 0; }		// slider 0-100, felt as linear
 	function pushLive() {
 		Module.ptOpts = { v: ++version, music: vol(s.music, s.musicOn), effects: vol(s.effects, s.effectsOn),
-			view: s.view==VIEW_GAME ? 0 : s.view, weather: s.weather|0 };
+			view: s.view==VIEW_GAME ? 0 : s.view, weather: s.wxOwn ? 1 + (s.wxKind|0) : 0 };
 		Module.ptShadowDark = s.shadowDark;
 	}
 	Module.ptShadows = !!s.shadows;
@@ -136,8 +136,12 @@
 		'<div class="pt-row"><label for="setView">Draw distance</label><div class="ctl">' +
 			'<input type="range" id="setView" min="' + VIEW_MIN + '" max="' + VIEW_MAX + '" step="2"><span class="val" id="setViewV"></span></div></div>' +
 		'<p class="note">Further is slower: the game draws everything on the CPU. Changes as you drag.</p>' +
-		'<div class="pt-row"><label for="setWeather">Weather</label><div class="ctl"><select id="setWeather">' +
-			WEATHER.map(function (w, i) { return '<option value="' + i + '">' + w[0] + '</option>'; }).join('') + '</select></div></div>' +
+
+		'<h3>Weather</h3>' +
+		'<div class="pt-row"><label>Weather</label><div class="ctl"><span class="pt-seg" id="setWxMode">' +
+			'<button type="button" data-v="0">Server</button><button type="button" data-v="1">My own</button></span></div></div>' +
+		'<div class="pt-row"><label for="setWeather">My weather</label><div class="ctl"><select id="setWeather">' +
+			WEATHER.map(function (w, i) { return '<option value="' + i + '">' + w + '</option>'; }).join('') + '</select></div></div>' +
 		'<p class="note" id="setWeatherN"></p>' +
 
 		'<h3>Sound</h3>' +
@@ -169,8 +173,10 @@
 		$('setShadowDark').disabled = !s.shadows;
 		$('setView').value = s.view;
 		$('setViewV').textContent = viewText(s.view);
-		$('setWeather').value = s.weather;
-		$('setWeatherN').textContent = (WEATHER[s.weather] || WEATHER[0])[1] || 'Outdoors; dungeons stay dry. Shows behind the login screen too.';
+		seg('setWxMode', s.wxOwn ? 1 : 0);
+		$('setWeather').value = s.wxKind;
+		$('setWeather').disabled = !s.wxOwn;
+		weatherNote();
 		$('setMusicOn').checked = s.musicOn;
 		$('setMusic').value = s.music; $('setMusic').disabled = !s.musicOn;
 		$('setMusicV').textContent = s.musicOn ? s.music + '%' : 'Off';
@@ -180,6 +186,18 @@
 		$('setRestart').hidden = s.quality == start.quality && s.shadows == start.shadows;
 	}
 	function change() { save(); pushLive(); render(); }
+	// the server's weather where you are now (weather.cpp writes Module.ptWeatherNow)
+	function weatherNote() {
+		var w = Module.ptWeatherNow, now = '';
+		if (w && w.name) {
+			var left = Math.max(0, Math.round(w.secs - (Date.now() - w.at)/1000));
+			now = 'Server weather here now: ' + w.name + (w.secs ? ' (changes in ' + (left >= 60 ? Math.ceil(left/60) + ' min' : left + ' s') + ')' : '') + '. ';
+		}
+		$('setWeatherN').textContent = s.wxOwn
+			? now + 'Only you see your own weather. It shows behind the login screen too; dungeons stay dry.'
+			: (now || 'Log in to see the server weather. ') + 'Changes every few minutes, the same for everyone online. Snow in the ice fields, dust in the desert.';
+	}
+	setInterval(function () { if (!panel.hidden) weatherNote(); }, 1000);
 
 	$('setQuality').addEventListener('click', function (e) { var v = e.target.dataset && e.target.dataset.v; if (v) { s.quality = v; change(); } });
 	$('setShadows').addEventListener('click', function (e) { var v = e.target.dataset && e.target.dataset.v; if (v) { s.shadows = v == '1'; change(); } });
@@ -191,7 +209,8 @@
 	slider('setView', function (v) { s.view = v; });
 	slider('setMusic', function (v) { s.music = v; });
 	slider('setEffects', function (v) { s.effects = v; });
-	$('setWeather').addEventListener('change', function () { s.weather = +this.value; change(); });
+	$('setWxMode').addEventListener('click', function (e) { var v = e.target.dataset && e.target.dataset.v; if (v) { s.wxOwn = v == '1'; change(); } });
+	$('setWeather').addEventListener('change', function () { s.wxKind = +this.value; change(); });
 	$('setMusicOn').addEventListener('change', function () { s.musicOn = this.checked; change(); });
 	$('setEffectsOn').addEventListener('change', function () { s.effectsOn = this.checked; change(); });
 	$('setRestartBtn').addEventListener('click', function () { this.disabled = true; location.reload(); });

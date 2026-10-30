@@ -2,8 +2,11 @@
 // game's world time, rain, storms with lightning, fog, and snow in the ice fields.
 #pragma once
 
-// the page's Weather setting (web\settings.js, read in Winmain.cpp PtWeb_PollOptions)
-enum { PTWX_SET_CHANGING = 0, PTWX_SET_CLEAR, PTWX_SET_RAIN, PTWX_SET_STORM, PTWX_SET_SNOW, PTWX_SET_FOG };
+// Kinds of weather (the page's list, web\settings.js, is in this order)
+enum { PTWX_CLEAR, PTWX_CLOUDY, PTWX_RAIN, PTWX_STORM, PTWX_FOG, PTWX_SNOW, PTWX_BLIZZARD, PTWX_DUST, PTWX_KINDS };
+
+// The page's Weather setting (read in Winmain.cpp PtWeb_PollOptions): 0 = the
+// server's weather (the same for everyone online), 1 + PTWX_* = that weather always.
 extern int PtWeather_Setting;
 
 class smSTAGE3D;

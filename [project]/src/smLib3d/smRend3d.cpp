@@ -6,19 +6,18 @@
 
 #define SM_DIST_NEARZ				16
 
-// Far away (past ccDistZMin) the original fades vertex colours into the background
-// and also lowers vertex alpha. Solid surfaces ignore alpha, but cut-out textures
-// (leaves, fences) faded out of sight while the branches and posts stayed. The GL
-// build keeps alpha, so every surface fades into the distance the same way.
-#ifdef PT_GFX_GL
-#define SM_FAR_ALPHA_FADE			0
-#else
-#define SM_FAR_ALPHA_FADE			1
-#endif
 #define SMFLOAT_DIST_NEARZ			(SM_DIST_NEARZ<<FLOATNS)
 //#define SM_DIST_FARZ				64*26
 #define SM_DIST_FARZ				64*25
+// Faces with see-through textures (leaves, fences) are cut off at this distance
+// (ClipRendFace), the rest of the world at the draw distance. The GL build cuts
+// them at the draw distance too (ViewPointLen, page setting), so trees keep their
+// leaves as far as you can see them.
+#ifdef PT_GFX_GL
+#define SMFLOAT_DIST_FARZ			( ( ViewPointLen>SM_DIST_FARZ ? ViewPointLen : SM_DIST_FARZ )<<FLOATNS )
+#else
 #define SMFLOAT_DIST_FARZ			(SM_DIST_FARZ<<FLOATNS)
+#endif
 
 #define SM_DIST_TEXCLIP				64*8
 #define SMFLOAT_DIST_TEXCLIP		(SM_DIST_TEXCLIP<<FLOATNS)
@@ -2529,9 +2528,7 @@ int smRENDER3D::ShiftLight( smRENDVERTEX *sv , int lev , int r,int g,int b, int 
 	// ALPHA
 	col = sv->bCol[3];
 	spe = sv->bSpe[3];
-#if SM_FAR_ALPHA_FADE
 	col -= ( col * dlev )>>8;
-#endif
 	spe += ( ( a-spe ) * dlev )>>8;
 	sv->bCol[3]=col;
 	sv->bSpe[3]=spe;
@@ -3307,7 +3304,7 @@ int smRENDER3D::SetD3DRendBuff( D3DVALUE *RenderBuff , int matrial , int TexClip
 				*(RenderBuff++) = (D3DVALUE)rv->rhw;
 
 
-				if ( SM_FAR_ALPHA_FADE && RendAlphaFlag && rv->tz>(ccDistZMin<<FLOATNS) ) {
+				if ( RendAlphaFlag && rv->tz>(ccDistZMin<<FLOATNS) ) {
 					*((DWORD *)dwColor) = *((DWORD *)rv->bCol);
 					*((DWORD *)dwSpecular) = *((DWORD *)rv->bSpe);
 					dwSpecular[3] = dwSpecular[3]/2 + dwSpecular[3]/3;
@@ -3667,7 +3664,7 @@ int smRENDER3D::SetD3DRendBuff3( D3DVALUE *RenderBuff , int matrial , int TexCli
 				*(RenderBuff++) = (D3DVALUE)rv->rhw;
 
 
-				if ( SM_FAR_ALPHA_FADE && RendAlphaFlag && rv->tz>(ccDistZMin<<FLOATNS) )
+				if ( RendAlphaFlag && rv->tz>(ccDistZMin<<FLOATNS) )
 				{
 					*((DWORD *)dwColor) = *((DWORD *)rv->bCol);
 					*((DWORD *)dwSpecular) = *((DWORD *)rv->bSpe);
@@ -4669,7 +4666,7 @@ int smRENDER3D::RenderD3D_OutLine( int MatNum )
 					*((DWORD*)(RenderBuff++)) = (*((DWORD*)rv->bCol)) | 0x00FFFFFF;
 				else
 				{
-					if( SM_FAR_ALPHA_FADE && RendAlphaFlag && rv->tz > (ccDistZMin<<FLOATNS) )
+					if( RendAlphaFlag && rv->tz > (ccDistZMin<<FLOATNS) )
 					{
 						*((DWORD*)dwColor) = *((DWORD*)rv->bCol);
 						dwColor[3] = dwColor[3]/2 + dwColor[3]/3;

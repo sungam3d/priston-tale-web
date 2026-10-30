@@ -2,15 +2,16 @@
 // with splashes on the ground, storms with lightning and thunder, fog, cloudy
 // skies, and snow in the ice fields.
 //
-// The weather changes every 8 game hours (6.4 minutes), picked from the game's
-// world time, which the server sends at login - so everyone online sees the same
-// weather. The page's Weather setting can fix one instead (PtWeather_Setting).
-// Indoors (dungeons, rooms, the Bellatra arena) it is always clear.
+// The server's weather changes every 8 game hours (6.4 minutes), picked from the
+// game's world time, which the server sends at login and keeps in step - so
+// everyone online sees the same weather. The page's Weather setting can pick one
+// instead (PtWeather_Setting). Indoors (dungeons, rooms, the Bellatra arena) it is
+// always clear. The page shows the server's weather now (Module.ptWeatherNow).
 //
 // The original game had rain too (playmain.cpp WeatherSwitch, playsub.cpp
 // DrawWeather: flat pictures over the screen), switched off. This uses its rain and
-// thunder sounds, its rain sky, and its WeatherMode (1 cloudy, 2 rain), which
-// keeps the field's own sky and wind sounds from coming back while it rains.
+// thunder sounds, but not its rain sky or WeatherMode: while WeatherMode is set the
+// game stops changing the sky between day and night.
 //
 // The look moves smoothly towards the weather picked: ptgfx multiplies the world by
 // a colour (darker under clouds), fogs it with distance, and draws the rain and
@@ -27,6 +28,9 @@
 #include "srcserver\\onserver.h"
 
 #ifdef PT_GFX_GL
+#ifdef PT_WEB
+#include <emscripten.h>
+#endif
 #include <dsound.h>
 #include "ptgfx\\ptgfx.h"
 #include "weather.h"
@@ -34,17 +38,16 @@
 extern BOOL PlayWav( DWORD dwSound, DWORD dwFlags, DWORD dwVol, DWORD dwfreq );
 extern BOOL PlayWav2( DWORD dwSound, DWORD dwFlags, DWORD dwVol, DWORD dwfreq );
 extern BOOL StopWav( int i );
-extern int ChangeSky( int codeID );
 extern void smRender_GetWeatherCamera( PtWeatherScene *s );		// smRend3d.cpp
-extern int WeatherMode;
 extern int DarkLevel;
 
-int PtWeather_Setting = PTWX_SET_CHANGING;
+int PtWeather_Setting = 0;
 
 #define WX_SND_RAIN		1		// wav\rain01.wav, looped
 #define WX_SND_THUNDER	2		// wav\thunder1.wav
 
-enum { WX_CLEAR, WX_CLOUDY, WX_RAIN, WX_STORM, WX_FOG, WX_SNOW, WX_BLIZZARD, WX_DUST, WX_KINDS };
+enum { WX_CLEAR = PTWX_CLEAR, WX_CLOUDY, WX_RAIN, WX_STORM, WX_FOG, WX_SNOW, WX_BLIZZARD, WX_DUST, WX_KINDS };
+static const char *s_Names[WX_KINDS] = { "Clear", "Cloudy", "Rain", "Storm", "Fog", "Snow", "Blizzard", "Dust haze" };
 
 // What a kind of weather looks like. Fog density is per world unit (a character is
 // about 50 units tall; the default view reaches about 2400).
@@ -104,16 +107,10 @@ static BOOL Indoors()
 	return f->State==FIELD_STATE_DUNGEON || f->State==FIELD_STATE_ROOM || f->FieldCode==rsSOD_FIELD;
 }
 
-static int PickKind( BOOL bIntro )
+// The server's weather where the player is (-1: indoors / not in the world)
+static int ServerKind()
 {
-	switch ( PtWeather_Setting ) {
-	case PTWX_SET_CLEAR:	return WX_CLEAR;
-	case PTWX_SET_RAIN:		return bIntro || !Indoors() ? WX_RAIN : WX_CLEAR;
-	case PTWX_SET_STORM:	return bIntro || !Indoors() ? WX_STORM : WX_CLEAR;
-	case PTWX_SET_SNOW:		return bIntro || !Indoors() ? WX_SNOW : WX_CLEAR;
-	case PTWX_SET_FOG:		return bIntro || !Indoors() ? WX_FOG : WX_CLEAR;
-	}
-	if ( bIntro || Indoors() ) return WX_CLEAR;
+	if ( Indoors() ) return -1;
 	int k = ChangingKind();
 	int state = StageField[lpCurPlayer->OnStageField]->State;
 	if ( state==FIELD_STATE_ICE ) {						// it snows there instead
@@ -125,6 +122,35 @@ static int PickKind( BOOL bIntro )
 		if ( k==WX_FOG ) return WX_DUST;
 	}
 	return k;
+}
+
+static int PickKind( BOOL bIntro )
+{
+	int own = PtWeather_Setting - 1;
+	if ( own>=0 && own<WX_KINDS ) return bIntro || !Indoors() ? own : WX_CLEAR;
+	if ( bIntro ) return WX_CLEAR;						// no server time yet
+	int k = ServerKind();
+	return k<0 ? WX_CLEAR : k;
+}
+
+// Tells the page the server's weather here and when it changes (once a second).
+static void Report( BOOL bIntro )
+{
+#ifdef PT_WEB
+	static double s_Last = -10;
+	if ( s_Time - s_Last < 1.0 ) return;
+	s_Last = s_Time;
+	int k = bIntro ? -2 : ServerKind();
+	const char *name = k>=0 ? s_Names[k] : k==-1 ? "Indoors (dry)" : "";
+	int secs = (int)( ( 480 - dwGameWorldTime%480 )*( GAME_WORLDTIME_MIN/1000.0 ) );		// game minutes left, real seconds
+	EM_ASM({
+		var w = {};
+		w.name = UTF8ToString($0);
+		w.secs = $1;
+		w.at = Date.now();
+		Module['ptWeatherNow'] = w;
+	}, name, bIntro ? 0 : secs );
+#endif
 }
 
 static void Ease( float &v, float target, float k ) { v += ( target - v )*k; }
@@ -168,7 +194,7 @@ void PtWeather_Frame( BOOL bIntro )
 	const WxLook &t = s_Looks[kind];
 	if ( kind==WX_CLEAR && !bIntro && Indoors() ) s_Cur = t;
 	else {
-		float k = s_Dt/( PtWeather_Setting==PTWX_SET_CHANGING ? 25.0f : 3.0f );
+		float k = s_Dt/( PtWeather_Setting==0 ? 25.0f : 3.0f );
 		if ( k>1 ) k = 1;
 		for ( int i=0; i<3; i++ ) { Ease( s_Cur.Tint[i], t.Tint[i], k ); Ease( s_Cur.Fog[i], t.Fog[i], k ); }
 		Ease( s_Cur.Density, t.Density, k );
@@ -205,13 +231,7 @@ void PtWeather_Frame( BOOL bIntro )
 		s_RainSound = FALSE;
 	}
 
-	// the game's own weather state: grey rain sky, no field wind sounds
-	if ( !bIntro ) {
-		float overcast = 1.0f - ( s_Cur.Tint[0] + s_Cur.Tint[1] + s_Cur.Tint[2] )/3.0f;
-		int mode = s_Cur.Rain>0.25f ? 2 : ( overcast>0.05f || s_Cur.Snow>0.2f || s_Cur.Density>0.0006f ) ? 1 : 0;
-		if ( mode && !WeatherMode && !Indoors() ) ChangeSky( FIELD_BACKIMAGE_RAIN );
-		WeatherMode = mode;
-	}
+	Report( bIntro );
 
 	// the world's look
 	float day = Daylight();
