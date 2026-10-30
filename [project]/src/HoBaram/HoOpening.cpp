@@ -1,4 +1,7 @@
 ﻿#include "..\\sinbaram\\SinLinkHeader.h"
+#ifdef PT_GFX_GL
+#include "..\\ptgfx\\ptgfx.h"			// shadow test view (?shadowtest)
+#endif
 #include "..\\HoBaram\\HoLinkHeader.h"
 #include "..\\smreg.h"
 #include "..\\HoBaram\\HoTextFile.h"
@@ -548,7 +551,13 @@ int HoOpening::Draw()
 	DrawOpeningSky(x, y, z, anx, any, anz);
 	if(CinemaFadeState != STATE_FADE_OUT)
 	{
+#ifdef PT_GFX_GL
+		PtGfx_ShadowTestBegin( (float)x/fONE, (float)y/fONE, (float)z/fONE );	// only with ?shadowtest
+#endif
 		Stage->DrawOpeningStage( x,y,z, anx, any, anz, s_AutoCamera.m_Frame );
+#ifdef PT_GFX_GL
+		PtGfx_ShadowTestEnd();
+#endif
 	}
 
 	DrawCinemaFadeEffect();

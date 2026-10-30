@@ -48,6 +48,9 @@ typedef ptrdiff_t		GLintptr;
 #define GL_BGRA						0x80E1
 #define GL_FUNC_ADD					0x8006
 #define GL_UNPACK_ROW_LENGTH		0x0CF2
+#define GL_TEXTURE_COMPARE_MODE		0x884C
+#define GL_TEXTURE_COMPARE_FUNC		0x884D
+#define GL_COMPARE_REF_TO_TEXTURE	0x884E
 
 #define PTGL_FUNCTIONS(X) \
 	X( void,	glGenBuffers,				(GLsizei n, GLuint *buffers) ) \
@@ -78,8 +81,11 @@ typedef ptrdiff_t		GLintptr;
 	X( void,	glUniform1i,				(GLint location, GLint v0) ) \
 	X( void,	glUniform1f,				(GLint location, GLfloat v0) ) \
 	X( void,	glUniform2f,				(GLint location, GLfloat v0, GLfloat v1) ) \
+	X( void,	glUniform3f,				(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) ) \
 	X( void,	glUniform4f,				(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) ) \
 	X( void,	glUniform1iv,				(GLint location, GLsizei count, const GLint *value) ) \
+	X( void,	glUniformMatrix3fv,			(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) ) \
+	X( void,	glDrawBuffers,				(GLsizei n, const GLenum *bufs) ) \
 	X( void,	glActiveTexture,			(GLenum texture) ) \
 	X( void,	glGenerateMipmap,			(GLenum target) ) \
 	X( void,	glBlendFuncSeparate,		(GLenum sfactorRGB, GLenum dfactorRGB, GLenum sfactorAlpha, GLenum dfactorAlpha) ) \
@@ -128,8 +134,11 @@ PTGL_FUNCTIONS(PTGL_DECLARE)
 #define glUniform1i					pt_glUniform1i
 #define glUniform1f					pt_glUniform1f
 #define glUniform2f					pt_glUniform2f
+#define glUniform3f					pt_glUniform3f
 #define glUniform4f					pt_glUniform4f
 #define glUniform1iv				pt_glUniform1iv
+#define glUniformMatrix3fv			pt_glUniformMatrix3fv
+#define glDrawBuffers				pt_glDrawBuffers
 #define glActiveTexture				pt_glActiveTexture
 #define glGenerateMipmap			pt_glGenerateMipmap
 #define glBlendFuncSeparate			pt_glBlendFuncSeparate

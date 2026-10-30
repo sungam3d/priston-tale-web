@@ -20,10 +20,13 @@ static const char *s_VS =
 	"in vec2 aTex0; in vec2 aTex1; in vec2 aTex2; in vec2 aTex3;\n"
 	"in vec2 aTex4; in vec2 aTex5; in vec2 aTex6; in vec2 aTex7;\n"
 	"uniform vec2 uScreen;\n"
-	"out vec4 vDiffuse; out vec4 vSpecular; out float vEyeW;\n"
+	"uniform int uSRecv;\n"					// shadow receiver (ptgfx_shadow.cpp)
+	PTSHADOW_GLSL
+	"out vec4 vDiffuse; out vec4 vSpecular; out float vEyeW; out vec3 vShadow;\n"
 	"out vec2 vTex0; out vec2 vTex1; out vec2 vTex2; out vec2 vTex3;\n"
 	"out vec2 vTex4; out vec2 vTex5; out vec2 vTex6; out vec2 vTex7;\n"
 	"void main() {\n"
+	"	vShadow = uSRecv!=0 ? ptSunPos( aPos )*0.5 + 0.5 : vec3( -1.0 );\n"
 	"	float w = aPos.w > 0.0 ? 1.0/aPos.w : 1.0;\n"
 	// D3D pixel centres are at integer coordinates, OpenGL's at .5
 	"	float x = (aPos.x+0.5)/uScreen.x*2.0-1.0;\n"
@@ -37,7 +40,8 @@ static const char *s_VS =
 	"}\n";
 
 static const char *s_FS =
-	"in vec4 vDiffuse; in vec4 vSpecular; in float vEyeW;\n"
+	"in vec4 vDiffuse; in vec4 vSpecular; in float vEyeW; in vec3 vShadow;\n"
+	"uniform highp sampler2DShadow uShadowMap; uniform int uSRecv; uniform float uShadowDark; uniform int uShadowDbg;\n"
 	"in vec2 vTex0; in vec2 vTex1; in vec2 vTex2; in vec2 vTex3;\n"
 	"in vec2 vTex4; in vec2 vTex5; in vec2 vTex6; in vec2 vTex7;\n"
 	"uniform sampler2D uTex0; uniform sampler2D uTex1; uniform sampler2D uTex2; uniform sampler2D uTex3;\n"
@@ -98,6 +102,20 @@ static const char *s_FS =
 	"	if ( uAlphaFunc==7 ) return v>=uAlphaRef;\n"
 	"	return true;\n"
 	"}\n"
+	// light reaching this pixel: 1 lit .. 1-uShadowDark in a character's shadow;
+	// 3x3 filtered taps (each a 2x2 hardware comparison) for soft edges, fading
+	// out towards the edge of the shadowed square
+	"float sunLight() {\n"
+	"	vec3 s = vShadow;\n"
+	"	if ( s.x<=0.0 || s.x>=1.0 || s.y<=0.0 || s.y>=1.0 || s.z>=1.0 ) return 1.0;\n"
+	"	vec2 t = 1.5/vec2( textureSize( uShadowMap, 0 ) );\n"
+	"	float lit = 0.0;\n"
+	"	for ( int i=-1; i<=1; i++ ) for ( int j=-1; j<=1; j++ )\n"
+	"		lit += texture( uShadowMap, vec3( s.xy + vec2( float(i), float(j) )*t, s.z - 0.0008 ) );\n"
+	"	vec2 e = min( s.xy, 1.0 - s.xy );\n"
+	"	float fade = clamp( min( e.x, e.y )*12.0, 0.0, 1.0 );\n"
+	"	return 1.0 - ( 1.0 - lit/9.0 )*uShadowDark*fade;\n"
+	"}\n"
 	"void main() {\n"
 	"	vec4 cur = vDiffuse;\n"
 	"	for ( int i=0; i<8; i++ ) {\n"
@@ -118,6 +136,15 @@ static const char *s_FS =
 	"	}\n"
 	"	if ( uSpecular!=0 ) cur.rgb = clamp( cur.rgb + vSpecular.rgb, 0.0, 1.0 );\n"
 	"	if ( !alphaPass( cur.a ) ) discard;\n"
+	"	if ( uSRecv!=0 ) {\n"
+	"		if ( uShadowDbg!=0 ) {\n"			// test view 2: blue = inside the shadow map, red = in shadow
+	"			vec3 s = vShadow;\n"
+	"			bool inside = s.x>0.0 && s.x<1.0 && s.y>0.0 && s.y<1.0 && s.z<1.0;\n"
+	"			float lit = inside ? texture( uShadowMap, vec3( s.xy, s.z - 0.0008 ) ) : 1.0;\n"
+	"			cur.rgb = mix( cur.rgb, inside ? vec3( 1.0-lit, 0.0, lit ) : vec3( 0.0, 1.0, 0.0 ), 0.5 );\n"
+	"		}\n"
+	"		else cur.rgb *= sunLight();\n"
+	"	}\n"
 	"	if ( uFogMode==1 ) cur.rgb = mix( uFogColor.rgb, cur.rgb, vSpecular.a );\n"						// vertex fog
 	"	else if ( uFogMode==2 ) {\n"																		// table fog (eye distance)
 	"		float f = clamp( (uFogRange.y - vEyeW) / max( uFogRange.y - uFogRange.x, 0.0001 ), 0.0, 1.0 );\n"
@@ -227,6 +254,7 @@ public:
 	GLuint		m_Prog;
 	GLint		u_Screen, u_COp, u_CA1, u_CA2, u_AOp, u_AA1, u_AA2, u_TCI, u_HasTex, u_Keyed, u_TexAlpha;
 	GLint		u_TFactor, u_Specular, u_ColorKey, u_AlphaFunc, u_AlphaRef, u_FogMode, u_FogColor, u_FogRange;
+	GLint		u_SRecv, u_SRot, u_SProj, u_SEye, u_SLightR, u_SLightU, u_SLightD, u_ShadowDark;		// shadows
 
 	PtDevice()
 	{
@@ -300,7 +328,51 @@ public:
 		u_FogMode = glGetUniformLocation( m_Prog, "uFogMode" );
 		u_FogColor = glGetUniformLocation( m_Prog, "uFogColor" );
 		u_FogRange = glGetUniformLocation( m_Prog, "uFogRange" );
+
+		// shadows (ptgfx_shadow.cpp): the shadow map stays bound to its own texture unit
+		u_SRecv = glGetUniformLocation( m_Prog, "uSRecv" );
+		u_SRot = glGetUniformLocation( m_Prog, "uSRot" );
+		u_SProj = glGetUniformLocation( m_Prog, "uSProj" );
+		u_SEye = glGetUniformLocation( m_Prog, "uSEye" );
+		u_SLightR = glGetUniformLocation( m_Prog, "uSLightR" );
+		u_SLightU = glGetUniformLocation( m_Prog, "uSLightU" );
+		u_SLightD = glGetUniformLocation( m_Prog, "uSLightD" );
+		glUniform1i( glGetUniformLocation( m_Prog, "uShadowMap" ), PTSHADOW_TEX_UNIT );
+		u_ShadowDark = glGetUniformLocation( m_Prog, "uShadowDark" );
+		glUniform1f( u_ShadowDark, 0.45f );
+		glUniform1i( u_SRecv, 0 );
+		BOOL bShadowsOk = PtShadow_Init();
+		glUseProgram( m_Prog );
+		glUniform1i( glGetUniformLocation( m_Prog, "uShadowDbg" ), g_PtShadow.bTestAllowed==2 ? 1 : 0 );
+		if ( !bShadowsOk ) {
+			// no shadow map: the sampler still needs a depth texture with comparison on its unit
+			GLuint t;
+			glGenTextures( 1, &t );
+			glActiveTexture( GL_TEXTURE0 + PTSHADOW_TEX_UNIT );
+			glBindTexture( GL_TEXTURE_2D, t );
+			glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 1, 1, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE );
+			glActiveTexture( GL_TEXTURE0 );
+		}
 		return TRUE;
+	}
+
+	// shadow receiving for this draw: on while the map is drawn and the shadow map is ready
+	void ApplyShadow( BOOL bScreenVerts )
+	{
+		PtShadowState &S = g_PtShadow;
+		BOOL on = ( S.Role==PTSHADOW_RECEIVER || S.Role==PTSHADOW_TEST ) && S.bMapReady && S.bCamera && bScreenVerts;
+		glUniform1i( u_SRecv, on ? 1 : 0 );
+		if ( !on ) return;
+		glUniformMatrix3fv( u_SRot, 1, GL_FALSE, S.Rot );
+		glUniform4f( u_SProj, S.Proj[0], S.Proj[1], S.Proj[2], S.Proj[3] );
+		glUniform3f( u_SEye, S.Eye[0], S.Eye[1], S.Eye[2] );
+		glUniform3f( u_SLightR, S.LightR[0], S.LightR[1], S.LightR[2] );
+		glUniform3f( u_SLightU, S.LightU[0], S.LightU[1], S.LightU[2] );
+		glUniform3f( u_SLightD, S.LightD[0], S.LightD[1], S.LightD[2] );
+		glUniform1f( u_ShadowDark, S.Dark );
 	}
 
 	static GLenum BlendFactor( DWORD b, BOOL bSrc )
@@ -628,6 +700,18 @@ public:
 		int stride = offset + nTex*8;
 
 		if ( m_bStateDirty ) ApplyState();
+
+		// shadows: keep caster triangles, or receive on the map. Solid models write
+		// depth (the engine leaves alpha blending on for them too); glows and other
+		// effects do not, or add their colour (DESTBLEND ONE).
+		if ( g_PtShadow.Role==PTSHADOW_CASTER || g_PtShadow.Role==PTSHADOW_TEST ) {
+			g_PtShadow.DbgDraws++;
+			if ( g_PtShadow.bCamera && mode==GL_TRIANGLES && posSize==4 && m_RS[D3DRENDERSTATE_ZWRITEENABLE] &&
+				!( m_RS[D3DRENDERSTATE_ALPHABLENDENABLE] && m_RS[D3DRENDERSTATE_DESTBLEND]==D3DBLEND_ONE ) )
+				PtShadow_Capture( (const BYTE *)lpVerts, count, stride );
+			else g_PtShadow.DbgSkipped++;
+		}
+		ApplyShadow( posSize==4 );
 
 		glBindVertexArray( g_PtGL.VAO );
 		glBindBuffer( GL_ARRAY_BUFFER, g_PtGL.VBO );

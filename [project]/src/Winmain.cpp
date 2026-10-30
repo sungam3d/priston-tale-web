@@ -7,6 +7,9 @@
 #include <process.h>
 
 #include "smlib3d\\smd3d.h"
+#ifdef PT_GFX_GL
+#include "ptgfx\\ptgfx.h"			// real-time shadows (PtGfx_Shadow*)
+#endif
 #include "smwsock.h"
 #include "smreg.h"
 
@@ -5672,11 +5675,25 @@ void _stdcall smPlayD3D( int x, int y, int z, int ax, int ay, int az )
 
 	//######################################################################################
 	//작 성 자 : 오 영 석
-	smRender.bApplyRendObjLight = TRUE;	
+#ifdef PT_GFX_GL
+	// Real-time shadows (ptgfx_shadow.cpp): the characters drawn by DrawPat3D cast,
+	// the map drawn by DisplayStage receives. Not in dungeons (no sun there). The
+	// shadowed square is centred on the player.
+	PtGfx_ShadowFrame( lpCurPlayer && lpCurPlayer->OnStageField>=0 && StageField[lpCurPlayer->OnStageField] &&
+		StageField[lpCurPlayer->OnStageField]->State!=FIELD_STATE_DUNGEON,
+		(float)(x - lpCurPlayer->pX)/fONE, (float)(y - lpCurPlayer->pY)/fONE, (float)(z - lpCurPlayer->pZ)/fONE );
+#endif
+	smRender.bApplyRendObjLight = TRUE;
 	DrawPat3D( x, y, z, ax, ay, az );
 
+#ifdef PT_GFX_GL
+	PtGfx_ShadowRole( PTSHADOW_RECEIVER );
+#endif
 	smRender.bApplyRendObjLight = FALSE;
 	NumPoly = DisplayStage( x ,  y,  z, ax, ay, az );
+#ifdef PT_GFX_GL
+	PtGfx_ShadowRole( PTSHADOW_OFF );
+#endif
 
 	smRender.bApplyRendObjLight = TRUE;
 	DrawPat3D_Alpha();

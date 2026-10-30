@@ -163,6 +163,7 @@
     <ClCompile Include="ptgfx\ptgfx_surface.cpp" />
     <ClCompile Include="ptgfx\ptgfx_device.cpp" />
     <ClCompile Include="ptgfx\ptgfx_text.cpp" />
+    <ClCompile Include="ptgfx\ptgfx_shadow.cpp" />
     <ClCompile Include="ptsound\ptsound.cpp" />
     <ClCompile Include="ptplatform\ptplatform.cpp" />
     <ClCompile Include="Particle.cpp" />

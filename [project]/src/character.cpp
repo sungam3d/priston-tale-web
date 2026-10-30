@@ -1,4 +1,7 @@
 ﻿#include "smlib3d\\smd3d.h"
+#ifdef PT_GFX_GL
+#include "ptgfx\\ptgfx.h"			// real-time shadows replace the round ones (DrawShadow)
+#endif
 #include "smwsock.h"
 
 #include "character.h"
@@ -7816,6 +7819,9 @@ int smCHAR::DrawShadow()
 	POINT3D CameraPosi , CameraAngle;
 
 	if ( PatSizeLevel<0 || !MotionInfo ) return FALSE;
+#ifdef PT_GFX_GL
+	if ( PtGfx_ShadowActive() ) return FALSE;			// real-time shadows drawn instead (ptgfx_shadow.cpp)
+#endif
 
 	CameraPosi.x = smCHAR_CameraX;
 	CameraPosi.y = smCHAR_CameraY;

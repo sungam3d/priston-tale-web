@@ -166,6 +166,52 @@ void	PtText_Install();					// ptgfx_text.cpp: own text rasterizer in place of GD
 void	PtGfx_Present( const RECT *lpSrc );
 void	PtGfx_InvalidateDeviceState();		// device must re-apply its GL state
 
+//////////////////////////////////////////////////////////////////////////////
+// Real-time shadows (ptgfx_shadow.cpp)
+//////////////////////////////////////////////////////////////////////////////
+#define PTSHADOW_MAP_SIZE	2048
+#define PTSHADOW_TEX_UNIT	8			// texture unit of the shadow map (stages use 0-7)
+
+struct PtShadowBatch { int First, Count; float Rot[9], Proj[4]; };
+
+struct PtShadowState {
+	BOOL	bAllowed;				// setting (browser: Module.ptShadows)
+	BOOL	bTestAllowed;			// test view in the intro (browser: ?shadowtest)
+	float	TestCam[3];				// test view: camera of the kept triangles
+	float	MapCentre[3];			// test view: world centre of the shadow map
+	BOOL	bFrame;					// shadows drawn this frame
+	int		Role;					// PTSHADOW_*
+	BOOL	bMapReady;				// shadow map holds this frame's casters
+	BOOL	bCamera;				// Rot/Proj set for the current draws
+	float	Rot[9];					// camera -> world rotation (GLSL mat3, column-major)
+	float	Proj[4];				// w, h, centre x, centre y
+	float	Eye[3];					// camera position relative to the shadow centre
+	float	Dark;					// how much a shadow darkens (0..1; browser: Module.ptShadowDark)
+	float	LightR[3], LightU[3], LightD[3];	// sun axes, scaled to the shadow map's [-1,1] box
+	GLuint	Prog, VAO, VBO, FBO, DepthTex;
+	GLint	u_Rot, u_Proj, u_Eye, u_R, u_U, u_D;
+	float	*pVerts;				// casters this frame: x, y, z, rhw per vertex
+	int		nVerts, nMaxVerts;
+	PtShadowBatch *pBatches;
+	int		nBatches, nMaxBatches;
+	int		DbgCam, DbgCamBad, DbgDraws, DbgSkipped;	// counters for the test log
+};
+extern PtShadowState g_PtShadow;
+BOOL	PtShadow_Init();									// GL objects (device Init)
+void	PtShadow_Capture( const BYTE *v, DWORD count, int stride );	// a caster draw (triangle list)
+
+// GLSL shared by the device and caster shaders: screen vertex (x, y pixels, z, rhw)
+// -> world position relative to the shadow centre -> sun space [-1,1].
+#define PTSHADOW_GLSL \
+	"uniform mat3 uSRot; uniform vec4 uSProj; uniform vec3 uSEye;\n" \
+	"uniform vec3 uSLightR; uniform vec3 uSLightU; uniform vec3 uSLightD;\n" \
+	"vec3 ptSunPos( vec4 p ) {\n" \
+	"	float cz = p.w > 0.0 ? 1.0/p.w : 1.0;\n" \
+	"	vec3 cam = vec3( (p.x/uSProj.z - 1.0)*cz/uSProj.x, (1.0 - p.y/uSProj.w)*cz/uSProj.y, cz );\n" \
+	"	vec3 w = uSRot*cam + uSEye;\n" \
+	"	return vec3( dot( w, uSLightR ), dot( w, uSLightU ), dot( w, uSLightD ) );\n" \
+	"}\n"
+
 // GLSL header: desktop GL 3.3 now, "#version 300 es" for the browser build.
 #ifdef PT_WEB
 #define PTGL_GLSL_HEADER "#version 300 es\nprecision highp float;\nprecision highp int;\n"

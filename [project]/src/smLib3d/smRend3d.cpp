@@ -1,5 +1,8 @@
 ﻿
 #include "smd3d.h"
+#ifdef PT_GFX_GL
+#include "../ptgfx/ptgfx.h"			// real-time shadows: PtGfx_ShadowCamera
+#endif
 
 #define SM_DIST_NEARZ				16
 #define SMFLOAT_DIST_NEARZ			(SM_DIST_NEARZ<<FLOATNS)
@@ -4306,6 +4309,18 @@ int smRENDER3D::RenderD3D()
 	int	RendLatterBuff[1024];
 
 	RendLatterCount = 0;
+
+#ifdef PT_GFX_GL
+	// real-time shadows rebuild 3D positions from the screen vertices: give the
+	// renderer the camera they were made with (camera = offset * mCamera >> FLOATS_EM)
+	if ( !g_IsDxProjectZoomIn ) {
+		const float s = 1.0f / (float)(1<<FLOATS_EM);
+		float m[9] = { mCamera._11*s, mCamera._12*s, mCamera._13*s,
+					   mCamera._21*s, mCamera._22*s, mCamera._23*s,
+					   mCamera._31*s, mCamera._32*s, mCamera._33*s };
+		PtGfx_ShadowCamera( m, s_DxProjection_w, s_DxProjection_h, (float)s_CenterX, (float)s_CenterY );
+	}
+#endif
 
 	if ( DeviceRendMode ) lpD3DDevice->BeginScene();
 
