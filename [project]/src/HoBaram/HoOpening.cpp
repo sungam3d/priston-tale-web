@@ -22,13 +22,6 @@
 static CAutoCamera		s_AutoCamera;
 //######################################################################################
 
-#ifdef PT_WEB
-// Classic opening: leaves keep falling around the point the camera looks at
-// (lpCurPlayer, SetCameraCharPos), from a little above it.
-static int s_LeafPart = -1;
-#define LEAF_HEIGHT		(120 << FLOATNS)
-#endif
-
 #ifdef _LANGUAGE_KOREAN
 char *szJoinWebUrl="http://www.pristontale.co.kr";
 #endif
@@ -160,25 +153,14 @@ int HoOpening::Init()
 	
 	smInitColorZClip(0, 0, 0);
 		
-#ifdef PT_WEB
-	// the classic (2004) opening: daylight, no red tint (see Load)
-	smRender.Color_R = 0;
-	smRender.Color_G = 0;
-	smRender.Color_B = 0;
-#else
 	smRender.Color_R = 40;
 	smRender.Color_G = 0;
 	smRender.Color_B = -30;
-#endif
 	smRender.Color_A = 0;
 	smRender.ClearLight();
-
+	
 	StopBGM();
-#ifdef PT_WEB
-	OpenBGM("StartImage\\Opening\\Classic\\Intro.wav");
-#else
 	OpenBGM("StartImage\\Opening\\Intro.wav");
-#endif
 	PlayBGM();
 	SetVolumeBGM(OpeningBgmVolume);
 
@@ -203,16 +185,9 @@ int HoOpening::Init()
 	
 	CameraFrame = 160;
 	ChangeSky(0x21);
-#ifdef PT_WEB
-	ChangeSky(0x03);		// FIELD_BACKIMAGE_GLOWDAY: warm golden sky (the classic opening's look)
-#else
 	ChangeSky(0x80);
-#endif
 
 	g_NewParticleMgr.Init();
-#ifdef PT_WEB
-	s_LeafPart = -1;
-#endif
 	InitAssaEffect();
 
 	InitCinemaFadeEffect();
@@ -282,16 +257,6 @@ void HoOpening::SetCameraCharPos(void)
 //작 성 자 : 오 영 석
 void HoOpening::SetParticleEffectSpawn(void)
 {
-#ifdef PT_WEB
-	POINT3D leafPos = { lpCurPlayer->pX, lpCurPlayer->pY + LEAF_HEIGHT, lpCurPlayer->pZ };
-	if( s_LeafPart<0 )
-		s_LeafPart = g_NewParticleMgr.Start( "LeafDown", leafPos );
-	else {
-		D3DVECTOR p = { (float)leafPos.x, (float)leafPos.y, (float)leafPos.z };
-		g_NewParticleMgr.SetPos( s_LeafPart, p );
-	}
-	return;
-#endif
 	m_ParticleSpawnTimeCount++;
 	if( (m_ParticleSpawnTimeCount % 70) != 0 )
 		return;
@@ -467,28 +432,7 @@ int HoOpening::Load()
 	if( smConfig.DebugMode ) 
 		IsLoad = DebugModeLoadFieldInfo();
 
-#ifdef PT_WEB
-	// The classic (2004) opening: the same temple town without Babel and the NPCs,
-	// leaves falling instead of fire (SetParticleEffectSpawn); its own music and sky
-	// (Init). Its old camera code is lost, so the current camera path flies it.
 	if( IsLoad == FALSE )
-	{
-		Stage = smSTAGE3D_ReadASE( "StartImage\\Opening\\Classic\\stage.ASE" );
-		if( Stage )
-		{
-			Stage->Head = TRUE;
-
-			s_AutoCamera.ReadASE_AutoCamera( "StartImage\\Opening\\opening_camera.ASE" );
-			m_AutoCameraFrameTime = 50;
-			s_AutoCamera.SetWarpFrame( 472, 473 );
-
-			Stage->StageObject->AddObjectFile( "StartImage\\Opening\\Classic\\st-ani01.ASE" );
-			Stage->StageObject->AddObjectFile( "StartImage\\Opening\\Classic\\st-ani02.ASE" );
-			Stage->StageObject->AddObjectFile( "StartImage\\Opening\\Classic\\st-ani03.ASE" );
-		}
-	}
-#endif
-	if( IsLoad == FALSE && Stage == NULL )
 	{
 		Stage = smSTAGE3D_ReadASE( "StartImage\\Opening\\map\\stage.ASE" );
 		if( Stage )
