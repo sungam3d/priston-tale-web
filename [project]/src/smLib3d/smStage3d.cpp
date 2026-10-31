@@ -2583,11 +2583,23 @@ int	smSTAGE3D::LoadFile( char *szFile )
 	lpwAreaBuff = new smAREA_INDEX[ wAreaSize ];
 	wbCnt = 0;
 
+	// Older stage files (the 2004 client's) keep the area lists as 16-bit face numbers;
+	// if the 32-bit reading below runs into nonsense, it starts over reading those.
+	DWORD areaStart = SetFilePointer( hFile, 0, NULL, FILE_CURRENT );
+	int areaWord = FALSE;
+readArea:
+
 	// 구역 영역의 데이타를 읽음
 	for( cnt2=0;cnt2<MAP_SIZE;cnt2++) {
 		for( cnt=0;cnt<MAP_SIZE;cnt++ ) {
 			if (StageArea[ cnt ][ cnt2 ]) {
 				ReadFile( hFile , &slen	, sizeof(int) , &dwAcess , NULL );
+				if ( ( slen<0 || wbCnt+slen>wAreaSize ) && !areaWord ) {
+					areaWord = TRUE;
+					wbCnt = 0;
+					SetFilePointer( hFile, areaStart, NULL, FILE_BEGIN );
+					goto readArea;
+				}
 				if ( slen<0 || wbCnt+slen>wAreaSize ) {
 					//파일 내용이 버퍼보다 크다: 힙을 망가뜨리지 않도록 중단 (로그 기록)
 					FILE *fp = fopen( "bad_stage_files.txt", "at" );
@@ -2602,7 +2614,14 @@ int	smSTAGE3D::LoadFile( char *szFile )
 					return FALSE;
 				}
 				StageArea[cnt][cnt2] = &lpwAreaBuff[ wbCnt ];
-				ReadFile( hFile , StageArea[cnt][cnt2]	, slen*sizeof(smAREA_INDEX) , &dwAcess , NULL );
+				if ( areaWord ) {
+					// read as WORDs into the end of the slot, widen front to back
+					WORD *w = (WORD *)StageArea[cnt][cnt2] + slen;
+					ReadFile( hFile , w , slen*sizeof(WORD) , &dwAcess , NULL );
+					for( int i=0; i<slen; i++ ) StageArea[cnt][cnt2][i] = w[i];
+				}
+				else
+					ReadFile( hFile , StageArea[cnt][cnt2]	, slen*sizeof(smAREA_INDEX) , &dwAcess , NULL );
 				wbCnt += slen;
 			}
 		}

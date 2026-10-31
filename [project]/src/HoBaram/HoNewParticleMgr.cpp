@@ -161,7 +161,7 @@ int HoNewParticleResMgr::SearchingAddTexture(const char *directory)
 int HoNewParticleResMgr::AddTexture(const char *mat)
 {
     if(MAX_MATERIAL <= NumMaterial)
-        return false;
+        return -1;			// not drawn (false = 0 drew material 0, a hit spark)
 	
 	
 	char testBuffer[256];

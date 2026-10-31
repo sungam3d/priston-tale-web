@@ -26062,3 +26062,8 @@ weapons/bang2.bmp	12342	12f55fd0d5611928
 weapons/crown.tga	32812	7914620ade9f9c47
 weapons/crown2.tga	32812	4ec6e0d29defaef2
 weapons/ds103-2x2.tga	8236	77a19aea964588a4
+StartImage/Opening/Classic/stage.smd	1574958	8ddd59dc4caede63
+StartImage/Opening/Classic/st-ani01.smd	181862	ec50e48f338ee2cb
+StartImage/Opening/Classic/st-ani02.smd	132422	1cda9f41dd0bc35e
+StartImage/Opening/Classic/st-ani03.smd	163522	6b71af14bb30972e
+StartImage/Opening/Classic/Intro.wav	4842512	5ed6502a4693496b

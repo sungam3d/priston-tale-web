@@ -14,7 +14,7 @@ struct HoNewParticleMatRes
 };
 
 #define MAX_TOKEN_VECTORS   250
-#define MAX_MATERIAL        150
+#define MAX_MATERIAL        1024	// textures of all particle scripts (was 150: later ones, e.g. the opening's leaves, got none)
 #define MAX_EMITTER         150
 
 class HoNewParticleScriptRes
