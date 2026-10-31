@@ -63,7 +63,17 @@ void _splitpath( const char *path, char *drive, char *dir, char *fname, char *ex
 // kernel32 / user32 string helpers
 //////////////////////////////////////////////////////////////////////////////
 LPSTR WINAPI lstrcpyA( LPSTR a, LPCSTR b ) { return strcpy( a, b ); }
-LPSTR WINAPI lstrcpynA( LPSTR a, LPCSTR b, int n ) { if ( n<=0 ) return a; strncpy( a, b, n-1 ); a[n-1] = 0; return a; }
+// Like Windows: writes only the text and its terminator, never the rest of the n
+// bytes (strncpy zero-fills them all). The game passes sizes bigger than its
+// buffers (GuideHelp.cpp: 1024 for 100-byte rows), which wiped the memory after.
+LPSTR WINAPI lstrcpynA( LPSTR a, LPCSTR b, int n )
+{
+	if ( n<=0 ) return a;
+	int i = 0;
+	for ( ; i<n-1 && b[i]; i++ ) a[i] = b[i];
+	a[i] = 0;
+	return a;
+}
 LPSTR WINAPI lstrcatA( LPSTR a, LPCSTR b ) { return strcat( a, b ); }
 int WINAPI lstrlenA( LPCSTR a ) { return a ? (int)strlen( a ) : 0; }
 int WINAPI lstrcmpA( LPCSTR a, LPCSTR b ) { return strcmp( a, b ); }
