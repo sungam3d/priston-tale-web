@@ -194,6 +194,7 @@ static float Daylight()
 #define WX_PI			3.14159265358979
 
 static double s_Hour, s_Day;			// game clock: hour 0..24 (with the minute's fraction), days
+static double s_ShadowHour;				// the same in whole game minutes, for the shadows
 static PtSkyLight s_Sun, s_Moon;
 
 static void GameClock()
@@ -208,9 +209,10 @@ static void GameClock()
 	double mins = m + frac;
 	s_Day = mins/1440.0;
 	s_Hour = fmod( mins/60.0, 24.0 );
+	s_ShadowHour = fmod( m/60.0, 24.0 );
 #ifdef PT_WEB
 	double held = EM_ASM_DOUBLE({ var h = Module['ptSunHour']; return typeof h=='number' ? h : -1; });
-	if ( held>=0 ) s_Hour = fmod( held, 24.0 );
+	if ( held>=0 ) s_Hour = s_ShadowHour = fmod( held, 24.0 );
 	s_Day += EM_ASM_DOUBLE({ var d = Module['ptSunDay']; return typeof d=='number' ? d : 0; });		// test: another moon phase
 #endif
 }
@@ -248,13 +250,18 @@ static float Smooth( float a, float b, float x )
 
 static float ElevDeg( const float d[3] ) { return asinf( d[1]<-1 ? -1 : d[1]>1 ? 1 : d[1] )*57.29578f; }
 
+// where the sun and the moon are at hour h
+static void Places( double h, float sun[3], float moon[3] )
+{
+	double hm = h<12 ? h + 24 : h, turn = TestTurn();
+	Arc( ( h - SUN_RISE )/( SUN_SET - SUN_RISE ), 58.0, turn, sun );
+	Arc( ( hm - MOON_RISE )/( MOON_SET - MOON_RISE ), 42.0, 25.0 + turn, moon );
+}
+
 static void SunAndMoon()
 {
 	GameClock();
-	double h = s_Hour, hm = h<12 ? h + 24 : h;
-	double turn = TestTurn();
-	Arc( ( h - SUN_RISE )/( SUN_SET - SUN_RISE ), 58.0, turn, s_Sun.Dir );
-	Arc( ( hm - MOON_RISE )/( MOON_SET - MOON_RISE ), 42.0, 25.0 + turn, s_Moon.Dir );
+	Places( s_Hour, s_Sun.Dir, s_Moon.Dir );
 	float se = ElevDeg( s_Sun.Dir ), me = ElevDeg( s_Moon.Dir );
 	float clear = s_Cur.Sun;
 	float night = 1 - Smooth( -5, 1, se );
@@ -273,10 +280,15 @@ static void SunAndMoon()
 	s_Moon.Color[0] = 0.80f; s_Moon.Color[1] = 0.84f; s_Moon.Color[2] = 0.92f;
 	s_Moon.Amount = Smooth( -2.5f, 1.5f, me )*clear*( 0.25f + 0.75f*night );
 
-	// shadows: from whichever is stronger (they hand over when both are near zero)
+	// shadows: from whichever is stronger (they hand over when both are near zero).
+	// Their direction moves once a game minute (0.8 s, a sixth of a degree for the
+	// sun), not every frame: a shadow map turning a little every frame makes the
+	// shadow edges shimmer.
 	float sunS = Smooth( 0, 12, se );
 	float moonS = Smooth( 0, 12, me )*night*0.5f*( 0.3f + 0.7f*s_Moon.Lit );
-	const float *towards = sunS>=moonS ? s_Sun.Dir : s_Moon.Dir;
+	float sunStep[3], moonStep[3];
+	Places( s_ShadowHour, sunStep, moonStep );
+	const float *towards = sunS>=moonS ? sunStep : moonStep;
 	float d[3] = { -towards[0], -towards[1], -towards[2] };
 	float minY = sinf( SHADOW_MIN_ELEV*(float)WX_PI/180 );
 	if ( -d[1]<minY ) {
