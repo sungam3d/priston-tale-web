@@ -74,6 +74,10 @@ static const char *s_FS =
 	"	return v;\n"
 	"}\n"
 	// D3DTOP_*
+	// depth allowance for the map's own surface (the shadow map's 0..1 spans 8000 world
+	// units). Small: the map's polygon offset already keeps surfaces off themselves, and
+	// ground nearer a caster than this stays lit (0.0008 = 6 units left a gap at the feet)
+	"const float shadowBias = 0.0001;\n"
 	"vec4 op( int o, vec4 a1, vec4 a2, vec4 cur, vec4 t ) {\n"
 	"	if ( o==2 ) return a1;\n"
 	"	if ( o==3 ) return a2;\n"
@@ -112,7 +116,7 @@ static const char *s_FS =
 	"	vec2 t = 1.5*uShadowSoft/vec2( textureSize( uShadowMap, 0 ) );\n"
 	"	float lit = 0.0;\n"
 	"	for ( int i=-1; i<=1; i++ ) for ( int j=-1; j<=1; j++ )\n"
-	"		lit += texture( uShadowMap, vec3( s.xy + vec2( float(i), float(j) )*t, s.z - 0.0008 ) );\n"
+	"		lit += texture( uShadowMap, vec3( s.xy + vec2( float(i), float(j) )*t, s.z - shadowBias ) );\n"
 	"	vec2 e = min( s.xy, 1.0 - s.xy );\n"
 	"	float fade = clamp( min( e.x, e.y )*12.0, 0.0, 1.0 );\n"
 	"	return 1.0 - ( 1.0 - lit/9.0 )*uShadowDark*fade;\n"
@@ -141,7 +145,7 @@ static const char *s_FS =
 	"		if ( uShadowDbg!=0 ) {\n"			// test view 2: blue = inside the shadow map, red = in shadow
 	"			vec3 s = vShadow;\n"
 	"			bool inside = s.x>0.0 && s.x<1.0 && s.y>0.0 && s.y<1.0 && s.z<1.0;\n"
-	"			float lit = inside ? texture( uShadowMap, vec3( s.xy, s.z - 0.0008 ) ) : 1.0;\n"
+	"			float lit = inside ? texture( uShadowMap, vec3( s.xy, s.z - shadowBias ) ) : 1.0;\n"
 	"			cur.rgb = mix( cur.rgb, inside ? vec3( 1.0-lit, 0.0, lit ) : vec3( 0.0, 1.0, 0.0 ), 0.5 );\n"
 	"		}\n"
 	"		else cur.rgb *= sunLight();\n"
