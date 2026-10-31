@@ -95,7 +95,7 @@ static void SetSun()
 static void SnapCentre( double c[3] )
 {
 	PtShadowState &S = g_PtShadow;
-	const double texel = 2.0*PTSHADOW_HALF_SIZE / PTSHADOW_MAP_SIZE;
+	const double texel = 2.0*PTSHADOW_HALF_SIZE / S.MapSize;
 	double r = c[0]*S.SunR[0] + c[1]*S.SunR[1] + c[2]*S.SunR[2];
 	double u = c[0]*S.SunU[0] + c[1]*S.SunU[1] + c[2]*S.SunU[2];
 	c[0] += floor( r/texel + 0.5 )*texel - r;
@@ -112,6 +112,41 @@ static void ReadDark()
 	g_PtShadow.Dark = 0.6f;
 #endif
 	g_PtShadow.Dark *= g_PtShadow.Strength;
+}
+
+// (Re)allocates the shadow map at size x size (the framebuffer keeps the texture
+// attached). Keeps the old size if the GPU cannot make the new one.
+static BOOL SetMapSize( int size )
+{
+	PtShadowState &S = g_PtShadow;
+	if ( size>S.MaxMapSize ) size = S.MaxMapSize;
+	if ( size==S.MapSize ) return TRUE;
+	while ( glGetError()!=GL_NO_ERROR ) ;
+	glActiveTexture( GL_TEXTURE0 + PTSHADOW_TEX_UNIT );
+	glBindTexture( GL_TEXTURE_2D, S.DepthTex );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, size, size, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL );
+	BOOL ok = glGetError()==GL_NO_ERROR;
+	if ( !ok && S.MapSize )
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, S.MapSize, S.MapSize, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL );
+	glActiveTexture( GL_TEXTURE0 );
+	PtGL_Log( ok ? "shadows: map %dx%d" : "shadows: map %dx%d failed, kept the old size", size, size );
+	if ( ok ) S.MapSize = size;
+	PtGfx_InvalidateDeviceState();
+	return ok;
+}
+
+// Shadow quality, read every frame (Module.ptShadowQuality: the map size, live).
+static void ReadQuality()
+{
+#ifdef PT_WEB
+	static int s_Asked = 0;					// tried once per change (a failed size is not retried)
+	int q = EM_ASM_INT({ var q = Module['ptShadowQuality']; return typeof q=='number' ? q : 0; });
+	if ( q<=0 || q==s_Asked ) return;
+	s_Asked = q;
+	int size = 1024;
+	while ( size<q && size<8192 ) size *= 2;
+	SetMapSize( size );
+#endif
 }
 
 void PtGfx_ShadowLight( const float dir[3], float strength, float soft )
@@ -174,10 +209,18 @@ BOOL PtShadow_Init()
 	glGenBuffers( 1, &S.VBO );
 
 	// depth texture with hardware comparison (sampler2DShadow, filtered = 2x2 PCF)
+	// the largest square map the GPU can draw into
+	GLint maxTex = 0, maxView[2] = { 0, 0 };
+	glGetIntegerv( GL_MAX_TEXTURE_SIZE, &maxTex );
+	glGetIntegerv( GL_MAX_VIEWPORT_DIMS, maxView );
+	S.MaxMapSize = 1024;
+	while ( S.MaxMapSize<8192 && S.MaxMapSize*2<=maxTex && S.MaxMapSize*2<=maxView[0] && S.MaxMapSize*2<=maxView[1] ) S.MaxMapSize *= 2;
+	S.MapSize = 0;
 	glGenTextures( 1, &S.DepthTex );
+	if ( !SetMapSize( PTSHADOW_MAP_SIZE ) ) { PtGL_Log( "shadows: no shadow map, shadows off" ); S.Prog = 0; return FALSE; }
+	ReadQuality();
 	glActiveTexture( GL_TEXTURE0 + PTSHADOW_TEX_UNIT );
 	glBindTexture( GL_TEXTURE_2D, S.DepthTex );
-	glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, PTSHADOW_MAP_SIZE, PTSHADOW_MAP_SIZE, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
@@ -202,7 +245,7 @@ BOOL PtShadow_Init()
 		return FALSE;
 	}
 	SetSun();
-	PtGL_Log( "shadows: %s (map %dx%d)", S.bAllowed ? "on" : "off (page setting)", PTSHADOW_MAP_SIZE, PTSHADOW_MAP_SIZE );
+	PtGL_Log( "shadows: %s (map %dx%d, up to %d)", S.bAllowed ? "on" : "off (page setting)", S.MapSize, S.MapSize, S.MaxMapSize );
 	return TRUE;
 }
 
@@ -211,6 +254,7 @@ BOOL PtShadow_Init()
 static void BeginFrame( const double cam[3], const double centre[3] )
 {
 	PtShadowState &S = g_PtShadow;
+	ReadQuality();								// before snapping: the pixel size may change
 	S.WorldCur ^= 1;
 	S.World[S.WorldCur].nVerts = S.World[S.WorldCur].nBatches = 0;
 	S.Chars.nVerts = S.Chars.nBatches = 0;
@@ -412,7 +456,7 @@ static void BuildMap()
 	if ( !S.Chars.nVerts && !prev.nVerts && !bMesh ) return;
 
 	glBindFramebuffer( GL_FRAMEBUFFER, S.FBO );
-	glViewport( 0, 0, PTSHADOW_MAP_SIZE, PTSHADOW_MAP_SIZE );
+	glViewport( 0, 0, S.MapSize, S.MapSize );
 	glDisable( GL_SCISSOR_TEST );
 	glDisable( GL_BLEND );
 	glDisable( GL_CULL_FACE );					// both sides: the camera's back faces cast too
@@ -422,11 +466,6 @@ static void BuildMap()
 	glColorMask( 0, 0, 0, 0 );
 	glClearDepth( 1.0f );
 	glClear( GL_DEPTH_BUFFER_BIT );
-	// the map also receives its own shadow: push its depth back a little more where it
-	// slopes away from the sun, so surfaces do not shadow themselves in stripes
-	glEnable( GL_POLYGON_OFFSET_FILL );
-	glPolygonOffset( 1.5f, 4.0f );
-
 	glUseProgram( S.Prog );
 	glUniform3f( S.u_R, S.LightR[0], S.LightR[1], S.LightR[2] );
 	glUniform3f( S.u_U, S.LightU[0], S.LightU[1], S.LightU[2] );
@@ -436,7 +475,13 @@ static void BuildMap()
 	glBindBuffer( GL_ARRAY_BUFFER, S.VBO );
 	glEnableVertexAttribArray( 0 );
 	glEnableVertexAttribArray( 1 );
+	// characters only cast, at their true depth: pushed back like the map, legs seen
+	// edge-on from the sun went units behind the ground and lost their shadow at the feet
 	DrawList( S.Chars );
+	// the map also receives its own shadow: push its depth back a little more where it
+	// slopes away from the sun, so surfaces do not shadow themselves in stripes
+	glEnable( GL_POLYGON_OFFSET_FILL );
+	glPolygonOffset( 1.5f, 4.0f );
 	DrawList( prev );
 	DrawMeshes();
 

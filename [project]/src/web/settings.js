@@ -7,7 +7,8 @@
 // its version (v) changes (Winmain.cpp PtWeb_PollOptions): music / effects volume
 // (ptsound master volumes), view (draw distance in map cells) and weather (0 = the
 // server's, 1 + weather.h PTWX_* = your own). Shadow strength
-// is Module.ptShadowDark (read every frame by ptgfx_shadow.cpp).
+// is Module.ptShadowDark and shadow quality Module.ptShadowQuality (the shadow map's
+// size, 1024..8192), both read every frame by ptgfx_shadow.cpp.
 // Restart settings are read when the game starts: Module.ptShadows, and the image
 // quality lines in ptReg.rgx ("ColorBPP" 32 = 32-bit colour, "Graphic" 0 = full
 // size textures; smReg.cpp / fileread.cpp).
@@ -17,7 +18,7 @@
 (function () {
 	if (!window.Module) return;
 	var KEY = 'pt-settings';
-	var DEF = { quality: 'max', shadows: true, shadowDark: 0.6, view: 38, music: 70, musicOn: true, effects: 80, effectsOn: true,
+	var DEF = { quality: 'max', shadows: true, shadowDark: 0.6, shadowQuality: 4096, view: 38, music: 70, musicOn: true, effects: 80, effectsOn: true,
 		wxOwn: false, wxKind: 2 };
 	// weather.h PTWX_* order
 	var WEATHER = ['Clear', 'Cloudy', 'Rain', 'Storm', 'Fog', 'Snow', 'Blizzard', 'Dust haze'];
@@ -34,6 +35,7 @@
 		Module.ptOpts = { v: ++version, music: vol(s.music, s.musicOn), effects: vol(s.effects, s.effectsOn),
 			view: s.view==VIEW_GAME ? 0 : s.view, weather: s.wxOwn ? 1 + (s.wxKind|0) : 0 };
 		Module.ptShadowDark = s.shadowDark;
+		Module.ptShadowQuality = s.shadowQuality;
 	}
 	Module.ptShadows = !!s.shadows;
 	pushLive();
@@ -133,6 +135,10 @@
 			'<button type="button" data-v="0">Round</button><button type="button" data-v="1">Real-time</button></span></div></div>' +
 		'<div class="pt-row"><label for="setShadowDark">Shadow darkness</label><div class="ctl">' +
 			'<input type="range" id="setShadowDark" min="20" max="90" step="5"><span class="val" id="setShadowDarkV"></span></div></div>' +
+		'<div class="pt-row"><label>Shadow quality</label><div class="ctl"><span class="pt-seg" id="setShadowQ">' +
+			'<button type="button" data-v="1024">Low</button><button type="button" data-v="2048">Medium</button>' +
+			'<button type="button" data-v="4096">High</button><button type="button" data-v="8192">Ultra</button></span></div></div>' +
+		'<p class="note">Sharper shadows need more graphics memory (Ultra about 256 MB). Changes straight away.</p>' +
 		'<div class="pt-row"><label for="setView">Draw distance</label><div class="ctl">' +
 			'<input type="range" id="setView" min="' + VIEW_MIN + '" max="' + VIEW_MAX + '" step="2"><span class="val" id="setViewV"></span></div></div>' +
 		'<p class="note">Further is slower: the game draws everything on the CPU. Changes as you drag.</p>' +
@@ -171,6 +177,8 @@
 		$('setShadowDark').value = Math.round(s.shadowDark*100);
 		$('setShadowDarkV').textContent = Math.round(s.shadowDark*100) + '%';
 		$('setShadowDark').disabled = !s.shadows;
+		seg('setShadowQ', s.shadowQuality);
+		Array.prototype.forEach.call($('setShadowQ').querySelectorAll('button'), function (b) { b.disabled = !s.shadows; });
 		$('setView').value = s.view;
 		$('setViewV').textContent = viewText(s.view);
 		seg('setWxMode', s.wxOwn ? 1 : 0);
@@ -201,6 +209,7 @@
 
 	$('setQuality').addEventListener('click', function (e) { var v = e.target.dataset && e.target.dataset.v; if (v) { s.quality = v; change(); } });
 	$('setShadows').addEventListener('click', function (e) { var v = e.target.dataset && e.target.dataset.v; if (v) { s.shadows = v == '1'; change(); } });
+	$('setShadowQ').addEventListener('click', function (e) { var v = e.target.dataset && e.target.dataset.v; if (v) { s.shadowQuality = +v; change(); } });
 	// sliders: while dragging (input) and when let go (change)
 	function slider(id, set) {
 		['input', 'change'].forEach(function (t) { $(id).addEventListener(t, function () { set(+this.value); change(); }); });

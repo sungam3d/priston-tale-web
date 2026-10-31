@@ -170,7 +170,7 @@ void	PtGfx_ScissorToViewport();			// clip to the game's current viewport
 //////////////////////////////////////////////////////////////////////////////
 // Real-time shadows (ptgfx_shadow.cpp)
 //////////////////////////////////////////////////////////////////////////////
-#define PTSHADOW_MAP_SIZE	2048
+#define PTSHADOW_MAP_SIZE	2048		// default; the page's shadow quality picks 1024..8192 (MapSize)
 #define PTSHADOW_TEX_UNIT	8			// texture unit of the shadow map (stages use 0-7)
 
 #define PTSHADOW_VERT_FLOATS	6		// kept per caster vertex: x, y, z, rhw, u, v
@@ -219,6 +219,7 @@ struct PtShadowState {
 	float	LightDir[3];			// the direction the light travels
 	float	LightR[3], LightU[3], LightD[3];	// sun axes, scaled to the shadow map's [-1,1] box
 	GLuint	Prog, VAO, VBO, FBO, DepthTex;
+	int		MapSize, MaxMapSize;	// shadow map size now (browser: Module.ptShadowQuality) and the GPU's limit
 	GLint	u_Rot, u_Proj, u_Eye, u_R, u_U, u_D, u_AlphaTest;
 	PtShadowList Chars;				// characters of this frame
 	PtShadowList World[2];			// the map: [WorldCur] being drawn now, the other from the frame before
