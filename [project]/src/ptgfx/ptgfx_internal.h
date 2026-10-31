@@ -204,7 +204,7 @@ struct PtShadowState {
 	PtShadowMesh Mesh[PTSHADOW_MESH_SLOTS];
 	GLuint	MeshProg;
 	GLint	um_Offset, um_R, um_U, um_D, um_AlphaTest;
-	double	SunR[3], SunU[3];		// sun axes (unit length), for snapping the centre to map pixels
+	double	SunR[3], SunU[3];		// shadow map x, y axes (world units), for snapping the centre to map pixels
 	BOOL	bTestAllowed;			// test view in the intro (browser: ?shadowtest)
 	BOOL	bFrame;					// shadows drawn this frame
 	int		Role;					// PTSHADOW_*

@@ -68,15 +68,18 @@ static void Normalize( float v[3] )
 	if ( l>0 ) { v[0] /= l; v[1] /= l; v[2] /= l; }
 }
 
+// The shadow map lies on the ground (world x, z), not across the light: a point
+// is slid along the light down to height 0 (x - y*dx/dy, z - y*dz/dy), depth is
+// along the light. The map's pixel grid stays put on the ground however the light
+// turns, so a moving sun moves only the shadows, smoothly - a map turning with the
+// light made every edge shimmer. Low light needs no bigger map either.
 static void SetSun()
 {
 	PtShadowState &S = g_PtShadow;
 	float d[3] = { S.LightDir[0], S.LightDir[1], S.LightDir[2] };
 	Normalize( d );
-	float r[3] = { -d[2], 0, d[0] };								// d x up
-	if ( r[0]*r[0] + r[2]*r[2]<1e-8f ) r[0] = 1;				// straight down
-	Normalize( r );
-	float u[3] = { r[1]*d[2]-r[2]*d[1], r[2]*d[0]-r[0]*d[2], r[0]*d[1]-r[1]*d[0] };	// r x d
+	if ( d[1]>-0.2f ) { d[1] = -0.2f; Normalize( d ); }		// never level (weather.cpp keeps it 18 degrees up)
+	float r[3] = { 1, -d[0]/d[1], 0 }, u[3] = { 0, -d[2]/d[1], 1 };
 	for ( int i=0; i<3; i++ ) {
 		S.LightR[i] = r[i] / PTSHADOW_HALF_SIZE;
 		S.LightU[i] = u[i] / PTSHADOW_HALF_SIZE;
@@ -86,17 +89,17 @@ static void SetSun()
 	}
 }
 
-// The shadow centre moved sideways (across the sun) in whole shadow-map pixels
-// only, so the map's pixel grid stays put on the ground and edges do not crawl
-// while walking.
+// The shadow centre moved in whole shadow-map pixels only, so the map's pixel
+// grid stays put on the ground and edges do not crawl while walking. Moving the
+// centre along x (z) moves its map position along the map's x (y) only.
 static void SnapCentre( double c[3] )
 {
 	PtShadowState &S = g_PtShadow;
 	const double texel = 2.0*PTSHADOW_HALF_SIZE / PTSHADOW_MAP_SIZE;
 	double r = c[0]*S.SunR[0] + c[1]*S.SunR[1] + c[2]*S.SunR[2];
 	double u = c[0]*S.SunU[0] + c[1]*S.SunU[1] + c[2]*S.SunU[2];
-	double dr = floor( r/texel + 0.5 )*texel - r, du = floor( u/texel + 0.5 )*texel - u;
-	for ( int i=0; i<3; i++ ) c[i] += S.SunR[i]*dr + S.SunU[i]*du;
+	c[0] += floor( r/texel + 0.5 )*texel - r;
+	c[2] += floor( u/texel + 0.5 )*texel - u;
 }
 
 // Shadow strength, read every frame (the page can change Module.ptShadowDark live),
