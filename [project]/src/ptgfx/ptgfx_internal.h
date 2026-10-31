@@ -214,7 +214,9 @@ struct PtShadowState {
 	float	Proj[4];				// w, h, centre x, centre y
 	double	Centre[3];				// shadow centre (the player), world units
 	float	Eye[3];					// camera position relative to the shadow centre
-	float	Dark;					// how much a shadow darkens (0..1; browser: Module.ptShadowDark)
+	float	Dark;					// how much a shadow darkens (0..1; browser: Module.ptShadowDark, times Strength)
+	float	Strength, Soft;			// the light's (PtGfx_ShadowLight)
+	float	LightDir[3];			// the direction the light travels
 	float	LightR[3], LightU[3], LightD[3];	// sun axes, scaled to the shadow map's [-1,1] box
 	GLuint	Prog, VAO, VBO, FBO, DepthTex;
 	GLint	u_Rot, u_Proj, u_Eye, u_R, u_U, u_D, u_AlphaTest;
@@ -235,7 +237,7 @@ struct PtWeatherState {
 	BOOL	bWorld;					// the world is being drawn
 	BOOL	bLook;					// Tint / Fog differ from clear weather
 	float	Tint[3], Fog[3], Density;
-	GLuint	Prog, SplashProg, VAO, VBO;
+	GLuint	Prog, SplashProg, SkyProg, VAO, VBO;
 	BOOL	bInitTried;
 };
 extern PtWeatherState g_PtWeather;

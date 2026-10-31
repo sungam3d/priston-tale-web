@@ -28,11 +28,13 @@
 
 PtShadowState g_PtShadow;
 
-// Sun: direction the light travels (y is up), half size of the shadowed square
-// around the player and depth range of the shadow map, in world units.
-static const float s_SunDir[3] = { 0.35f, -1.0f, 0.50f };
+// Half size of the shadowed square around the player and depth range of the
+// shadow map, in world units (deep enough for a sun 18 degrees up, weather.cpp).
+// The light's direction comes from PtGfx_ShadowLight (the sun or the moon moving
+// with the game's clock); this one until it is first set.
+static const float s_DefaultDir[3] = { 0.35f, -1.0f, 0.50f };
 #define PTSHADOW_HALF_SIZE	1000.0f
-#define PTSHADOW_DEPTH		3000.0f
+#define PTSHADOW_DEPTH		4000.0f
 
 static const char *s_CasterVS =
 	"in vec4 aPos; in vec2 aUV;\n"
@@ -69,9 +71,10 @@ static void Normalize( float v[3] )
 static void SetSun()
 {
 	PtShadowState &S = g_PtShadow;
-	float d[3] = { s_SunDir[0], s_SunDir[1], s_SunDir[2] };
+	float d[3] = { S.LightDir[0], S.LightDir[1], S.LightDir[2] };
 	Normalize( d );
 	float r[3] = { -d[2], 0, d[0] };								// d x up
+	if ( r[0]*r[0] + r[2]*r[2]<1e-8f ) r[0] = 1;				// straight down
 	Normalize( r );
 	float u[3] = { r[1]*d[2]-r[2]*d[1], r[2]*d[0]-r[0]*d[2], r[0]*d[1]-r[1]*d[0] };	// r x d
 	for ( int i=0; i<3; i++ ) {
@@ -96,7 +99,8 @@ static void SnapCentre( double c[3] )
 	for ( int i=0; i<3; i++ ) c[i] += S.SunR[i]*dr + S.SunU[i]*du;
 }
 
-// Shadow strength, read every frame (the page can change Module.ptShadowDark live).
+// Shadow strength, read every frame (the page can change Module.ptShadowDark live),
+// times the light's own (low sun, moon, clouds).
 static void ReadDark()
 {
 #ifdef PT_WEB
@@ -104,6 +108,17 @@ static void ReadDark()
 #else
 	g_PtShadow.Dark = 0.6f;
 #endif
+	g_PtShadow.Dark *= g_PtShadow.Strength;
+}
+
+void PtGfx_ShadowLight( const float dir[3], float strength, float soft )
+{
+	PtShadowState &S = g_PtShadow;
+	S.Strength = strength<0 ? 0 : strength>1 ? 1 : strength;
+	S.Soft = soft<1 ? 1 : soft;
+	if ( !memcmp( S.LightDir, dir, sizeof(S.LightDir) ) ) return;
+	memcpy( S.LightDir, dir, sizeof(S.LightDir) );
+	if ( S.Prog ) SetSun();
 }
 
 static BOOL AllocList( PtShadowList &L, int nVerts, int nBatches )
@@ -120,6 +135,10 @@ BOOL PtShadow_Init()
 {
 	PtShadowState &S = g_PtShadow;
 	S.bAllowed = TRUE;
+	if ( !S.Strength && !S.Soft ) {				// no light set yet
+		memcpy( S.LightDir, s_DefaultDir, sizeof(S.LightDir) );
+		S.Strength = S.Soft = 1;
+	}
 	ReadDark();
 #ifdef PT_WEB
 	S.bAllowed = EM_ASM_INT({ return Module['ptShadows']===false ? 0 : 1; });		// page setting

@@ -572,6 +572,9 @@ int HoOpening::Draw()
 	PtGfx_WeatherWorld( TRUE );
 #endif
 	DrawOpeningSky(x, y, z, anx, any, anz);
+#ifdef PT_GFX_GL
+	PtWeather_DrawSky( TRUE );
+#endif
 	if(CinemaFadeState != STATE_FADE_OUT)
 	{
 #ifdef PT_GFX_GL

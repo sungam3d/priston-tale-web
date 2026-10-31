@@ -41,7 +41,7 @@ static const char *s_VS =
 
 static const char *s_FS =
 	"in vec4 vDiffuse; in vec4 vSpecular; in float vEyeW; in vec3 vShadow;\n"
-	"uniform highp sampler2DShadow uShadowMap; uniform int uSRecv; uniform float uShadowDark; uniform int uShadowDbg;\n"
+	"uniform highp sampler2DShadow uShadowMap; uniform int uSRecv; uniform float uShadowDark; uniform float uShadowSoft; uniform int uShadowDbg;\n"
 	"in vec2 vTex0; in vec2 vTex1; in vec2 vTex2; in vec2 vTex3;\n"
 	"in vec2 vTex4; in vec2 vTex5; in vec2 vTex6; in vec2 vTex7;\n"
 	"uniform sampler2D uTex0; uniform sampler2D uTex1; uniform sampler2D uTex2; uniform sampler2D uTex3;\n"
@@ -104,12 +104,12 @@ static const char *s_FS =
 	"	return true;\n"
 	"}\n"
 	// light reaching this pixel: 1 lit .. 1-uShadowDark in a character's shadow;
-	// 3x3 filtered taps (each a 2x2 hardware comparison) for soft edges, fading
-	// out towards the edge of the shadowed square
+	// 3x3 filtered taps (each a 2x2 hardware comparison) for soft edges (spread
+	// wider for the moon: uShadowSoft), fading out towards the edge of the shadowed square
 	"float sunLight() {\n"
 	"	vec3 s = vShadow;\n"
-	"	if ( s.x<=0.0 || s.x>=1.0 || s.y<=0.0 || s.y>=1.0 || s.z>=1.0 ) return 1.0;\n"
-	"	vec2 t = 1.5/vec2( textureSize( uShadowMap, 0 ) );\n"
+	"	if ( uShadowDark<=0.002 || s.x<=0.0 || s.x>=1.0 || s.y<=0.0 || s.y>=1.0 || s.z>=1.0 ) return 1.0;\n"
+	"	vec2 t = 1.5*uShadowSoft/vec2( textureSize( uShadowMap, 0 ) );\n"
 	"	float lit = 0.0;\n"
 	"	for ( int i=-1; i<=1; i++ ) for ( int j=-1; j<=1; j++ )\n"
 	"		lit += texture( uShadowMap, vec3( s.xy + vec2( float(i), float(j) )*t, s.z - 0.0008 ) );\n"
@@ -262,7 +262,7 @@ public:
 	GLuint		m_Prog;
 	GLint		u_Screen, u_COp, u_CA1, u_CA2, u_AOp, u_AA1, u_AA2, u_TCI, u_HasTex, u_Keyed, u_TexAlpha;
 	GLint		u_TFactor, u_Specular, u_ColorKey, u_AlphaFunc, u_AlphaRef, u_FogMode, u_FogColor, u_FogRange;
-	GLint		u_SRecv, u_SRot, u_SProj, u_SEye, u_SLightR, u_SLightU, u_SLightD, u_ShadowDark;		// shadows
+	GLint		u_SRecv, u_SRot, u_SProj, u_SEye, u_SLightR, u_SLightU, u_SLightD, u_ShadowDark, u_ShadowSoft;		// shadows
 	GLint		u_WxMode, u_WxTint, u_WxFog;		// weather
 
 	PtDevice()
@@ -352,6 +352,8 @@ public:
 		glUniform1i( glGetUniformLocation( m_Prog, "uShadowMap" ), PTSHADOW_TEX_UNIT );
 		u_ShadowDark = glGetUniformLocation( m_Prog, "uShadowDark" );
 		glUniform1f( u_ShadowDark, 0.45f );
+		u_ShadowSoft = glGetUniformLocation( m_Prog, "uShadowSoft" );
+		glUniform1f( u_ShadowSoft, 1.0f );
 		glUniform1i( u_SRecv, 0 );
 		BOOL bShadowsOk = PtShadow_Init();
 		glUseProgram( m_Prog );
@@ -385,6 +387,7 @@ public:
 		glUniform3f( u_SLightU, S.LightU[0], S.LightU[1], S.LightU[2] );
 		glUniform3f( u_SLightD, S.LightD[0], S.LightD[1], S.LightD[2] );
 		glUniform1f( u_ShadowDark, S.Dark );
+		glUniform1f( u_ShadowSoft, S.Soft );
 	}
 
 	static GLenum BlendFactor( DWORD b, BOOL bSrc )

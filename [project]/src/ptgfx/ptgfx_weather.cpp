@@ -116,8 +116,44 @@ static const char *s_SplashFS =
 	"	oColor = vec4( uColor.rgb, uColor.a*ring*( 1.0 - vAge ) );\n"
 	"}\n";
 
+// Sun / moon: one quad around the direction towards it, on the unit sphere around
+// the camera (so it never comes nearer). vC: -1..1 across the quad.
+static const char *s_SkyVS =
+	WX_GLSL
+	"uniform vec3 uDir; uniform float uSize;\n"
+	"out vec2 vC;\n"
+	"void main() {\n"
+	"	int k = gl_VertexID;\n"
+	"	vC = vec2( ( k==1 || k==2 || k==4 ) ? 1.0 : -1.0, ( k==2 || k==4 || k==5 ) ? 1.0 : -1.0 );\n"
+	"	vec3 c = uRot*uDir;\n"
+	"	vec3 a = normalize( cross( abs( c.y )<0.99 ? vec3( 0.0, 1.0, 0.0 ) : vec3( 1.0, 0.0, 0.0 ), c ) );\n"
+	"	vec3 p = c + ( a*vC.x + cross( c, a )*vC.y )*uSize;\n"
+	"	if ( p.z<0.02 ) { gl_Position = WX_OUT; return; }\n"
+	"	vec4 s = wxScreen( p );\n"
+	"	gl_Position = wxClip( s.xy, s );\n"
+	"}\n";
+
+// a disc (radius uCore of the quad), the moon's dark part (a disc moved sideways
+// by how lit it is), and a glow fading out to the quad's edge; added to the sky
+static const char *s_SkyFS =
+	"in vec2 vC;\n"
+	"uniform vec3 uColor; uniform float uAmount; uniform float uCore; uniform float uGlow; uniform float uHalo;\n"
+	"uniform float uLit; uniform float uSide;\n"
+	"out vec4 oColor;\n"
+	"void main() {\n"
+	"	float d = length( vC );\n"
+	"	float disc = 1.0 - smoothstep( uCore*0.86, uCore, d );\n"
+	"	if ( uLit<0.999 ) {\n"
+	"		float off = length( vC - vec2( uSide*uLit*2.0*uCore, 0.0 ) );\n"
+	"		disc *= mix( 0.05, 1.0, smoothstep( uCore*0.88, uCore*1.04, off ) );\n"
+	"	}\n"
+	"	float glow = exp( -max( d - uCore, 0.0 )/uGlow )*( 1.0 - smoothstep( 0.6, 1.0, d ) );\n"
+	"	oColor = vec4( uColor*( disc + glow*uHalo )*uAmount, 1.0 );\n"
+	"}\n";
+
 struct WxUniforms { GLint Rot, Proj, ZQ, Screen, Box, Centre, Shift, Vel, Streak, Time, Px, Snow, Color; };
-static WxUniforms s_uFall, s_uSplash;
+static WxUniforms s_uFall, s_uSplash, s_uSky;
+static GLint s_uSkyDir, s_uSkySize, s_uSkyAmount, s_uSkyCore, s_uSkyGlow, s_uSkyHalo, s_uSkyLit, s_uSkySide;
 
 static void GetUniforms( GLuint prog, WxUniforms &u )
 {
@@ -151,6 +187,19 @@ static BOOL Init()
 	}
 	GetUniforms( W.Prog, s_uFall );
 	GetUniforms( W.SplashProg, s_uSplash );
+	W.SkyProg = PtGfx_CompileProgram( s_SkyVS, s_SkyFS, NULL, 0 );
+	if ( W.SkyProg ) {
+		GetUniforms( W.SkyProg, s_uSky );
+		s_uSkyDir = glGetUniformLocation( W.SkyProg, "uDir" );
+		s_uSkySize = glGetUniformLocation( W.SkyProg, "uSize" );
+		s_uSkyAmount = glGetUniformLocation( W.SkyProg, "uAmount" );
+		s_uSkyCore = glGetUniformLocation( W.SkyProg, "uCore" );
+		s_uSkyGlow = glGetUniformLocation( W.SkyProg, "uGlow" );
+		s_uSkyHalo = glGetUniformLocation( W.SkyProg, "uHalo" );
+		s_uSkyLit = glGetUniformLocation( W.SkyProg, "uLit" );
+		s_uSkySide = glGetUniformLocation( W.SkyProg, "uSide" );
+	}
+	else PtGL_Log( "weather: sun / moon shader failed, none in the sky" );
 	glGenVertexArrays( 1, &W.VAO );
 	glGenBuffers( 1, &W.VBO );
 	PtGL_Log( "weather: ready" );
@@ -278,6 +327,51 @@ void PtGfx_WeatherDraw( const PtWeatherScene *s )
 	DrawSplashes( s, rt );
 	if ( s->Rain>0.002f ) DrawFall( s, rt, FALSE, s->Rain );
 	if ( s->Snow>0.002f ) DrawFall( s, rt, TRUE, s->Snow );
+
+	rt->m_bGPUNewer = TRUE;
+	PtGfx_InvalidateDeviceState();
+}
+
+// size: half size of the quad (tangent of the angle); core, glow: of the quad's half size
+static void DrawSkyLight( const PtSkyLight *L, float size, float core, float glow, float halo )
+{
+	if ( !L || L->Amount<=0.002f ) return;
+	glUniform3f( s_uSkyDir, L->Dir[0], L->Dir[1], L->Dir[2] );
+	glUniform1f( s_uSkySize, size );
+	glUniform3f( s_uSky.Color, L->Color[0], L->Color[1], L->Color[2] );
+	glUniform1f( s_uSkyAmount, L->Amount );
+	glUniform1f( s_uSkyCore, core );
+	glUniform1f( s_uSkyGlow, glow );
+	glUniform1f( s_uSkyHalo, halo );
+	glUniform1f( s_uSkyLit, L->Lit );
+	glUniform1f( s_uSkySide, L->Side );
+	glDrawArrays( GL_TRIANGLES, 0, 6 );
+}
+
+void PtGfx_SkyLights( const PtWeatherScene *s, const PtSkyLight *sun, const PtSkyLight *moon )
+{
+	PtSurface *rt = g_PtGL.pRenderTarget;
+	BOOL bSun = sun && sun->Amount>0.002f, bMoon = moon && moon->Amount>0.002f;
+	if ( !s || !rt || !( bSun || bMoon ) ) return;
+	if ( s->ProjW==0 || s->ProjH==0 || s->CenterX<=0 || s->CenterY<=0 ) return;
+	if ( !Init() || !g_PtWeather.SkyProg ) return;
+
+	glBindVertexArray( g_PtWeather.VAO );
+	PtGfx_ScissorToViewport();
+	if ( s->ClipHalfH>0 && s->ClipHalfH<s->CenterY ) {
+		glEnable( GL_SCISSOR_TEST );
+		glScissor( 0, (int)( s->CenterY - s->ClipHalfH ), rt->Width(), (int)( 2*s->ClipHalfH ) );
+	}
+	glDisable( GL_CULL_FACE );
+	glDisable( GL_DEPTH_TEST );						// on the sky: whatever is drawn later covers it
+	glDepthMask( GL_FALSE );
+	glEnable( GL_BLEND );
+	glBlendFunc( GL_ONE, GL_ONE );
+	glColorMask( 1, 1, 1, 0 );
+	glUseProgram( g_PtWeather.SkyProg );
+	SetCamera( s_uSky, s, rt );
+	if ( bMoon ) DrawSkyLight( moon, 0.22f, 0.16f, 0.10f, 0.35f*moon->Lit );
+	if ( bSun ) DrawSkyLight( sun, 0.6f, 0.06f, 0.07f, 0.7f );
 
 	rt->m_bGPUNewer = TRUE;
 	PtGfx_InvalidateDeviceState();

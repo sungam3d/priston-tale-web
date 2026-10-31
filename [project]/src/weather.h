@@ -15,6 +15,9 @@ class smSTAGE3D;
 // (ptgfx), plays the rain and thunder. bIntro: the login screen's scene (the
 // weather only shows there when the setting picks one).
 void PtWeather_Frame( BOOL bIntro );
+// Right after the sky: the sun or the moon in it (they move with the game's clock
+// and cast the shadows, set in PtWeather_Frame).
+void PtWeather_DrawSky( BOOL bIntro );
 // After the world: the rain or snow falling and the splashes. ground: the loaded
 // map(s), for where rain lands.
 void PtWeather_Draw( BOOL bIntro, smSTAGE3D *ground0, smSTAGE3D *ground1 );

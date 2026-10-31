@@ -5705,6 +5705,9 @@ void _stdcall smPlayD3D( int x, int y, int z, int ax, int ay, int az )
 #endif
 	//DrawBG( x,  y,  z,  ax, ay, az );
 	DrawSky( x,  y,  z,  ax, ay, az );
+#ifdef PT_GFX_GL
+	PtWeather_DrawSky( FALSE );
+#endif
 
 	smRender.DeviceRendMode = FALSE;
 	lpD3DDevice->BeginScene();

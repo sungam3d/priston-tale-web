@@ -62,6 +62,10 @@ void PtGfx_ShadowSetMesh( int slot, const void *key, int keyN, const double orig
 	const float *verts, int nVerts, const PtShadowMeshBatch *batches, int nBatches );
 // Around the map mesh's own drawing: not kept from the screen (the mesh casts itself).
 void PtGfx_ShadowSkipCapture( BOOL bSkip );
+// The light casting the shadows (the sun or the moon, weather.cpp), every frame:
+// dir = the direction the light travels (y up: dir[1] < 0), strength 0..1 (times
+// the page's shadow darkness), soft = how blurred the edges are (1 = the sun's).
+void PtGfx_ShadowLight( const float dir[3], float strength, float soft );
 
 // Test view (browser page with ?shadowtest): the intro scene casts onto itself,
 // one frame late. cam = camera position in world units.
@@ -94,6 +98,16 @@ struct PtWeatherScene {
 void PtGfx_WeatherLook( const float tint[3], const float fog[3], float density );
 void PtGfx_WeatherWorld( BOOL bOn );
 void PtGfx_WeatherDraw( const PtWeatherScene *s );
+// The sun or the moon in the sky: a disc with a glow, drawn right after the sky (the
+// map then covers it where hills and walls stand in front). Scene: the camera only.
+struct PtSkyLight {
+	float	Dir[3];				// towards it from the camera (unit length, y up)
+	float	Amount;				// 0 not seen (below the horizon, behind clouds) .. 1
+	float	Color[3];
+	float	Lit;				// moon: how much of the disc is lit (0 new .. 1 full); sun: 1
+	float	Side;				// moon: which side is lit (+1 / -1)
+};
+void PtGfx_SkyLights( const PtWeatherScene *s, const PtSkyLight *sun, const PtSkyLight *moon );
 
 // Fonts are forced to non-antialiased so GDI text has no colour fringes when
 // drawn into the transparent text overlay.

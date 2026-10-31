@@ -16,6 +16,9 @@
 // The look moves smoothly towards the weather picked: ptgfx multiplies the world by
 // a colour (darker under clouds), fogs it with distance, and draws the rain and
 // snow (ptgfx_weather.cpp).
+//
+// The sun and the moon cross the sky with the game's clock and cast the real-time
+// shadows (SunAndMoon below).
 
 #include <math.h>
 #include <string.h>
@@ -58,17 +61,18 @@ struct WxLook {
 	float	Rain, Snow;			// 0..1
 	float	Wind;				// world units per second
 	float	Storm;				// lightning: 1 = often
+	float	Sun;				// how much sun / moon gets through: its disc and its shadows
 };
 static const WxLook s_Looks[WX_KINDS] = {
-	//  tint                      fog colour                 density    rain   snow   wind  storm
-	{ { 1.00f, 1.00f, 1.00f }, { 0.70f, 0.72f, 0.75f }, 0.0f,      0.0f,  0.0f,    0.0f, 0.0f },	// clear
-	{ { 0.84f, 0.85f, 0.89f }, { 0.62f, 0.64f, 0.68f }, 0.00012f,  0.0f,  0.0f,   20.0f, 0.0f },	// cloudy
-	{ { 0.68f, 0.70f, 0.76f }, { 0.50f, 0.53f, 0.58f }, 0.00035f,  0.6f,  0.0f,   40.0f, 0.0f },	// rain
-	{ { 0.50f, 0.52f, 0.60f }, { 0.34f, 0.36f, 0.42f }, 0.0005f,   1.0f,  0.0f,  170.0f, 1.0f },	// storm
-	{ { 0.88f, 0.89f, 0.91f }, { 0.74f, 0.76f, 0.78f }, 0.0016f,   0.0f,  0.0f,    0.0f, 0.0f },	// fog
-	{ { 0.92f, 0.94f, 1.00f }, { 0.82f, 0.85f, 0.90f }, 0.0005f,   0.0f,  0.7f,   25.0f, 0.0f },	// snow
-	{ { 0.80f, 0.83f, 0.90f }, { 0.80f, 0.83f, 0.88f }, 0.0011f,   0.0f,  1.0f,  140.0f, 0.0f },	// blizzard
-	{ { 0.92f, 0.86f, 0.76f }, { 0.78f, 0.67f, 0.50f }, 0.0012f,   0.0f,  0.0f,   60.0f, 0.0f },	// dust haze (desert)
+	//  tint                      fog colour                 density    rain   snow   wind  storm  sun
+	{ { 1.00f, 1.00f, 1.00f }, { 0.70f, 0.72f, 0.75f }, 0.0f,      0.0f,  0.0f,    0.0f, 0.0f, 1.00f },	// clear
+	{ { 0.84f, 0.85f, 0.89f }, { 0.62f, 0.64f, 0.68f }, 0.00012f,  0.0f,  0.0f,   20.0f, 0.0f, 0.40f },	// cloudy
+	{ { 0.68f, 0.70f, 0.76f }, { 0.50f, 0.53f, 0.58f }, 0.00035f,  0.6f,  0.0f,   40.0f, 0.0f, 0.12f },	// rain
+	{ { 0.50f, 0.52f, 0.60f }, { 0.34f, 0.36f, 0.42f }, 0.0005f,   1.0f,  0.0f,  170.0f, 1.0f, 0.00f },	// storm
+	{ { 0.88f, 0.89f, 0.91f }, { 0.74f, 0.76f, 0.78f }, 0.0016f,   0.0f,  0.0f,    0.0f, 0.0f, 0.35f },	// fog
+	{ { 0.92f, 0.94f, 1.00f }, { 0.82f, 0.85f, 0.90f }, 0.0005f,   0.0f,  0.7f,   25.0f, 0.0f, 0.30f },	// snow
+	{ { 0.80f, 0.83f, 0.90f }, { 0.80f, 0.83f, 0.88f }, 0.0011f,   0.0f,  1.0f,  140.0f, 0.0f, 0.05f },	// blizzard
+	{ { 0.92f, 0.86f, 0.76f }, { 0.78f, 0.67f, 0.50f }, 0.0012f,   0.0f,  0.0f,   60.0f, 0.0f, 0.55f },	// dust haze (desert)
 };
 
 static WxLook s_Cur = s_Looks[WX_CLEAR];		// eases towards the weather picked
@@ -175,6 +179,135 @@ static float Daylight()
 	return 1.0f - d/220.0f*0.8f;
 }
 
+// ---- the sun and the moon ----
+// The game's day: the sun rises at GAME_HOUR_DAY (4:00) and is down when it gets
+// dark (GAME_HOUR_DARKNESS, 23:00); the moon is up from 20:00 to 7:00 and goes
+// through its phases in 8 game days. A game minute is GAME_WORLDTIME_MIN ms, so a
+// whole day takes about 19 real minutes: the sun visibly moves, shadows turn with
+// it. The sun casts the shadows by day, the moon (fainter, softer) by night; clouds
+// take both away. The page can hold the clock for testing: Module.ptSunHour = 0..24.
+#define SUN_RISE		((double)GAME_HOUR_DAY)
+#define SUN_SET			((double)GAME_HOUR_DARKNESS)
+#define MOON_RISE		20.0
+#define MOON_SET		31.0			// 7:00 the next morning
+#define SHADOW_MIN_ELEV	18.0f			// a lower light: shadows stop growing (the shadow map's depth, ptgfx_shadow.cpp)
+#define WX_PI			3.14159265358979
+
+static double s_Hour, s_Day;			// game clock: hour 0..24 (with the minute's fraction), days
+static PtSkyLight s_Sun, s_Moon;
+
+static void GameClock()
+{
+	// the clock steps once a game minute: in between, the fraction from real time
+	static DWORD s_Min = 0xFFFFFFFF;
+	static DWORD s_At;
+	DWORD m = dwGameWorldTime + dwGameTimeOffset, now = timeGetTime();
+	if ( m!=s_Min ) { s_Min = m; s_At = now; }
+	double frac = (double)( now - s_At )/GAME_WORLDTIME_MIN;
+	if ( frac>1 ) frac = 1;
+	double mins = m + frac;
+	s_Day = mins/1440.0;
+	s_Hour = fmod( mins/60.0, 24.0 );
+#ifdef PT_WEB
+	double held = EM_ASM_DOUBLE({ var h = Module['ptSunHour']; return typeof h=='number' ? h : -1; });
+	if ( held>=0 ) s_Hour = fmod( held, 24.0 );
+	s_Day += EM_ASM_DOUBLE({ var d = Module['ptSunDay']; return typeof d=='number' ? d : 0; });		// test: another moon phase
+#endif
+}
+
+// test (?suntest=degrees): the sun's and moon's paths turned, to bring them in front of a camera
+static double TestTurn()
+{
+#ifdef PT_WEB
+	static double s_Turn = -1e9;
+	if ( s_Turn==-1e9 ) s_Turn = EM_ASM_DOUBLE({ var m = /[?&]suntest=(-?[0-9.]+)/.exec(location.search); return m ? +m[1] : 0; });
+	return s_Turn;
+#else
+	return 0;
+#endif
+}
+
+// Direction towards a body crossing the sky, p: 0 rising .. 1 setting (outside:
+// below the horizon). It rises in the east (+x) and its path leans south (+z), so
+// at its highest it stands peakDeg up; turnDeg turns the whole path.
+static void Arc( double p, double peakDeg, double turnDeg, float out[3] )
+{
+	double a = p*WX_PI, tilt = ( 90.0 - peakDeg )*WX_PI/180.0, turn = turnDeg*WX_PI/180.0;
+	double x = cos( a ), up = sin( a )*cos( tilt ), side = sin( a )*sin( tilt );
+	out[0] = (float)( x*cos( turn ) - side*sin( turn ) );
+	out[1] = (float)up;
+	out[2] = (float)( x*sin( turn ) + side*cos( turn ) );
+}
+
+static float Smooth( float a, float b, float x )
+{
+	float t = ( x - a )/( b - a );
+	t = t<0 ? 0 : t>1 ? 1 : t;
+	return t*t*( 3 - 2*t );
+}
+
+static float ElevDeg( const float d[3] ) { return asinf( d[1]<-1 ? -1 : d[1]>1 ? 1 : d[1] )*57.29578f; }
+
+static void SunAndMoon()
+{
+	GameClock();
+	double h = s_Hour, hm = h<12 ? h + 24 : h;
+	double turn = TestTurn();
+	Arc( ( h - SUN_RISE )/( SUN_SET - SUN_RISE ), 58.0, turn, s_Sun.Dir );
+	Arc( ( hm - MOON_RISE )/( MOON_SET - MOON_RISE ), 42.0, 25.0 + turn, s_Moon.Dir );
+	float se = ElevDeg( s_Sun.Dir ), me = ElevDeg( s_Moon.Dir );
+	float clear = s_Cur.Sun;
+	float night = 1 - Smooth( -5, 1, se );
+
+	// the sun: orange low down, white high up
+	float w = Smooth( 0, 25, se );
+	static const float low[3] = { 1.0f, 0.50f, 0.22f }, high[3] = { 1.0f, 0.93f, 0.80f };
+	for ( int i=0; i<3; i++ ) s_Sun.Color[i] = low[i] + ( high[i] - low[i] )*w;
+	s_Sun.Amount = Smooth( -2.5f, 1.5f, se )*clear;
+	s_Sun.Lit = 1;
+	s_Sun.Side = 1;
+	// the moon: its phase over 8 days; faint while the sun is up
+	double ph = fmod( s_Day/8.0, 1.0 );
+	s_Moon.Lit = (float)( 0.5 - 0.5*cos( 2*WX_PI*ph ) );			// 0 new .. 1 full (half way)
+	s_Moon.Side = ph<0.5 ? 1.0f : -1.0f;
+	s_Moon.Color[0] = 0.80f; s_Moon.Color[1] = 0.84f; s_Moon.Color[2] = 0.92f;
+	s_Moon.Amount = Smooth( -2.5f, 1.5f, me )*clear*( 0.25f + 0.75f*night );
+
+	// shadows: from whichever is stronger (they hand over when both are near zero)
+	float sunS = Smooth( 0, 12, se );
+	float moonS = Smooth( 0, 12, me )*night*0.5f*( 0.3f + 0.7f*s_Moon.Lit );
+	const float *towards = sunS>=moonS ? s_Sun.Dir : s_Moon.Dir;
+	float d[3] = { -towards[0], -towards[1], -towards[2] };
+	float minY = sinf( SHADOW_MIN_ELEV*(float)WX_PI/180 );
+	if ( -d[1]<minY ) {
+		float hl = sqrtf( d[0]*d[0] + d[2]*d[2] ), c = sqrtf( 1 - minY*minY );
+		if ( hl>1e-5f ) { d[0] *= c/hl; d[2] *= c/hl; }
+		else { d[0] = c; d[2] = 0; }
+		d[1] = -minY;
+	}
+	PtGfx_ShadowLight( d, ( sunS>=moonS ? sunS : moonS )*clear, sunS>=moonS ? 1.0f : 2.6f );
+}
+
+void PtWeather_DrawSky( BOOL bIntro )
+{
+	if ( !bIntro && Indoors() ) return;
+	PtWeatherScene s;
+	memset( &s, 0, sizeof(s) );
+	smRender_GetWeatherCamera( &s );			// the sky's camera (HoSky sets the player's view)
+	PtGfx_SkyLights( &s, &s_Sun, &s_Moon );
+#ifdef PT_WEB
+	static int s_Test = -1;
+	static double s_Logged = -10;
+	if ( s_Test<0 ) s_Test = EM_ASM_INT({ return /[?&]suntest/.test(location.search) ? 1 : 0; });
+	if ( s_Test && s_Time - s_Logged > 3 ) {		// ?suntest: where the camera looks and where the sun / moon are
+		s_Logged = s_Time;
+		printf( "[sun] hour %.2f day %.2f | view %.2f %.2f %.2f | sun %.2f %.2f %.2f (%.2f) | moon %.2f %.2f %.2f (%.2f lit %.2f)\n",
+			s_Hour, s_Day, s.Rot[2], s.Rot[5], s.Rot[8], s_Sun.Dir[0], s_Sun.Dir[1], s_Sun.Dir[2], s_Sun.Amount,
+			s_Moon.Dir[0], s_Moon.Dir[1], s_Moon.Dir[2], s_Moon.Amount, s_Moon.Lit );
+	}
+#endif
+}
+
 void PtWeather_Frame( BOOL bIntro )
 {
 	// time
@@ -202,7 +335,9 @@ void PtWeather_Frame( BOOL bIntro )
 		Ease( s_Cur.Snow, t.Snow, k );
 		Ease( s_Cur.Wind, t.Wind, k );
 		Ease( s_Cur.Storm, t.Storm, k );
+		Ease( s_Cur.Sun, t.Sun, k );
 	}
+	SunAndMoon();
 
 	// lightning, and its thunder later (sound is slower than light: further = later, quieter)
 	if ( s_Cur.Storm>0.5f && s_Time>=s_NextBolt ) {
