@@ -2934,7 +2934,14 @@ int WarpField2( int Num )
 			z = sField[Num].StartPoint[cnt].y * fONE;
 		}
 
-		lpCurPlayer->SetPosi( x,0,z  ,0,0,0 );
+		// stand on the ground there: GetFloorHeight below only finds a floor
+		// within 10 units of y, so starting at y=0 left you under a high map
+		int y = 0;
+		if ( smGameStage[0] ) {
+			cnt = smGameStage[0]->GetHeight( x, z );
+			if ( cnt>-200*fONE ) y = cnt;
+		}
+		lpCurPlayer->SetPosi( x,y,z  ,0,0,0 );
 		TraceCameraPosi.x = lpCurPlayer->pX;
 		TraceCameraPosi.y = lpCurPlayer->pY;
 		TraceCameraPosi.z = lpCurPlayer->pZ;
