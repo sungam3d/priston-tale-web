@@ -47,7 +47,9 @@ MAPS = [
     ('forest', 'fore-3', 'o_fore-3', 0, (0, 0)),
     ('forest', 'fore-2', 'o_fore-2', 1, (0, 0)),
     ('forest', 'fore-1', 'o_fore-1', 2, (0, 0)),
-    ('Ricarten', 'village-2', 'o_village-2', 3, (0, 0)),
+    # same layout as today's Ricarten; the forest folder's older Ricarten (below) is the
+    # one that meets the old fore-1, so this one is moved out of its way
+    ('Ricarten', 'village-2', 'o_village-2', 3, (0, -65536)),
     ('Ruin', 'ruin-4', 'o_ruin-4', 4, (0, 0)),
     ('Ruin', 'ruin-3', 'o_ruin-3', 5, (0, 0)),
     ('Ruin', 'ruin-2', 'o_ruin-2', 6, (0, 0)),
@@ -70,8 +72,8 @@ MAPS = [
     ('castle', 'castle', 'o_castle', 33, (0, 0)),
     ('SeaA', 'SeaA', 'o_SeaA', -1, (0, 0)),
     ('SeaA', 'Stemple', 'o_Stemple', -1, (0, 0)),
-    # an earlier Ricarten from the forest folder: same place as Ricarten\village-2, so moved again
-    ('forest', 'village-2', 'o_village-2f', 3, (0, -65536)),
+    # an earlier Ricarten from the forest folder: the one that links up with the old fore-1
+    ('forest', 'village-2', 'o_village-2f', 3, (0, 0)),
 ]
 OFFSET = (-8 * GRID, 0)                 # x, z (world units) for the whole old world
 

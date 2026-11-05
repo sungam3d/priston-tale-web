@@ -10149,7 +10149,7 @@ Field/old/Ricarten/monpc-it02.BMP	822	31b16b2dc774b6a3
 Field/old/Ricarten/monpc-it03.BMP	822	7919f1452c01fc5d
 Field/old/Ricarten/mt02.bmp	49206	2b4f3f7fe5091c77
 Field/old/Ricarten/mt03.bmp	49206	47c1d8a3c51850aa
-Field/old/Ricarten/o_village-2.smd	4762849	bed488b5a83abfcf
+Field/old/Ricarten/o_village-2.smd	4762849	df691b3477c239a3
 Field/old/Ricarten/riy-f003.bmp	3126	d685f829ee10cb5e
 Field/old/Ricarten/riy-f021.bmp	98358	2cb28f12fba43049
 Field/old/Ricarten/riy-w010.bmp	3126	0db9ea1ffa77b4a4
@@ -10409,7 +10409,7 @@ Field/old/forest/o_fore-1.smd	3739802	5bb8a505b9f21cc9
 Field/old/forest/o_fore-2.smd	3881941	f978908fcf0e9284
 Field/old/forest/o_fore-3.smd	4985175	b2a75fef9464ce22
 Field/old/forest/o_village-1.smd	2789162	5bc116cb86090a54
-Field/old/forest/o_village-2f.smd	1925599	0f994e4db2db9cec
+Field/old/forest/o_village-2f.smd	1925599	769e8c23a2cf0978
 Field/old/forest/oh1-9.bmp	6198	e57aaf4f445505d7
 Field/old/forest/oh11-9.bmp	6198	c615dc7956f60406
 Field/old/forest/oh13-6.bmp	24630	b696b2f6a6e8b2cb

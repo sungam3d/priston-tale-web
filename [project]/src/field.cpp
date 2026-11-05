@@ -2400,7 +2400,7 @@ cnt++;
 	cnt++;
 
 	sField[cnt].SetName( "old\\Ricarten\\o_village-2.ase" , "o_village-2" );				//47
-	SetOldField( &sField[cnt] , 3 , -131072 , 0 , -128476 , -18738 );
+	SetOldField( &sField[cnt] , 3 , -131072 , -65536 , -128476 , -84274 );
 	cnt++;
 
 	sField[cnt].SetName( "old\\Ruin\\o_ruin-4.ase" , "o_ruin-4" );				//48
@@ -2524,7 +2524,7 @@ cnt++;
 	cnt++;
 
 	sField[cnt].SetName( "old\\SeaA\\o_SeaA.ase" , "o_SeaA" );				//68
-	SetOldField( &sField[cnt] , -1 , -131072 , 0 , -153606 , 1246 );
+	SetOldField( &sField[cnt] , -1 , -131072 , 0 , -149902 , -3566 );
 	sField[cnt].AddStageObject( "old\\SeaA\\sea_ani01.ASE" );
 	sField[cnt].AddStageObject( "old\\SeaA\\sea_ani02.ASE" );
 	sField[cnt].AddStageObject( "old\\SeaA\\sea_ani03.ASE" );
@@ -2542,12 +2542,30 @@ cnt++;
 	cnt++;
 
 	sField[cnt].SetName( "old\\forest\\o_village-2f.ase" , "o_village-2f" );				//70
-	SetOldField( &sField[cnt] , 3 , -131072 , -65536 , -129980 , -83480 );
+	SetOldField( &sField[cnt] , 3 , -131072 , 0 , -129980 , -17944 );
 	sField[cnt].AddStageObject( "old\\forest\\v_ani01.ASE" );
 	sField[cnt].AddStageObject( "old\\forest\\v_ani02.ASE" );
 	sField[cnt].AddStageObject( "old\\forest\\v_ani03.ASE" );
 	sField[cnt].AddStageObject( "old\\forest\\v_ani04.ASE" );
 	cnt++;
+
+	// Link the old maps the way today's versions of them are linked: each gate of
+	// the map's origin field, moved by the offset, to the old version of the gate's
+	// field that sits in the same moved world (same offset).
+	for( int f=OldFieldFirst; f<cnt; f++ ) {
+		int org = sField[f].OriginField;
+		if ( org<0 ) continue;
+		for( int g=0; g<sField[org].GateCount; g++ ) {
+			sFGATE *lpGate = &sField[org].FieldGate[g];
+			for( int t=OldFieldFirst; t<cnt; t++ ) {
+				if ( t!=f && sField[t].OriginField>=0 && &sField[sField[t].OriginField]==lpGate->lpsField &&
+					sField[t].OffsetX==sField[f].OffsetX && sField[t].OffsetZ==sField[f].OffsetZ ) {
+					sField[f].AddGate2( &sField[t] , lpGate->x+sField[f].OffsetX , lpGate->z+sField[f].OffsetZ , lpGate->y );
+					break;
+				}
+			}
+		}
+	}
 
 #ifdef PT_WEB
 	printf( "[field] old maps are fields %d..%d\n", OldFieldFirst, cnt-1 );
