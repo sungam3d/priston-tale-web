@@ -299,6 +299,9 @@ smSTAGE3D *LoadStageFromField( sFIELD *lpField , sFIELD *lpSecondField )
 		return NULL;
 	}
 
+	lpstg->StageObject->Offset.x = lpField->OffsetX*fONE;
+	lpstg->StageObject->Offset.z = lpField->OffsetZ*fONE;
+
 	//보조 오브젝트 추가
 	for( cnt=0;cnt<lpField->StgObjCount;cnt++ ) {
 		Bip = lpField->GetStageObjectName( cnt , szBuff );
@@ -312,7 +315,7 @@ smSTAGE3D *LoadStageFromField( sFIELD *lpField , sFIELD *lpSecondField )
 
 	if ( lpField->StgObjCount && lpD3DDevice ) {
 		ReadTextures();
-		lpstg->smMaterialGroup->CheckMatreialTextureSwap();	
+		lpstg->smMaterialGroup->CheckMatreialTextureSwap();
 	}
 
 	if ( lpSecondField && lpSecondField==StageField[0] ) {
@@ -393,6 +396,9 @@ smSTAGE3D *LoadStageFromField2( sFIELD *lpField , sFIELD *lpSecondField )
 		return NULL;
 	}
 
+	lpstg->StageObject->Offset.x = lpField->OffsetX*fONE;
+	lpstg->StageObject->Offset.z = lpField->OffsetZ*fONE;
+
 	//보조 오브젝트 추가
 	for( cnt=0;cnt<lpField->StgObjCount;cnt++ ) {
 		Bip = lpField->GetStageObjectName( cnt , szBuff );
@@ -406,7 +412,7 @@ smSTAGE3D *LoadStageFromField2( sFIELD *lpField , sFIELD *lpSecondField )
 
 	if ( lpField->StgObjCount && lpD3DDevice ) {
 		ReadTextures();
-		lpstg->smMaterialGroup->CheckMatreialTextureSwap();	
+		lpstg->smMaterialGroup->CheckMatreialTextureSwap();
 	}
 
 

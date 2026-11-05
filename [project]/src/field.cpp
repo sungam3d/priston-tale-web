@@ -28,7 +28,7 @@ sFIELD	*lpLastWarpField = 0;
 //필드별 레벨 제한
 //국문
 #ifdef _LANGUAGE_KOREAN
-int FieldLimitLevel_Table[] =
+int FieldLimitLevel_Table[FIELD_MAX]=
 {
 	0,0,0,0,					//숲 리카르텐
 	0,0,0,0,					//황무지
@@ -49,7 +49,7 @@ int FieldLimitLevel_Table[] =
 #ifdef _LANGUAGE_JAPANESE_FIELDLEVEL
 
 
-int FieldLimitLevel_Table[] =
+int FieldLimitLevel_Table[FIELD_MAX]=
 {
 	0,0,0,0,					//숲 리카르텐
 	0,0,0,0,					//황무지
@@ -70,7 +70,7 @@ int FieldLimitLevel_Table[] =
 
 /*
 // 장별 - 필드 레벨 제한 해제 이벤트
-int FieldLimitLevel_Table[] =
+int FieldLimitLevel_Table[FIELD_MAX]=
 {
 	0,0,0,0,					//숲 리카르텐
 	0,0,0,0,					//황무지
@@ -92,7 +92,7 @@ int FieldLimitLevel_Table[] =
 #endif
 
 #ifdef _LANGUAGE_BRAZIL_FIELDLEVEL
-int FieldLimitLevel_Table[] = {
+int FieldLimitLevel_Table[FIELD_MAX]= {
 	0,0,0,0,					//숲 리카르텐
 	0,0,0,0,					//황무지
 	0,0,0,						//사막 네비스코
@@ -108,7 +108,7 @@ int FieldLimitLevel_Table[] = {
 #endif
 //아르헨티나
 #ifdef _LANGUAGE_ARGENTINA_FIELDLEVEL
-int FieldLimitLevel_Table[] = {
+int FieldLimitLevel_Table[FIELD_MAX]= {
 	0,0,0,0,					//숲 리카르텐
 	0,0,0,0,					//황무지
 	0,0,0,						//사막 네비스코
@@ -124,7 +124,7 @@ int FieldLimitLevel_Table[] = {
 #endif
 //영문
 #ifdef _LANGUAGE_ENGLISH_FIELDLEVEL
-int FieldLimitLevel_Table[] = {
+int FieldLimitLevel_Table[FIELD_MAX]= {
 	0,0,0,0,					//숲 리카르텐
 	0,0,0,0,					//황무지
 	0,0,0,						//사막 네비스코
@@ -141,7 +141,7 @@ int FieldLimitLevel_Table[] = {
 #endif
 //필리핀
 #ifdef _LANGUAGE_PHILIPIN_FIELDLEVEL
-int FieldLimitLevel_Table[] = {
+int FieldLimitLevel_Table[FIELD_MAX]= {
 	0,0,0,0,					//숲 리카르텐
 	0,0,0,0,					//황무지
 	0,0,0,						//사막 네비스코
@@ -157,7 +157,7 @@ int FieldLimitLevel_Table[] = {
 #endif
 //중국
 #ifdef _LANGUAGE_CHINESE_FIELDLEVEL
-int FieldLimitLevel_Table[] = {
+int FieldLimitLevel_Table[FIELD_MAX]= {
 	0,0,0,0,					//숲 리카르텐
 	0,0,0,0,					//황무지
 	0,0,0,						//사막 네비스코
@@ -170,7 +170,7 @@ int FieldLimitLevel_Table[] = {
 	0,70,90,90,					//템스크론성 그리디호수 아이스2필드(중국만 95)  보스존
 	95,100,1000,102,102			//로스트아일랜드(95) 로스트템플(100) 일그러진숲, 끝없는탑1층(102), 끝없는탑2층(102)
 };
-/*int FieldLimitLevel_Table[] = {
+/*int FieldLimitLevel_Table[FIELD_MAX]= {
 	0,0,0,0,					//숲 리카르텐
 	0,0,0,0,					//황무지
 	0,0,0,						//사막 네비스코
@@ -184,7 +184,7 @@ int FieldLimitLevel_Table[] = {
 };*/
 #endif
 //#ifdef _LANGUAGE_PHILIPIN_FIELDLEVEL
-//int FieldLimitLevel_Table[] = {
+//int FieldLimitLevel_Table[FIELD_MAX]= {
 //	0,0,0,0,					//숲 리카르텐
 //	0,0,0,0,					//황무지
 //	0,0,0,						//사막 네비스코
@@ -199,7 +199,7 @@ int FieldLimitLevel_Table[] = {
 //};
 //#endif
 #ifdef _LANGUAGE_VEITNAM_FIELDLEVEL
-int FieldLimitLevel_Table[] = {
+int FieldLimitLevel_Table[FIELD_MAX]= {
 	0,0,0,0,					//숲 리카르텐
 	0,0,0,0,					//황무지
 	0,0,0,						//사막 네비스코
@@ -214,7 +214,7 @@ int FieldLimitLevel_Table[] = {
 };
 #endif
 #ifdef _LANGUAGE_THAI_FIELDLEVEL
-int FieldLimitLevel_Table[] = {
+int FieldLimitLevel_Table[FIELD_MAX]= {
 	0,0,0,0,					//숲 리카르텐
 	0,0,0,0,					//황무지
 	0,0,0,						//사막 네비스코
@@ -622,6 +622,36 @@ int CustomField = 0;
 
 static int SelCount = 0;
 
+// A map of an old client moved out of the way (see sFIELD::OffsetX): sky, music
+// and kind come from today's version of the map (Origin, -1: none).
+static void SetOldField( sFIELD *lpField , int Origin , int OffsetX , int OffsetZ , int x , int z )
+{
+	lpField->OffsetX = OffsetX;
+	lpField->OffsetZ = OffsetZ;
+	lpField->OriginField = Origin;
+
+	if ( Origin>=0 ) {
+		lpField->State			= sField[Origin].State;
+		lpField->BackImageCode[0]= sField[Origin].BackImageCode[0];
+		lpField->BackImageCode[1]= sField[Origin].BackImageCode[1];
+		lpField->BackImageCode[2]= sField[Origin].BackImageCode[2];
+		lpField->BackMusicCode	= sField[Origin].BackMusicCode;
+		lpField->ServerCode		= sField[Origin].ServerCode;
+	}
+	else {
+		lpField->State			= FIELD_STATE_FOREST;
+		lpField->BackImageCode[0]= FIELD_BACKIMAGE_DAY;
+		lpField->BackImageCode[1]= FIELD_BACKIMAGE_GLOWDAY;
+		lpField->BackImageCode[2]= FIELD_BACKIMAGE_NIGHT;
+		lpField->BackMusicCode	= BGM_CODE_FOREST;
+		lpField->ServerCode		= PLAY_SERVER_CODE_MAIN;
+	}
+	if ( lpField->State==FIELD_STATE_CASTLE ) lpField->State = FIELD_STATE_FOREST;	//the old castle is not the siege field
+
+	lpField->SetCenterPos( x , z );
+	lpField->AddStartPoint( x , z );
+}
+
 //필드 초기화
 int InitField()
 {
@@ -633,8 +663,10 @@ int InitField()
 
 	ZeroMemory( sField , sizeof(sFIELD) * FIELD_MAX );
 
-	for(cnt=0;cnt<FIELD_MAX;cnt++)
+	for(cnt=0;cnt<FIELD_MAX;cnt++) {
 		sField[cnt].FieldCode = cnt;
+		sField[cnt].OriginField = -1;
+	}
 
 	cnt = 0;
 
@@ -2348,6 +2380,177 @@ cnt++;
 
 
 
+#endif
+
+	int OldFieldFirst = cnt;
+	//////////////////////// old maps ////////////////////////
+	// The maps of the 1753 client, moved to an empty part of the world by
+	// web\port_old_maps.py (field 44 onwards: /field <number>).
+
+	sField[cnt].SetName( "old\\forest\\o_fore-3.ase" , "o_fore-3" );				//44
+	SetOldField( &sField[cnt] , 0 , -131072 , 0 , -147491 , -7054 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\forest\\o_fore-2.ase" , "o_fore-2" );				//45
+	SetOldField( &sField[cnt] , 1 , -131072 , 0 , -136499 , -9915 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\forest\\o_fore-1.ase" , "o_fore-1" );				//46
+	SetOldField( &sField[cnt] , 2 , -131072 , 0 , -126888 , -11016 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\Ricarten\\o_village-2.ase" , "o_village-2" );				//47
+	SetOldField( &sField[cnt] , 3 , -131072 , 0 , -128476 , -18738 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\Ruin\\o_ruin-4.ase" , "o_ruin-4" );				//48
+	SetOldField( &sField[cnt] , 4 , -131072 , 0 , -129688 , -918 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\Ruin\\o_ruin-3.ase" , "o_ruin-3" );				//49
+	SetOldField( &sField[cnt] , 5 , -131072 , 0 , -126119 , 10922 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\Ruin\\o_ruin-2.ase" , "o_ruin-2" );				//50
+	SetOldField( &sField[cnt] , 6 , -131072 , 0 , -123571 , 23948 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\Ruin\\o_ruin-1.ase" , "o_ruin-1" );				//51
+	SetOldField( &sField[cnt] , 7 , -131072 , 0 , -114710 , 14959 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\desert\\o_De-1.ase" , "o_De-1" );				//52
+	SetOldField( &sField[cnt] , 8 , -131072 , 0 , -116067 , -1421 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\forest\\o_village-1.ase" , "o_village-1" );				//53
+	SetOldField( &sField[cnt] , 9 , -131072 , 0 , -108858 , -1182 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\desert\\o_De-2.ase" , "o_De-2" );				//54
+	SetOldField( &sField[cnt] , 10 , -131072 , 0 , -115185 , -11161 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\desert\\o_De-3.ase" , "o_De-3" );				//55
+	SetOldField( &sField[cnt] , 11 , -131072 , 0 , -96314 , -1323 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\desert\\o_De-4.ase" , "o_De-4" );				//56
+	SetOldField( &sField[cnt] , 12 , -131072 , 0 , -87084 , 12053 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\dungeon\\o_dun-1.ase" , "o_dun-1" );				//57
+	SetOldField( &sField[cnt] , 13 , -131072 , 0 , -146456 , -24310 );
+	sField[cnt].AddStageObject( "old\\dungeon\\dun-1-wheel.ASE" );
+	cnt++;
+
+	sField[cnt].SetName( "old\\dungeon\\o_dun-2.ase" , "o_dun-2" );				//58
+	SetOldField( &sField[cnt] , 14 , -131072 , 0 , -137180 , -26880 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\dungeon\\o_dun-3.ase" , "o_dun-3" );				//59
+	SetOldField( &sField[cnt] , 15 , -131072 , 0 , -129245 , -28586 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\Room\\o_office.ase" , 0 );				//60
+	SetOldField( &sField[cnt] , 16 , 0 , -65536 , -200000 , 134464 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\forever-fall\\o_forever-fall-04.ase" , "o_forever-fall-04" );				//61
+	SetOldField( &sField[cnt] , 17 , -131072 , 0 , -132655 , 37905 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\forever-fall\\o_forever-fall-03.ase" , "o_forever-fall-03" );				//62
+	SetOldField( &sField[cnt] , 18 , -131072 , 0 , -136895 , 43244 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\forever-fall\\o_forever-fall-02.ase" , "o_forever-fall-02" );				//63
+	SetOldField( &sField[cnt] , 19 , -131072 , 0 , -129381 , 52599 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\forever-fall\\o_forever-fall-01.ase" , "o_forever-fall-01" );				//64
+	SetOldField( &sField[cnt] , 20 , -131072 , 0 , -129040 , 71183 );
+	sField[cnt].AddStageObject( "old\\forever-fall\\1ani-02.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\1ani-10.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\1ani-11.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\1ani-18.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\1ani-19.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\1ani-20.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\1ani-21.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\1ani-24.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\1ani-25.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\1ani-26.ASE" );
+	cnt++;
+
+	sField[cnt].SetName( "old\\forever-fall\\o_pilai.ase" , "o_pilai" );				//65
+	SetOldField( &sField[cnt] , 21 , -131072 , 0 , -128091 , 75486 );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-01.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-02.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-04.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-08.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-11.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-12.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-20.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-21.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-22.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-23.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-24.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-25.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-26.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-27.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-28.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-29.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-30.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-31.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-32.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-33.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-34.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-35.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-36.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-37.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-38.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-39.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-40.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-42.ASE" );
+	sField[cnt].AddStageObject( "old\\forever-fall\\piani-43.ASE" );
+	cnt++;
+
+	sField[cnt].SetName( "old\\Ice\\o_ice_ura.ase" , "o_ice_ura" );				//66
+	SetOldField( &sField[cnt] , 29 , -131072 , 0 , -98451 , 23865 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\castle\\o_castle.ase" , "o_castle" );				//67
+	SetOldField( &sField[cnt] , 33 , -131072 , 0 , -95847 , -23847 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\SeaA\\o_SeaA.ase" , "o_SeaA" );				//68
+	SetOldField( &sField[cnt] , -1 , -131072 , 0 , -153606 , 1246 );
+	sField[cnt].AddStageObject( "old\\SeaA\\sea_ani01.ASE" );
+	sField[cnt].AddStageObject( "old\\SeaA\\sea_ani02.ASE" );
+	sField[cnt].AddStageObject( "old\\SeaA\\sea_ani03.ASE" );
+	sField[cnt].AddStageObject( "old\\SeaA\\sea_ani04.ASE" );
+	sField[cnt].AddStageObject( "old\\SeaA\\sea_ani05.ASE" );
+	sField[cnt].AddStageObject( "old\\SeaA\\sea_ani06.ASE" );
+	sField[cnt].AddStageObject( "old\\SeaA\\sea_ani07.ASE" );
+	sField[cnt].AddStageObject( "old\\SeaA\\sea_ani08.ASE" );
+	sField[cnt].AddStageObject( "old\\SeaA\\sea_ani09.ASE" );
+	sField[cnt].AddStageObject( "old\\SeaA\\sea_ani10.ASE" );
+	cnt++;
+
+	sField[cnt].SetName( "old\\SeaA\\o_Stemple.ase" , "o_Stemple" );				//69
+	SetOldField( &sField[cnt] , -1 , -131072 , 0 , -163732 , 22038 );
+	cnt++;
+
+	sField[cnt].SetName( "old\\forest\\o_village-2f.ase" , "o_village-2f" );				//70
+	SetOldField( &sField[cnt] , 3 , -131072 , -65536 , -128476 , -84274 );
+	sField[cnt].AddStageObject( "old\\forest\\v_ani01.ASE" );
+	sField[cnt].AddStageObject( "old\\forest\\v_ani02.ASE" );
+	sField[cnt].AddStageObject( "old\\forest\\v_ani03.ASE" );
+	sField[cnt].AddStageObject( "old\\forest\\v_ani04.ASE" );
+	cnt++;
+
+#ifdef PT_WEB
+	printf( "[field] old maps are fields %d..%d\n", OldFieldFirst, cnt-1 );
 #endif
 
 	//////////////////////// 확장 테스트용 ////////////////////

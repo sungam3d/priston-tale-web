@@ -227,7 +227,7 @@ public:
 };
 
 //StgArea 최대 갯수 
-#define STAGE_AREA_MAX		64
+#define STAGE_AREA_MAX		128			// was 64: the field table now has the old client's maps too (fields 44+)
 
 extern STG_AREA	*StageArea;				//Stg_Area 선언
 

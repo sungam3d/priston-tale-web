@@ -28,6 +28,8 @@ public:
 
 	int SumCnt;
 
+	POINT3D Offset;					// props of a moved map: drawn this far from where their file puts them
+
 	smSTAGE_OBJECT();
 	~smSTAGE_OBJECT();
 

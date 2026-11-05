@@ -25,6 +25,7 @@ typedef ptrdiff_t		GLintptr;
 
 #define GL_ARRAY_BUFFER				0x8892
 #define GL_STREAM_DRAW				0x88E0
+#define GL_STATIC_DRAW				0x88E4
 #define GL_DYNAMIC_DRAW				0x88E8
 #define GL_FRAGMENT_SHADER			0x8B30
 #define GL_VERTEX_SHADER			0x8B31

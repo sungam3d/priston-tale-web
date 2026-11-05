@@ -570,6 +570,15 @@ static int s_iFzmFieldCodeInfo[] =
 	30, // 박재원 - 끝없는 탑 3층 추가
 };
 
+// Guide map of a field: a moved old map (sFIELD::OriginField) shows today's
+// version of it; fields past the table get the same one as SOD.
+static int FzmFieldCode( int iFieldCode )
+{
+	if ( sField[iFieldCode].OriginField>=0 ) iFieldCode = sField[iFieldCode].OriginField;
+	if ( iFieldCode>=int(sizeof(s_iFzmFieldCodeInfo)/sizeof(s_iFzmFieldCodeInfo[0])) ) return 4;
+	return s_iFzmFieldCodeInfo[ iFieldCode ];
+}
+
 //
 static char	*s_lpFzmINamePtrBuff[ EFzmNameMax * 2 ] =			//미니맵 이름 ,미니맵 이미지
 {
@@ -856,7 +865,7 @@ static void MainFzmEffect(void)
 		if( lpCurPlayer->OnStageField >= 0 )
 		{
 			iFieldCode = StageField[ lpCurPlayer->OnStageField ]->FieldCode;
-			SetFzmEffect(CHAR_POS_NAME_EFFECT, &s_NameEffectDataInfo, 2, s_iFzmFieldCodeInfo[ iFieldCode ] );
+			SetFzmEffect(CHAR_POS_NAME_EFFECT, &s_NameEffectDataInfo, 2, FzmFieldCode( iFieldCode ) );
 		}
 		
 		s_iFzmCharPosNameEffectTime = 0;
@@ -882,7 +891,7 @@ static void MainFzmEffect(void)
 					else if( lpNameEffect->eEffectType == CHAR_POS_EFFECT )
 						SetFzmEffect(CHAR_POS_EFFECT, &s_CharPosEffectDataInfo, 3, s_iFzmActiveName);
 					else if( lpNameEffect->eEffectType == CHAR_POS_NAME_EFFECT )
-						SetFzmEffect(CHAR_POS_NAME_EFFECT, &s_NameEffectDataInfo, 0, s_iFzmFieldCodeInfo[ iFieldCode ] );
+						SetFzmEffect(CHAR_POS_NAME_EFFECT, &s_NameEffectDataInfo, 0, FzmFieldCode( iFieldCode ) );
 				}
 
 				//
@@ -971,7 +980,7 @@ static void SetMapStageInfo(void)
 				Width		  = s_MapStageInfoBuff[i].iStageWidth;
 				Height		  = s_MapStageInfoBuff[i].iStageHeight;
 
-				lpZoomMapInfo = &s_FzmInfo[ s_iFzmFieldCodeInfo[i] ];
+				lpZoomMapInfo = &s_FzmInfo[ FzmFieldCode( i ) ];
 				if( lpZoomMapInfo->fRatio )
 				{
 					if( Width > Height )	fRatio = float(Width)  / lpZoomMapInfo->fRatio;
@@ -1034,17 +1043,19 @@ static void SetFzmCharPos(void)
 	// User ////////////////////////////////////////////////////////////////////////
 	if( lpCurPlayer->OnStageField >= 0 )
 	{
-		int iFieldCode = StageField[ lpCurPlayer->OnStageField ]->FieldCode;
-		if( s_iFzmActiveName == s_iFzmFieldCodeInfo[ iFieldCode ] )
+		sFIELD *lpField = StageField[ lpCurPlayer->OnStageField ];
+		int iFieldCode = lpField->FieldCode;
+		int iInfo = lpField->OriginField>=0 ? lpField->OriginField : iFieldCode;		// moved old map: today's map, player moved back
+		if( s_iFzmActiveName == FzmFieldCode( iFieldCode ) && s_MapStageInfoBuff[ iInfo ].fRatio > 0 )
 		{
-			
-			lpRect = &s_MapStageInfoBuff[ iFieldCode ].rcStageMapRect;
-			fRatio = s_MapStageInfoBuff[ iFieldCode ].fRatio;
-			
+
+			lpRect = &s_MapStageInfoBuff[ iInfo ].rcStageMapRect;
+			fRatio = s_MapStageInfoBuff[ iInfo ].fRatio;
+
 			s_FzmCharPosBuff[ s_iFzmCharPosNum ].eCharType = USER_CHAR;
-		
-			s_FzmCharPosBuff[ s_iFzmCharPosNum ].iXpos     = int( float(lpCurPlayer->pX - lpRect->left)   / fRatio);
-			s_FzmCharPosBuff[ s_iFzmCharPosNum ].iYpos     = int( float(lpRect->bottom - lpCurPlayer->pZ) / fRatio);
+
+			s_FzmCharPosBuff[ s_iFzmCharPosNum ].iXpos     = int( float(lpCurPlayer->pX - lpField->OffsetX*fONE - lpRect->left)   / fRatio);
+			s_FzmCharPosBuff[ s_iFzmCharPosNum ].iYpos     = int( float(lpRect->bottom - (lpCurPlayer->pZ - lpField->OffsetZ*fONE)) / fRatio);
 			s_iFzmCharPosNum++;
 		}
 	}
@@ -1057,7 +1068,7 @@ static void SetFzmCharPos(void)
 		{
 			for( cnt=0; cnt < FieldCount; cnt++ )
 			{
-				if( s_iFzmActiveName == s_iFzmFieldCodeInfo[ cnt ] )
+				if( s_iFzmActiveName == FzmFieldCode( cnt ) )
 				{
 					lpRect = &s_MapStageInfoBuff[ cnt ].rcStageMapRect;
 					fRatio = s_MapStageInfoBuff[ cnt ].fRatio;
@@ -1066,7 +1077,7 @@ static void SetFzmCharPos(void)
 			}
 		}
 
-		if( lpRect == NULL )
+		if( lpRect == NULL || fRatio <= 0 )
 			return;
 
 		for( cnt=0; cnt < InterfaceParty.PartyMemberCount; cnt++ )
@@ -1348,7 +1359,7 @@ int SetFullZoomMap(int IsSet)
 		{
 			iFieldCode = StageField[ lpCurPlayer->OnStageField ]->FieldCode;
 
-			s_iFzmActiveName = s_iFzmFieldCodeInfo[ iFieldCode ];
+			s_iFzmActiveName = FzmFieldCode( iFieldCode );
 			if( iFieldCode == 40 || iFieldCode == 41 || iFieldCode == 43 ) // pluto 끝없는 탑에 있을때 맵 화면에서 잃어버린 사원 안나오게 한다 // 박재원 - 끝없는 탑 3층
 			{
 				lpZoomMapInfo    = &s_FzmInfo[ 4 ];
@@ -1519,7 +1530,7 @@ void MainFullZoomMap(void)
 	{
 		if( lpCurPlayer->pX != s_CurPlayerPos.x || lpCurPlayer->pZ != s_CurPlayerPos.y )
 		{
-			if( s_iFzmActiveName != s_iFzmFieldCodeInfo[ StageField[lpCurPlayer->OnStageField]->FieldCode ] )
+			if( s_iFzmActiveName != FzmFieldCode( StageField[lpCurPlayer->OnStageField]->FieldCode ) )
 				SetFullZoomMap(1);
 		}
 

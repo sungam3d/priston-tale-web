@@ -152,6 +152,13 @@ public:
 	int		StartPointCnt;									//시작 지점 포인트
 
 	ACTION_FIELD_CAMERA	ActionCamera;					//액션필드에서의 카메라 정보
+
+	// Maps of an old client moved to an empty part of the world (web\port_old_maps.py):
+	// the stage file is already moved; its props keep their own position and are
+	// drawn moved by OffsetX/Z. OriginField = today's version of the map (-1: none).
+	int		OffsetX, OffsetZ;
+	int		OriginField;
+
 	int	AddStageObject( char *szStgObjName , int BipAnimation=0 );	//배경 보조 오브젝트 추가
 	int	GetStageObjectName( int num , char *szNameBuff );			//배경 보조 오브젝트 이름 얻기
 

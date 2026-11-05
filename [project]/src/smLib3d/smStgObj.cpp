@@ -14,6 +14,7 @@ smSTAGE_OBJECT::smSTAGE_OBJECT()
 	}
 
 	SumCnt = 0;
+	Offset.x = Offset.y = Offset.z = 0;
 }
 
 smSTAGE_OBJECT::~smSTAGE_OBJECT()
@@ -236,7 +237,12 @@ int smSTAGE_OBJECT::Draw( smSTAGE_OBJ3D *mobj )
 	// 패턴의 좌표를 원좌표로 고정
 	mobj->Pattern->SetFixPosi();
 	smObjFixPos = TRUE;
-	rcnt = mobj->Pattern->RenderD3D( &Camera, &CameraAngle );
+	// a moved map's prop is drawn at its own position: move the camera the other way
+	POINT3D cam;
+	cam.x = Camera.x-Offset.x;
+	cam.y = Camera.y-Offset.y;
+	cam.z = Camera.z-Offset.z;
+	rcnt = mobj->Pattern->RenderD3D( &cam, &CameraAngle );
 	smObjFixPos = FALSE;
 
 	mobj->sum = SumCnt;

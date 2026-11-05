@@ -8125,6 +8125,7 @@ int srReadStage()
 
 	while(1) {
 		if ( sField[cnt].szName[0]==0 ) break;
+		if ( cnt>=STAGE_AREA_MAX ) break;		// more fields than StageArea holds
 ///////////임시
 //		if ( cnt>5 ) break;						
 ////////////////////
