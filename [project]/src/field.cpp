@@ -2424,7 +2424,7 @@ cnt++;
 	cnt++;
 
 	sField[cnt].SetName( "old\\forest\\o_village-1.ase" , "o_village-1" );				//53
-	SetOldField( &sField[cnt] , 9 , -131072 , 0 , -108858 , -1182 );
+	SetOldField( &sField[cnt] , 9 , -131072 , 0 , -109233 , 1293 );
 	cnt++;
 
 	sField[cnt].SetName( "old\\desert\\o_De-2.ase" , "o_De-2" );				//54
@@ -2440,7 +2440,7 @@ cnt++;
 	cnt++;
 
 	sField[cnt].SetName( "old\\dungeon\\o_dun-1.ase" , "o_dun-1" );				//57
-	SetOldField( &sField[cnt] , 13 , -131072 , 0 , -146456 , -24310 );
+	SetOldField( &sField[cnt] , 13 , -131072 , 0 , -143803 , -27817 );
 	sField[cnt].AddStageObject( "old\\dungeon\\dun-1-wheel.ASE" );
 	cnt++;
 
@@ -2449,11 +2449,11 @@ cnt++;
 	cnt++;
 
 	sField[cnt].SetName( "old\\dungeon\\o_dun-3.ase" , "o_dun-3" );				//59
-	SetOldField( &sField[cnt] , 15 , -131072 , 0 , -129245 , -28586 );
+	SetOldField( &sField[cnt] , 15 , -131072 , 0 , -129483 , -27433 );
 	cnt++;
 
 	sField[cnt].SetName( "old\\Room\\o_office.ase" , 0 );				//60
-	SetOldField( &sField[cnt] , 16 , 0 , -65536 , -200000 , 134464 );
+	SetOldField( &sField[cnt] , 16 , 0 , -65536 , -199966 , 134764 );
 	cnt++;
 
 	sField[cnt].SetName( "old\\forever-fall\\o_forever-fall-04.ase" , "o_forever-fall-04" );				//61
@@ -2516,11 +2516,11 @@ cnt++;
 	cnt++;
 
 	sField[cnt].SetName( "old\\Ice\\o_ice_ura.ase" , "o_ice_ura" );				//66
-	SetOldField( &sField[cnt] , 29 , -131072 , 0 , -98451 , 23865 );
+	SetOldField( &sField[cnt] , 29 , -131072 , 0 , -101109 , 23681 );
 	cnt++;
 
 	sField[cnt].SetName( "old\\castle\\o_castle.ase" , "o_castle" );				//67
-	SetOldField( &sField[cnt] , 33 , -131072 , 0 , -95847 , -23847 );
+	SetOldField( &sField[cnt] , 33 , -131072 , 0 , -93992 , -30427 );
 	cnt++;
 
 	sField[cnt].SetName( "old\\SeaA\\o_SeaA.ase" , "o_SeaA" );				//68
@@ -2542,7 +2542,7 @@ cnt++;
 	cnt++;
 
 	sField[cnt].SetName( "old\\forest\\o_village-2f.ase" , "o_village-2f" );				//70
-	SetOldField( &sField[cnt] , 3 , -131072 , -65536 , -128476 , -84274 );
+	SetOldField( &sField[cnt] , 3 , -131072 , -65536 , -129980 , -83480 );
 	sField[cnt].AddStageObject( "old\\forest\\v_ani01.ASE" );
 	sField[cnt].AddStageObject( "old\\forest\\v_ani02.ASE" );
 	sField[cnt].AddStageObject( "old\\forest\\v_ani03.ASE" );

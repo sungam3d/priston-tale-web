@@ -294,6 +294,37 @@ def floor_point(b, voff, nv, nf, want_x, want_z):
     return (best[0], best[1], False) if best else (int(want_x), int(want_z), False)
 
 
+def busy_point(b, voff, nv, nf, want_x, want_z, n=24):
+    """(want_x, want_z) if it lies where the map has plenty of walkable textured ground,
+    else the middle of the busiest part of the map (an old map's layout can differ
+    from today's, so today's warp point may sit in an empty corner)."""
+    nmat = I(b, ST_MATGRP + 8)
+    off, walk = ST_MATGRP + MATGRP_SIZE, []
+    for _ in range(nmat):
+        walk.append(bool(I(b, off + 42 * 4) & 1) and (I(b, off + 4) + I(b, off + 304)) > 0)
+        inuse = I(b, off)
+        off += MAT_SIZE
+        if inuse:
+            off += 4 + I(b, off)
+    l, t, r, btm = [v / 256 for v in struct.unpack_from('<4i', b, ST_RECT)]
+    cell = lambda x, z: (min(n - 1, max(0, int((x - l) / (r - l) * n))), min(n - 1, max(0, int((z - t) / (btm - t) * n))))
+    count = {}
+    foff = voff + nv * 28
+    for k in range(nf):
+        v0, v1, v2, m = struct.unpack_from('<4H', b, foff + k * 28 + 8)
+        if m >= nmat or not walk[m] or max(v0, v1, v2) >= nv:
+            continue
+        ps = [struct.unpack_from('<3i', b, voff + v * 28 + 8) for v in (v0, v1, v2)]
+        c = cell(sum(p[0] for p in ps) / 768, sum(p[2] for p in ps) / 768)
+        count[c] = count.get(c, 0) + 1
+    if not count:
+        return want_x, want_z
+    best = max(count, key=count.get)
+    if count.get(cell(want_x, want_z), 0) >= max(10, count[best] // 20):
+        return want_x, want_z
+    return l + (best[0] + .5) * (r - l) / n, t + (best[1] + .5) * (btm - t) / n
+
+
 def port_model(src, tex):
     b = open(src, 'rb').read()
     if not b.startswith(HDR_MODEL):
@@ -414,7 +445,8 @@ def main():
         ox, oz = fi['offset']
         want = CENTRES.get(fi['origin'], fi.pop('want'))
         fi.pop('want', None)
-        cx, cz, exact = floor_point(data, voff, nv, nf, want[0] + ox, want[1] + oz)
+        want = busy_point(data, voff, nv, nf, want[0] + ox, want[1] + oz)
+        cx, cz, exact = floor_point(data, voff, nv, nf, want[0], want[1])
         fi['centre'] = [cx, cz]
         fi['centre_on_floor'] = exact
     print('textures: %d copied, %d kept, %d missing' % (len(tex.copied), tex.kept, len(tex.missing)))
