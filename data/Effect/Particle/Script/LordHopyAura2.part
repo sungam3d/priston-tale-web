@@ -1,0 +1,35 @@
+particlesystem "LordHopyAura2" 1.00 {
+  position = XYZ(0,0,0)
+  eventsequence "motes" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 14
+    gravity = XYZ(0,0,0)
+    emitrate = 8
+    emitradius = xyz(random(-46,46),random(0,90),random(-46,46))
+    lifetime = 2
+    texture = "effect\\particle\\flare.bmp"
+    initial size = random(3,6)
+    initial color = rgba(235,60,255,190)
+    initial velocity = XYZ(random(-4,4),random(10,26),random(-4,4))
+    fade so at 1.1 color = rgba(140,60,255,200)
+    fade so at 2 color = rgba(0,0,0,0)
+    fade so final size = 1
+    }
+  eventsequence "shards" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 4
+    gravity = XYZ(0,0,0)
+    emitrate = 3
+    emitradius = xyz(random(-54,54),random(50,130),random(-54,54))
+    lifetime = 1.8
+    texture = "effect\\particle\\flare.bmp"
+    initial size = random(4,8)
+    initial color = rgba(225,180,255,170)
+    initial velocity = XYZ(0,random(2,8),0)
+    fade so at 0.99 color = rgba(140,60,255,200)
+    fade so at 1.8 color = rgba(0,0,0,0)
+    fade so final size = 2
+    }
+}

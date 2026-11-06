@@ -1,0 +1,68 @@
+particlesystem "LordHopySlam" 1.00 {
+  position = XYZ(0,0,0)
+  eventsequence "ring" {
+    sourceblendmode = BLEND_LAMP
+    particletype = TYPE_TWO
+    loops = 1
+    numparticles = 1
+    gravity = XYZ(0,0,0)
+    emitrate = 100
+    emitradius = xyz(0,0,0)
+    lifetime = 0.7
+    texture = "effect\\particle\\shock.bmp"
+    initial size = 40
+    initial color = rgba(255,190,90,230)
+    initial velocity = XYZ(0,0,0)
+    fade so at 0.39 color = rgba(140,60,255,200)
+    fade so at 0.7 color = rgba(0,0,0,0)
+    fade so final size = 320
+    }
+  eventsequence "flash" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 1
+    gravity = XYZ(0,0,0)
+    emitrate = 100
+    emitradius = xyz(0,0,0)
+    lifetime = 0.35
+    texture = "effect\\particle\\flare.bmp"
+    initial size = 40
+    initial color = rgba(255,190,90,230)
+    initial velocity = XYZ(0,0,0)
+    fade so at 0.19 color = rgba(235,60,255,200)
+    fade so at 0.35 color = rgba(0,0,0,0)
+    fade so final size = 110
+    }
+  eventsequence "dust" {
+    sourceblendmode = BLEND_ALPHA
+    loops = 1
+    numparticles = 14
+    gravity = XYZ(0,0,0)
+    emitrate = 120
+    emitradius = xyz(random(-28,28),4,random(-28,28))
+    lifetime = 1.1
+    texture = "effect\\particle\\Dust1.bmp"
+    initial size = random(14,26)
+    initial color = rgba(130,115,105,130)
+    initial velocity = XYZ(random(-30,30),random(10,34),random(-30,30))
+    fade so at 0.61 color = rgba(90,80,80,200)
+    fade so at 1.1 color = rgba(0,0,0,0)
+    fade so final size = 46
+    }
+  eventsequence "chips" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 12
+    gravity = XYZ(0,-320,0)
+    emitrate = 150
+    emitradius = xyz(0,0,0)
+    lifetime = 0.9
+    texture = "effect\\particle\\flare.bmp"
+    initial size = random(2,5)
+    initial color = rgba(255,190,90,230)
+    initial velocity = XYZ(random(-90,90),random(70,170),random(-90,90))
+    fade so at 0.5 color = rgba(140,60,255,200)
+    fade so at 0.9 color = rgba(0,0,0,0)
+    fade so final size = 1
+    }
+}

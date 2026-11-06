@@ -11717,6 +11717,10 @@ char/monster/Lizard_bigmama/Lizard_Bigmama_Green.smd	367761	4711492bfe05ce24
 char/monster/Lizard_bigmama/Lizard_Bigmama_W.tga	196652	f9f240225d3a48e4
 char/monster/Lizard_bigmama/Lizard_Bigmama_W_01.TGA	262188	d5d32d74662f1679
 char/monster/Lizard_bigmama/Lizard_Bigmama_W_02.TGA	262188	0e52255c3b1d2ec5
+char/monster/LordHopy/LordHopy.bmp	3145782	be0603bfb2c3a0c7
+char/monster/LordHopy/LordHopy.inx	95268	9165fc2b26678f15
+char/monster/LordHopy/LordHopy.smb	743048	df016361de1c399c
+char/monster/LordHopy/LordHopy.smd	542564	b0a1c87a108b816b
 char/monster/MapleFairy/MapleFairy.inx	95268	ffcc7e3e69eca9ba
 char/monster/MapleFairy/MapleFairy.smb	2332064	85d076f79d63c1d0
 char/monster/MapleFairy/MapleFairy.smd	147450	a49e9cefb1e6519a
@@ -26557,3 +26561,24 @@ weapons/bang2.bmp	12342	12f55fd0d5611928
 weapons/crown.tga	32812	7914620ade9f9c47
 weapons/crown2.tga	32812	4ec6e0d29defaef2
 weapons/ds103-2x2.tga	8236	77a19aea964588a4
+Effect/Particle/Script/LordHopyAura2.part	1129	0761c1aa202412e2
+Effect/Particle/Script/LordHopyAura3.part	2116	c5a3dce218a6a546
+Effect/Particle/Script/LordHopyBlast.part	3143	f4425e86052e209b
+Effect/Particle/Script/LordHopyBreath.part	1518	7c2fe94a1c4c9bf2
+Effect/Particle/Script/LordHopyBreathHit.part	1555	601cd7309b2ae42a
+Effect/Particle/Script/LordHopyCharge.part	2289	a7532a80e4bdd459
+Effect/Particle/Script/LordHopyCrystal.part	2124	71cebf8aaa25c54a
+Effect/Particle/Script/LordHopyIllusion.part	1083	0140ab2218dc24c2
+Effect/Particle/Script/LordHopyMark.part	1098	2844fc1f393be0bc
+Effect/Particle/Script/LordHopyMouth.part	1046	1e1f36ba30bf3be9
+Effect/Particle/Script/LordHopySlam.part	2087	53be74cf35ee3cf8
+wav/Effects/monster/LordHopy/attack 1.wav	13252	a528b88e042d3dc6
+wav/Effects/monster/LordHopy/attack 2.wav	19044	5837cd368944d04c
+wav/Effects/monster/LordHopy/damage 1.wav	11404	c7ec8c8e70ea62fb
+wav/Effects/monster/LordHopy/damage 2.wav	8730	9693df2f45226a2e
+wav/Effects/monster/LordHopy/dead 1.wav	26508	2ff207be257db3c0
+wav/Effects/monster/LordHopy/dead 2.wav	23062	61a718e09570cca6
+wav/Effects/monster/LordHopy/move 1.wav	94538	af64f82af86d6872
+wav/Effects/monster/LordHopy/move 2.wav	71558	f2a64fdad9bd8142
+wav/Effects/monster/LordHopy/neutral 1.wav	20942	a11c4a210de20c75
+wav/Effects/monster/LordHopy/neutral 2.wav	23308	6e2bf9aa1bc4726f

@@ -13,6 +13,7 @@
 #include "netplay.h"
 #include "field.h"
 #include "hobaram\\holinkheader.h"
+#include "hobaram\\HoNewParticleLinkHeader.h"
 #include "sinbaram\\sinlinkheader.h"
 
 #include "effectsnd.h"
@@ -388,6 +389,54 @@ int GetSinItemNumFromCode( DWORD CODE )
 
 	}
 	return -1;
+}
+
+// Lord Hopy (snCHAR_SOUND_LORDHOPY). His skills are told apart by MotionInfo->KeyCode:
+//   'B' energy breath, 'C' crystal summon, 'I' illusions, 'E' arcane ecstasy.
+// His effects are the Effect\Particle\Script\LordHopy*.part scripts.
+#define LORDHOPY_CRYSTALS		8
+
+static void LordHopyFx( char *szScript , int x, int y, int z, float Delay=0.f )
+{
+#ifndef PT_SERVER_EXE
+	POINT3D pos;
+	pos.x = x;
+	pos.y = y;
+	pos.z = z;
+	g_NewParticleMgr.Start( szScript , pos , Delay );
+#endif
+}
+
+// HP phase: 1 above 70%, 2 down to 30%, 3 below
+static int LordHopyPhase( smCHAR *lpChar )
+{
+	if ( lpChar->smCharInfo.Life[1]<=0 ) return 1;
+	int Percent = (lpChar->smCharInfo.Life[0]*100)/lpChar->smCharInfo.Life[1];
+	if ( Percent<=30 ) return 3;
+	if ( Percent<=70 ) return 2;
+	return 1;
+}
+
+// SetMotionFromCode picks among his skill motions at random: draw again until the phase allows it
+static void LordHopyPickSkill( smCHAR *lpChar )
+{
+	int Phase = LordHopyPhase( lpChar );
+
+	for( int cnt=0;cnt<16;cnt++ ) {
+		char Key = lpChar->MotionInfo->KeyCode;
+		if ( Key=='E' && Phase<3 ) { }
+		else if ( (Key=='C' || Key=='I') && Phase<2 ) { }
+		else return;
+		lpChar->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+	}
+}
+
+// Where crystal number Num rises: a fixed ring around him, inside the server's damage radius
+static void LordHopyCrystalPos( smCHAR *lpChar , int Num , int *x, int *z )
+{
+	GetMoveLocation( 0 , 0, ((Num&1) ? 150 : 95)*fONE , 0, (lpChar->Angle.y+Num*ANGLE_45)&ANGCLIP , 0 );
+	*x = lpChar->pX+GeoResult_X;
+	*z = lpChar->pZ+GeoResult_Z;
 }
 
 //2점의 거리를 구한다 ( 반환은 거리의 제곱값 )
@@ -1934,8 +1983,9 @@ int smCHAR::MoveAngle2( int step )
 
 	WaterHeight = CLIP_OUT;
 
-#ifndef _W_SERVER
-
+	// (was #ifndef _W_SERVER, but nettype.hpp defines _W_SERVER for the client too,
+	// so GM walk-through never got compiled in; PT_SERVER_EXE is the server build only)
+#ifndef PT_SERVER_EXE
 	if ( smConfig.DebugMode && VRKeyBuff['N'] ) {
 
 		x = pX + (( (GetSin[Angle.y&ANGCLIP]>>FLOATNS) * step )>>FLOATNS);
@@ -1951,9 +2001,8 @@ int smCHAR::MoveAngle2( int step )
 
 		return TRUE;
 	}
-#else
-	if ( DontMoveFlag ) return FALSE;
 #endif
+	if ( DontMoveFlag ) return FALSE;
 
 	POINT3D Posi;
 
@@ -3158,6 +3207,12 @@ int smCHAR::EventAttack( int Flag )
 							ResetAttackTrans();		//AttackTrans.code = 0;
 						}
 					}
+					break;
+
+				case snCHAR_SOUND_LORDHOPY:
+					//seismic slam: every normal attack hits the ground in front of him
+					GetMoveLocation( 0 , 0, 44*fONE , 0, Angle.y , 0 );
+					LordHopyFx( "LordHopySlam" , pX+GeoResult_X, pY+2*fONE, pZ+GeoResult_Z );
 					break;
 
 				case snCHAR_SOUND_HULK:
@@ -5543,8 +5598,11 @@ Skip_5:
 
 								if ( smMonsterInfo.SkillRating>0 && MotionInfo->State==CHRMOTION_STATE_ATTACK ) {
 									//몬스터 스킬 공격
-									if ( (rand()%100)<smMonsterInfo.SkillRating )
+									if ( (rand()%100)<smMonsterInfo.SkillRating ) {
 										SetMotionFromCode( CHRMOTION_STATE_SKILL );
+										if ( smCharInfo.dwCharSoundCode==snCHAR_SOUND_LORDHOPY && MotionInfo->State==CHRMOTION_STATE_SKILL )
+											LordHopyPickSkill( this );
+									}
 								}
 	
 								Angle.y = GetRadian2D( pX,pZ , lpTargetChar->pX, lpTargetChar->pZ );
@@ -5772,6 +5830,9 @@ Skip_5:
 									PotionLog = 2;
 								}
 								else if ( SetMotionFromCode( CHRMOTION_STATE_SKILL )>0 ) {
+									if ( smCharInfo.dwCharSoundCode==snCHAR_SOUND_LORDHOPY )
+										LordHopyPickSkill( this );
+
 									if ( smMonsterInfo.SkillCurse ) {
 										//저주 걸기 기술
 										switch( smMonsterInfo.SkillCurse ) {
@@ -6041,10 +6102,26 @@ Skip_5:
 					}
 				}
 
-				if ( FrameCounter==EvtFrame ) {
+				int SkillHitNow = (FrameCounter==EvtFrame);
+
+				if ( smCharInfo.dwCharSoundCode==snCHAR_SOUND_LORDHOPY ) {
+					//his skills differ in length: the damage lands on the motion's own hit frame, with the client's effect
+					int MotionPos = frame-(MotionInfo->StartFrame*160);
+					SkillHitNow = ( MotionInfo->EventFrame[0]>(DWORD)(MotionPos-FrameStep) && MotionInfo->EventFrame[0]<=(DWORD)MotionPos );
+				}
+
+				if ( SkillHitNow ) {
 					if ( MotionInfo->State==CHRMOTION_STATE_SKILL ) {
-						if ( smCharInfo.dwCharSoundCode!=snCHAR_SOUND_MYSTIC ) {				//미스틱 저주 데미지 없음
+						if ( smCharInfo.dwCharSoundCode==snCHAR_SOUND_LORDHOPY && MotionInfo->KeyCode=='I' ) {
+							//illusions do no damage
+							AttackUserFlag = TRUE;
+						}
+						else if ( smCharInfo.dwCharSoundCode!=snCHAR_SOUND_MYSTIC ) {				//미스틱 저주 데미지 없음
 							AttackSkillRange = 	smMonsterInfo.SkillRange*smMonsterInfo.SkillRange;
+							if ( smCharInfo.dwCharSoundCode==snCHAR_SOUND_LORDHOPY ) {
+								if ( MotionInfo->KeyCode=='B' ) AttackSkillRange = 0;			//breath: his target only
+								if ( MotionInfo->KeyCode=='E' ) AttackSkillRange *= 4;			//ecstasy: twice the radius of the crystals
+							}
 							if ( !AttackSkillRange && lpTargetPlayInfo ) {
 								//상대 캐릭터에 기술 공격 가함 
 								rsSendTransSkillAttack( this , lpTargetPlayInfo );
@@ -6883,6 +6960,14 @@ Skip_5:
 			}
 		}
 
+		if ( smCharInfo.dwCharSoundCode==snCHAR_SOUND_LORDHOPY && RendSucess &&
+			MotionInfo->State!=CHRMOTION_STATE_DEAD && (Counter&0x7F)==0 ) {
+			//HP phases: energy gathers around him as he weakens
+			cnt = LordHopyPhase( this );
+			if ( cnt==2 ) LordHopyFx( "LordHopyAura2" , pX,pY,pZ );
+			if ( cnt==3 ) LordHopyFx( "LordHopyAura3" , pX,pY,pZ );
+		}
+
 		if ( smCharInfo.wPlayClass[0]==MONSTER_CLASS_BOSS ) {
 			//보스몬스터 죽음
 			if ( MotionInfo->State==CHRMOTION_STATE_DEAD ) {
@@ -7273,6 +7358,19 @@ int smCHAR::Draw()
 	smRender.Color_B = cb+abs(AttackIce)+sB;
 	smRender.Color_A = ca+DisplayAlpha-(abs(AttackIce)>>1)+sA;
 
+	if ( smCharInfo.dwCharSoundCode==snCHAR_SOUND_LORDHOPY && MotionInfo->State!=CHRMOTION_STATE_DEAD ) {
+		//HP phases: a violet glow that pulses harder as he weakens
+		cnt = LordHopyPhase( this );
+		if ( cnt>1 ) {
+			nl = Counter&0x3F;
+			if ( nl>0x1F ) nl = 0x3F-nl;
+			nl = (cnt==3) ? (40+nl*2) : (12+nl);
+			smRender.Color_R += nl>>1;
+			smRender.Color_B += nl;
+			nl = 0;
+		}
+	}
+
 	if ( PlayCurseQuest ) {
 		//퀘스트 저주
 		smRender.Color_R += 100;
@@ -7391,6 +7489,43 @@ int smCHAR::Draw()
 				RendSucess += Pattern->RenderD3D( &CameraPosi, &CameraAngle, &FrameInfo );
 		}
 		//######################################################################################
+
+		if ( smCharInfo.dwCharSoundCode==snCHAR_SOUND_LORDHOPY && MotionInfo->State==CHRMOTION_STATE_SKILL &&
+			MotionInfo->KeyCode=='I' && lpModelGroup->ModelNameCnt ) {
+			//illusions: translucent purple copies of him slide out, sway with him, and fade back
+			int MotionPos = (frame/160)-MotionInfo->StartFrame;
+			int MotionLeft = MotionInfo->EndFrame-(frame/160);
+			int Env = ( MotionPos<MotionLeft ) ? MotionPos : MotionLeft;
+			if ( Env>30 ) Env = 30;
+
+			if ( Env>0 ) {
+				int sr = smRender.Color_R, sg = smRender.Color_G, sb = smRender.Color_B, sa = smRender.Color_A;
+				POINT3D CopyPosi;
+
+				smRender.Color_R = sr+40;
+				smRender.Color_G = sg-60;
+				smRender.Color_B = sb+110;
+				smRender.Color_A = sa-256+(Env*4);		//at most about half solid
+
+				for( cnt=0;cnt<3;cnt++ ) {
+					GetMoveLocation( 0 , 0, (Env*4)*fONE , 0, (Angle.y+ANGLE_45+cnt*(ANGLE_360/3))&ANGCLIP , 0 );
+					CopyPosi.x = pX+GeoResult_X;
+					CopyPosi.y = pY;
+					CopyPosi.z = pZ+GeoResult_Z;
+
+					Pattern->SetPosi( &CopyPosi , &angle );
+					if ( Pattern->TmParent ) Pattern->TmParent->TmLastFrame = -1;
+					else Pattern->TmLastFrame = -1;
+					Pattern->ChoiseRenderD3D( &CameraPosi, &CameraAngle, ModelNameList, lpModelGroup->ModelNameCnt, &FrameInfo );
+				}
+
+				Pattern->SetPosi( &Posi , &angle );
+				smRender.Color_R = sr;
+				smRender.Color_G = sg;
+				smRender.Color_B = sb;
+				smRender.Color_A = sa;
+			}
+		}
 	}
 
 	//머리및 보조 패턴 출력
@@ -9682,6 +9817,12 @@ int smCHAR::FormSetPlayerInfo()
 				AttackObjBip = Pattern->TmParent->GetObjectFromName( "bip01 wea" );
 			}
 			break;
+		case snCHAR_SOUND_LORDHOPY:
+			if( Pattern && Pattern->TmParent )
+			{
+				AttackObjBip = Pattern->TmParent->GetObjectFromName( "Bip05" );		//the snout: where his breath starts
+			}
+			break;
 		case snCHAR_SOUND_REVIVED_ARCHER:
 			if( Pattern && Pattern->TmParent )
 			{
@@ -11898,6 +12039,42 @@ int smCHAR::BeginSkill_Monster()
 	POINT3D	pos;
 
 	switch( smCharInfo.dwCharSoundCode ) {
+		case snCHAR_SOUND_LORDHOPY:
+			{
+				int x,y,z,cnt;
+				switch( MotionInfo->KeyCode ) {
+					case 'B':	//energy breath: light gathers at his mouth
+						if ( GetAttackPoint( &x,&y,&z )==FALSE ) {
+							GetMoveLocation( 0 , 0, 24*fONE , 0, Angle.y , 0 );
+							x = pX+GeoResult_X;
+							y = pY+80*fONE;
+							z = pZ+GeoResult_Z;
+						}
+						LordHopyFx( "LordHopyMouth" , x,y,z , 0.5f );
+						SkillPlaySound( SKILL_SOUND_SKILL_CASTING_MAGICIAN , pX,pY,pZ );
+						break;
+
+					case 'C':	//crystal summon: warning marks where the needles will rise
+						for( cnt=0;cnt<LORDHOPY_CRYSTALS;cnt++ ) {
+							LordHopyCrystalPos( this , cnt , &x,&z );
+							LordHopyFx( "LordHopyMark" , x,pY+2*fONE,z , cnt*0.05f );
+						}
+						SkillPlaySound( SKILL_SOUND_SKILL_CASTING_MAGICIAN , pX,pY,pZ );
+						break;
+
+					case 'I':	//illusions (the copies themselves are drawn with him)
+						LordHopyFx( "LordHopyIllusion" , pX,pY,pZ );
+						SkillPlaySound( SKILL_SOUND_SKILL_CASTING_MAGICIAN , pX,pY,pZ );
+						break;
+
+					case 'E':	//arcane ecstasy: summoning circle, rising energy and stones
+						LordHopyFx( "LordHopyCharge" , pX,pY+2*fONE,pZ );
+						SkillPlaySound( SKILL_SOUND_SKILL_ROAR1 , pX,pY,pZ );
+						break;
+				}
+			}
+			break;
+
 		case snCHAR_SOUND_NAZ:
 			GetMoveLocation( 0 , 0, 100*fONE , 0, Angle.y , 0 );
 			StartSkillDest( pX,pY,pZ, pX+GeoResult_X,pY,pZ+GeoResult_Z, SKILL_TORNADO2 , 1 );
@@ -12034,6 +12211,59 @@ int smCHAR::EventSkill_Monster()
 	int x,y,z;
 
 	switch( smCharInfo.dwCharSoundCode ) {
+		case snCHAR_SOUND_LORDHOPY:
+			{
+				int cnt,dx,dy,dz;
+				switch( MotionInfo->KeyCode ) {
+					case 'B':	//energy breath: a beam from his snout to the target
+						if ( GetAttackPoint( &x,&y,&z )==FALSE ) {
+							GetMoveLocation( 0 , 0, 24*fONE , 0, Angle.y , 0 );
+							x = pX+GeoResult_X;
+							y = pY+80*fONE;
+							z = pZ+GeoResult_Z;
+						}
+						if ( chrAttackTarget ) {
+							dx = chrAttackTarget->pX;
+							dy = chrAttackTarget->pY+24*fONE;
+							dz = chrAttackTarget->pZ;
+						}
+						else {
+							GetMoveLocation( 0 , 0, 200*fONE , 0, Angle.y , 0 );
+							dx = pX+GeoResult_X;
+							dy = pY+24*fONE;
+							dz = pZ+GeoResult_Z;
+						}
+						for( cnt=1;cnt<=16;cnt++ ) {
+							LordHopyFx( "LordHopyBreath" , x+((dx-x)>>4)*cnt, y+((dy-y)>>4)*cnt, z+((dz-z)>>4)*cnt , cnt*0.012f );
+						}
+						LordHopyFx( "LordHopyBreathHit" , dx,dy,dz , 0.2f );
+						SkillPlaySound( SKILL_SOUND_SKILL_ROAR1 , pX,pY,pZ );
+						break;
+
+					case 'C':	//crystal summon: the needles rise from the marks
+						for( cnt=0;cnt<LORDHOPY_CRYSTALS;cnt++ ) {
+							LordHopyCrystalPos( this , cnt , &x,&z );
+							LordHopyFx( "LordHopyCrystal" , x,pY,z , cnt*0.04f );
+						}
+						SkillPlaySound( SKILL_SOUND_SKILL_GRAND_CROSS , pX,pY,pZ );
+						break;
+
+					case 'I':	//illusions: a shimmer at each copy
+						for( cnt=0;cnt<3;cnt++ ) {
+							GetMoveLocation( 0 , 0, 120*fONE , 0, (Angle.y+ANGLE_45+cnt*(ANGLE_360/3))&ANGCLIP , 0 );
+							LordHopyFx( "LordHopyIllusion" , pX+GeoResult_X,pY,pZ+GeoResult_Z );
+						}
+						break;
+
+					case 'E':	//arcane ecstasy: the blast
+						LordHopyFx( "LordHopyBlast" , pX,pY+2*fONE,pZ );
+						SetDynLight( pX,pY+80*fONE,pZ, 150, 40, 255, 255, 400 );
+						SkillPlaySound( SKILL_SOUND_SKILL_GRAND_CROSS , pX,pY,pZ );
+						break;
+				}
+			}
+			break;
+
 		case snCHAR_SOUND_NAZ:
 
 			break;

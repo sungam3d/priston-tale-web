@@ -1,0 +1,51 @@
+particlesystem "LordHopyBreath" 1.00 {
+  position = XYZ(0,0,0)
+  eventsequence "core" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 1
+    gravity = XYZ(0,0,0)
+    emitrate = 100
+    emitradius = xyz(0,0,0)
+    lifetime = 0.45
+    texture = "effect\\particle\\flare.bmp"
+    initial size = 24
+    initial color = rgba(225,180,255,255)
+    initial velocity = XYZ(0,0,0)
+    fade so at 0.25 color = rgba(235,60,255,200)
+    fade so at 0.45 color = rgba(0,0,0,0)
+    fade so final size = 8
+    }
+  eventsequence "halo" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 1
+    gravity = XYZ(0,0,0)
+    emitrate = 100
+    emitradius = xyz(0,0,0)
+    lifetime = 0.55
+    texture = "effect\\particle\\flare.bmp"
+    initial size = 42
+    initial color = rgba(235,60,255,170)
+    initial velocity = XYZ(0,0,0)
+    fade so at 0.3 color = rgba(140,60,255,200)
+    fade so at 0.55 color = rgba(0,0,0,0)
+    fade so final size = 18
+    }
+  eventsequence "filament" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 5
+    gravity = XYZ(0,0,0)
+    emitrate = 100
+    emitradius = xyz(0,0,0)
+    lifetime = 0.5
+    texture = "effect\\particle\\flare.bmp"
+    initial size = random(2,5)
+    initial color = rgba(225,180,255,230)
+    initial velocity = XYZ(random(-70,70),random(-70,70),random(-70,70))
+    fade so at 0.28 color = rgba(140,60,255,200)
+    fade so at 0.5 color = rgba(0,0,0,0)
+    fade so final size = 1
+    }
+}

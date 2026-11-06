@@ -4227,6 +4227,8 @@ szSTATE_CODE	dwCharSoundCode[] = {
 	{	"BEBECHICK"		, snCHAR_SOUND_BEBECHICK		},	// 아기 꼬꼬
 	{	"PAPACHICK"		, snCHAR_SOUND_PAPACHICK		},	// 아빠 꼬꼬
 
+	{	"LORDHOPY"		, snCHAR_SOUND_LORDHOPY			},
+
 
 	/////////////// 이벤트용 NPC //////////////////
 	{	"MORIF"			, snCHAR_SOUND_NPC_MORIF		},

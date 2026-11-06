@@ -1,0 +1,38 @@
+particlesystem "LordHopyMark" 1.00 {
+  position = XYZ(0,0,0)
+  eventsequence "mark" {
+    sourceblendmode = BLEND_LAMP
+    particletype = TYPE_TWO
+    loops = 1
+    numparticles = 1
+    gravity = XYZ(0,0,0)
+    emitrate = 100
+    emitradius = xyz(0,0,0)
+    lifetime = 1.9
+    texture = "effect\\particle\\m_futy-jin-out.bmp"
+    initial size = 30
+    initial color = rgba(140,60,255,210)
+    initial velocity = XYZ(0,0,0)
+    initial partAngleY = 0
+    fade so final partAngleY = 160
+    fade so at 1.04 color = rgba(235,60,255,200)
+    fade so at 1.9 color = rgba(0,0,0,0)
+    fade so final size = 44
+    }
+  eventsequence "core" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 1
+    gravity = XYZ(0,0,0)
+    emitrate = 100
+    emitradius = xyz(0,0,0)
+    lifetime = 1.9
+    texture = "effect\\particle\\flare.bmp"
+    initial size = 16
+    initial color = rgba(140,60,255,150)
+    initial velocity = XYZ(0,0,0)
+    fade so at 1.04 color = rgba(235,60,255,200)
+    fade so at 1.9 color = rgba(0,0,0,0)
+    fade so final size = 30
+    }
+}

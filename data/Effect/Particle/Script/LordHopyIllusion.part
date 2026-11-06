@@ -1,0 +1,35 @@
+particlesystem "LordHopyIllusion" 1.00 {
+  position = XYZ(0,0,0)
+  eventsequence "veil" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 1
+    gravity = XYZ(0,0,0)
+    emitrate = 100
+    emitradius = xyz(0,0,0)
+    lifetime = 1.4
+    texture = "effect\\particle\\flare.bmp"
+    initial size = 90
+    initial color = rgba(140,60,255,110)
+    initial velocity = XYZ(0,0,0)
+    fade so at 0.77 color = rgba(235,60,255,200)
+    fade so at 1.4 color = rgba(0,0,0,0)
+    fade so final size = 140
+    }
+  eventsequence "motes" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 22
+    gravity = XYZ(0,0,0)
+    emitrate = 40
+    emitradius = xyz(random(-40,40),random(0,110),random(-40,40))
+    lifetime = 1.5
+    texture = "effect\\particle\\flare.bmp"
+    initial size = random(3,7)
+    initial color = rgba(225,180,255,230)
+    initial velocity = XYZ(random(-8,8),random(10,34),random(-8,8))
+    fade so at 0.83 color = rgba(140,60,255,200)
+    fade so at 1.5 color = rgba(0,0,0,0)
+    fade so final size = 1
+    }
+}

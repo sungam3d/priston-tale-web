@@ -32,7 +32,7 @@ struct	snEFFECT {
 };
 
 //#define	snFIND_EFFECT_MAX			76+14
-#define	snFIND_EFFECT_MAX			166			// 박재원 - 저주받은 신전 3층(신규필드 몬스터) 5종 추가  // 117+34+5
+#define	snFIND_EFFECT_MAX			167			// 박재원 - 저주받은 신전 3층(신규필드 몬스터) 5종 추가  // 117+34+5 (+1: Lord Hopy)
 												// 박재원 - 끝없는 탑 3층(신규필드 몬스터) 7종 추가      // 117+34+5+7
 												// 장별 - 수박몬스터 117+34+5+7+1
 												// 장별 - 복날 몬스터 2종 추가 117+34+5+7+1+2
@@ -213,6 +213,8 @@ snFIND_EFFECT	snFindEffects[snFIND_EFFECT_MAX] = {
 	// 박재원 - 복날 이벤트 몬스터 추가
 	{ "wav\\Effects\\monster\\Bebechick\\",			snCHAR_SOUND_BEBECHICK		}, // 아기 꼬꼬
 	{ "wav\\Effects\\monster\\PaPachick\\",			snCHAR_SOUND_PAPACHICK		}, // 아빠 꼬꼬
+
+	{ "wav\\Effects\\monster\\LordHopy\\",			snCHAR_SOUND_LORDHOPY		}, // Lord Hopy
 
 	//////////////////////// NPC //////////////////////////////////
 	{ "wav\\Effects\\npc\\morif\\",				snCHAR_SOUND_NPC_MORIF	},

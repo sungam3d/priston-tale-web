@@ -1,0 +1,67 @@
+particlesystem "LordHopyAura3" 1.00 {
+  position = XYZ(0,0,0)
+  eventsequence "aura" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 1
+    gravity = XYZ(0,0,0)
+    emitrate = 100
+    emitradius = xyz(0,0,0)
+    lifetime = 1.6
+    texture = "effect\\particle\\flare.bmp"
+    initial size = 130
+    initial color = rgba(140,60,255,70)
+    initial velocity = XYZ(0,0,0)
+    fade so at 0.88 color = rgba(235,60,255,200)
+    fade so at 1.6 color = rgba(0,0,0,0)
+    fade so final size = 170
+    }
+  eventsequence "motes" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 30
+    gravity = XYZ(0,0,0)
+    emitrate = 16
+    emitradius = xyz(random(-60,60),random(0,120),random(-60,60))
+    lifetime = 1.8
+    texture = "effect\\particle\\flare.bmp"
+    initial size = random(3,7)
+    initial color = rgba(225,180,255,230)
+    initial velocity = XYZ(random(-8,8),random(20,56),random(-8,8))
+    fade so at 0.99 color = rgba(235,60,255,200)
+    fade so at 1.8 color = rgba(0,0,0,0)
+    fade so final size = 1
+    }
+  eventsequence "bolts" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 3
+    gravity = XYZ(0,0,0)
+    emitrate = 3
+    emitradius = xyz(random(-46,46),random(20,120),random(-46,46))
+    lifetime = 0.35
+    texture = "effect\\particle\\lightning5_1.bmp"
+    initial size = random(28,50)
+    initial color = rgba(225,180,255,220)
+    initial velocity = XYZ(0,0,0)
+    fade so at 0.19 color = rgba(235,60,255,200)
+    fade so at 0.35 color = rgba(0,0,0,0)
+    fade so final size = 30
+    }
+  eventsequence "stones" {
+    sourceblendmode = BLEND_ALPHA
+    loops = 1
+    numparticles = 5
+    gravity = XYZ(0,0,0)
+    emitrate = 3
+    emitradius = xyz(random(-90,90),4,random(-90,90))
+    lifetime = 1.8
+    texture = "effect\\particle\\Dust1.bmp"
+    initial size = random(6,10)
+    initial color = rgba(90,70,110,200)
+    initial velocity = XYZ(0,random(12,28),0)
+    fade so at 0.99 color = rgba(120,80,150,200)
+    fade so at 1.8 color = rgba(0,0,0,0)
+    fade so final size = 7
+    }
+}

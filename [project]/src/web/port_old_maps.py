@@ -28,7 +28,7 @@ Usage:
 The data folders get Field\\old\\..., Field\\map\\o_*.tga, Field\\Title\\o_*t.tga;
 the server folder gets only the stage files (Field\\old\\...).
 """
-import hashlib, json, os, shutil, struct, sys
+import hashlib, json, math, os, shutil, struct, sys
 
 HDR_STAGE = b'SMD Stage data Ver 0.72'
 HDR_MODEL = b'SMD Model data Ver 0.62'
@@ -84,6 +84,9 @@ CENTRES = {0: (-16419, -7054), 1: (-5427, -9915), 2: (4184, -11016), 3: (2596, -
            14: (-6108, -26880), 15: (1827, -28586), 16: (-200000, 200000), 17: (-1583, 37905),
            18: (-5823, 43244), 19: (1691, 52599), 20: (2032, 71183), 21: (2981, 75486),
            29: (32621, 23865), 33: (35225, -23847)}
+
+# warp points picked in game (world units after the move): these win over the computed ones
+WARP_POINTS = {'o_village-2f': (-128020, -17355)}
 
 # props in the old folders that are not placed on a map
 SKIP_MODELS = {'ani\\ani.smd', 'ani\\test.smd'}
@@ -327,6 +330,131 @@ def busy_point(b, voff, nv, nf, want_x, want_z, n=24):
     return l + (best[0] + .5) * (r - l) / n, t + (best[1] + .5) * (btm - t) / n
 
 
+class StageGround:
+    """Walkable ground of a (ported) stage file, looked up through its own area grid."""
+    def __init__(self, b, voff, nv, nf):
+        self.b, self.voff, self.foff, self.nv = b, voff, voff + nv * 28, nv
+        nmat = I(b, ST_MATGRP + 8)
+        off, walk = ST_MATGRP + MATGRP_SIZE, []
+        for _ in range(nmat):
+            walk.append(bool(I(b, off + 42 * 4) & 1))
+            inuse = I(b, off)
+            off += MAT_SIZE
+            if inuse:
+                off += 4 + I(b, off)
+        self.walk = walk
+        aoff = self.foff + nf * 28 + I(b, ST_NT) * 32 + I(b, ST_NL) * 28
+        self.cells = {}
+        for cz in range(256):
+            for cx in range(256):
+                if I(b, ST_AREA + (cx * 256 + cz) * 4):
+                    s = I(b, aoff)
+                    self.cells[(cx, cz)] = struct.unpack_from('<%dI' % (s - 1), b, aoff + 8)
+                    aoff += 4 + s * 4
+        self.rect = [v / 256 for v in struct.unpack_from('<4i', b, ST_RECT)]
+
+    def heights(self, x, z):
+        """Heights of the walkable faces under (x, z), world units."""
+        l, t, r, btm = self.rect
+        if not (l <= x <= r and t <= z <= btm):
+            return []
+        out = []
+        for f in self.cells.get(((int(x * 256) >> 14) & 0xFF, (int(z * 256) >> 14) & 0xFF), ()):
+            v0, v1, v2, m = struct.unpack_from('<4H', self.b, self.foff + f * 28 + 8)
+            if m >= len(self.walk) or not self.walk[m] or max(v0, v1, v2) >= self.nv:
+                continue
+            (ax, ay, az), (bx, by, bz), (cx, cy, cz) = [
+                [c / 256 for c in struct.unpack_from('<3i', self.b, self.voff + v * 28 + 8)] for v in (v0, v1, v2)]
+            d = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz)
+            if abs(d) < 1e-6:
+                continue
+            w0 = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / d
+            w1 = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / d
+            w2 = 1 - w0 - w1
+            if min(w0, w1, w2) >= -1e-6:
+                out.append(w0 * ay + w1 * by + w2 * cy)
+        return out
+
+    def near(self, x, z, y=None, tol=80, radius=400, step=24, taken=()):
+        """Nearest point (x, z, ground y) with walkable ground (near height y if given)."""
+        def ok(px, pz):
+            hs = self.heights(px, pz)
+            if y is not None:
+                hs = [h for h in hs if abs(h - y) <= tol]
+            if not hs or any(abs(px - a) < 40 and abs(pz - c) < 40 for a, c in taken):
+                return None
+            return min(hs, key=lambda h: abs(h - y)) if y is not None else max(hs)
+        for rr in range(0, radius + 1, step):
+            ring = [(0, 0)] if rr == 0 else [
+                (round(rr * math.cos(a * math.pi / 16)), round(rr * math.sin(a * math.pi / 16))) for a in range(32)]
+            for dx, dz in ring:
+                h = ok(x + dx, z + dz)
+                if h is not None:
+                    return x + dx, z + dz, h
+        return None
+
+
+SPAWN_SKIP = {'o_castle'}           # the siege field's NPCs/monsters do not belong on the old castle
+
+
+def port_spawns(server, fields, grounds):
+    """Monster list (.spm), spawn points (.spp) and NPCs (.spc) of today's version of each
+    old map, moved by its offset and checked against the old map's own ground."""
+    gf = Finder(os.path.join(server, 'GameServer', 'Field'))
+    for fi in fields:
+        if fi['name'] in SPAWN_SKIP:
+            continue
+        g = grounds[fi['name']]
+        ox, oz = fi['offset']
+        out = os.path.join(server, 'GameServer', 'Field', fi['name'] + '.ase.')
+        rep = []
+        spm = gf.find(fi['old'] + '.ase.spm')
+        if spm:
+            shutil.copyfile(spm, out + 'spm')
+            rep.append('monsters')
+        spp = gf.find(fi['old'] + '.ase.spp')
+        if spp:
+            b = bytearray(open(spp, 'rb').read())
+            kept = moved = dropped = 0
+            for k in range(len(b) // 12):
+                st, x, z = struct.unpack_from('<3i', b, k * 12)
+                if not st:
+                    continue
+                p = g.near(x + ox, z + oz)
+                if not p:
+                    struct.pack_into('<3i', b, k * 12, 0, 0, 0)
+                    dropped += 1
+                    continue
+                moved += (p[0], p[1]) != (x + ox, z + oz)
+                kept += 1
+                struct.pack_into('<3i', b, k * 12, st, int(p[0]), int(p[1]))
+            open(out + 'spp', 'wb').write(b)
+            rep.append('%d spawn points (%d nudged, %d dropped)' % (kept, moved, dropped))
+        spc = gf.find(fi['old'] + '.ase.spc')
+        if spc:
+            b = bytearray(open(spc, 'rb').read())
+            taken, kept, moved, dropped = [], 0, 0, 0
+            for k in range(len(b) // 504):
+                o = k * 504
+                if not I(b, o) and not I(b, o + 4):
+                    continue
+                x, y, z = [v / 256 for v in struct.unpack_from('<3i', b, o + 476)]
+                p = g.near(x + ox, z + oz, y, tol=60, radius=60, step=12, taken=taken) or \
+                    g.near(x + ox, z + oz, y, tol=150, radius=1500, step=24, taken=taken)
+                if not p:
+                    b[o:o + 504] = bytes(504)
+                    dropped += 1
+                    continue
+                if abs(p[0] - x - ox) > 30 or abs(p[1] - z - oz) > 30:
+                    moved += 1
+                taken.append((p[0], p[1]))
+                kept += 1
+                struct.pack_into('<3i', b, o + 476, int(p[0] * 256), int(p[2] * 256), int(p[1] * 256))
+            open(out + 'spc', 'wb').write(b)
+            rep.append('%d NPCs (%d moved, %d dropped)' % (kept, moved, dropped))
+        print('%-20s %s' % (fi['name'], ', '.join(rep) or 'nothing to copy'))
+
+
 def port_model(src, tex):
     b = open(src, 'rb').read()
     if not b.startswith(HDR_MODEL):
@@ -442,6 +570,7 @@ def main():
 
     tex.write()
 
+    grounds = {}
     for fi in fields:
         data, voff, nv, nf = fi.pop('_data')
         ox, oz = fi['offset']
@@ -449,8 +578,14 @@ def main():
         fi.pop('want', None)
         want = busy_point(data, voff, nv, nf, want[0] + ox, want[1] + oz)
         cx, cz, exact = floor_point(data, voff, nv, nf, want[0], want[1])
+        if fi['name'] in WARP_POINTS:
+            cx, cz = WARP_POINTS[fi['name']]
         fi['centre'] = [cx, cz]
         fi['centre_on_floor'] = exact
+        if server:
+            grounds[fi['name']] = StageGround(data, voff, nv, nf)
+    if server:
+        port_spawns(server, fields, grounds)
     print('textures: %d copied, %d kept, %d missing' % (len(tex.copied), tex.kept, len(tex.missing)))
     if report:
         with open(report, 'w', encoding='utf-8') as fp:

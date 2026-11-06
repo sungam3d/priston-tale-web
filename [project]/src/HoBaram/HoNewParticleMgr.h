@@ -13,7 +13,7 @@ struct HoNewParticleMatRes
     string  matName;
 };
 
-#define MAX_TOKEN_VECTORS   250
+#define MAX_TOKEN_VECTORS   512		// scripts loaded at start-up (was 250: HoEffect.cpp loads more than that, the last ones were dropped)
 #define MAX_MATERIAL        1024	// textures of all particle scripts (was 150: later ones, e.g. the opening's leaves, got none)
 #define MAX_EMITTER         150
 

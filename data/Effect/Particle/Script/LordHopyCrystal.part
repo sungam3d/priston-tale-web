@@ -1,0 +1,68 @@
+particlesystem "LordHopyCrystal" 1.00 {
+  position = XYZ(0,0,0)
+  eventsequence "needle" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 30
+    gravity = XYZ(0,0,0)
+    emitrate = 90
+    emitradius = xyz(random(-3,3),0,random(-3,3))
+    lifetime = 0.8
+    texture = "effect\\particle\\flare.bmp"
+    initial size = random(7,11)
+    initial color = rgba(235,60,255,255)
+    initial velocity = XYZ(random(-5,5),random(120,250),random(-5,5))
+    fade so at 0.44 color = rgba(140,60,255,200)
+    fade so at 0.8 color = rgba(0,0,0,0)
+    fade so final size = 2
+    }
+  eventsequence "tip" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 10
+    gravity = XYZ(0,0,0)
+    emitrate = 60
+    emitradius = xyz(0,0,0)
+    lifetime = 0.7
+    texture = "effect\\particle\\flare.bmp"
+    initial size = random(3,6)
+    initial color = rgba(225,180,255,255)
+    initial velocity = XYZ(random(-14,14),random(190,290),random(-14,14))
+    fade so at 0.39 color = rgba(235,60,255,200)
+    fade so at 0.7 color = rgba(0,0,0,0)
+    fade so final size = 1
+    }
+  eventsequence "base" {
+    sourceblendmode = BLEND_LAMP
+    particletype = TYPE_TWO
+    loops = 1
+    numparticles = 1
+    gravity = XYZ(0,0,0)
+    emitrate = 100
+    emitradius = xyz(0,0,0)
+    lifetime = 0.5
+    texture = "effect\\particle\\shock.bmp"
+    initial size = 10
+    initial color = rgba(235,60,255,230)
+    initial velocity = XYZ(0,0,0)
+    fade so at 0.28 color = rgba(140,60,255,200)
+    fade so at 0.5 color = rgba(0,0,0,0)
+    fade so final size = 56
+    }
+  eventsequence "shards" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 8
+    gravity = XYZ(0,-220,0)
+    emitrate = 120
+    emitradius = xyz(0,0,0)
+    lifetime = 1
+    texture = "effect\\particle\\flare.bmp"
+    initial size = random(2,4)
+    initial color = rgba(225,180,255,230)
+    initial velocity = XYZ(random(-60,60),random(40,130),random(-60,60))
+    fade so at 0.55 color = rgba(140,60,255,200)
+    fade so at 1 color = rgba(0,0,0,0)
+    fade so final size = 1
+    }
+}

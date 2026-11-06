@@ -182,6 +182,8 @@
 #define snCHAR_SOUND_BEBECHICK			0x2170 // 아기 꼬꼬
 #define snCHAR_SOUND_PAPACHICK			0x2180 // 아빠 꼬꼬
 
+#define snCHAR_SOUND_LORDHOPY			0x2190 // Lord Hopy
+
 //월드컵 몬스터
 #define	snCHAR_SOUND_WORLDCUP		0x1A00
 

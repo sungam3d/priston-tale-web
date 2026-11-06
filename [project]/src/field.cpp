@@ -2542,7 +2542,7 @@ cnt++;
 	cnt++;
 
 	sField[cnt].SetName( "old\\forest\\o_village-2f.ase" , "o_village-2f" );				//70
-	SetOldField( &sField[cnt] , 3 , -131072 , 0 , -129980 , -17944 );
+	SetOldField( &sField[cnt] , 3 , -131072 , 0 , -128020 , -17355 );
 	sField[cnt].AddStageObject( "old\\forest\\v_ani01.ASE" );
 	sField[cnt].AddStageObject( "old\\forest\\v_ani02.ASE" );
 	sField[cnt].AddStageObject( "old\\forest\\v_ani03.ASE" );

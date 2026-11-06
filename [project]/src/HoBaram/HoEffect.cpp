@@ -13468,6 +13468,19 @@ int InitEffect()
 	g_NewParticleResMgr.LoadScript("Effect\\Particle\\Script\\LostMonsterDarkMageDead.part");
 
 	g_NewParticleResMgr.LoadScript("Effect\\Particle\\Script\\TerrainFireSmall.part");	// 메테오 작은거
+
+	// Lord Hopy
+	g_NewParticleResMgr.LoadScript("Effect\\Particle\\Script\\LordHopyMouth.part");
+	g_NewParticleResMgr.LoadScript("Effect\\Particle\\Script\\LordHopyBreath.part");
+	g_NewParticleResMgr.LoadScript("Effect\\Particle\\Script\\LordHopyBreathHit.part");
+	g_NewParticleResMgr.LoadScript("Effect\\Particle\\Script\\LordHopySlam.part");
+	g_NewParticleResMgr.LoadScript("Effect\\Particle\\Script\\LordHopyMark.part");
+	g_NewParticleResMgr.LoadScript("Effect\\Particle\\Script\\LordHopyCrystal.part");
+	g_NewParticleResMgr.LoadScript("Effect\\Particle\\Script\\LordHopyIllusion.part");
+	g_NewParticleResMgr.LoadScript("Effect\\Particle\\Script\\LordHopyCharge.part");
+	g_NewParticleResMgr.LoadScript("Effect\\Particle\\Script\\LordHopyBlast.part");
+	g_NewParticleResMgr.LoadScript("Effect\\Particle\\Script\\LordHopyAura2.part");
+	g_NewParticleResMgr.LoadScript("Effect\\Particle\\Script\\LordHopyAura3.part");
 	
 	
 #ifdef _EFFECT_RES_LOADING_
