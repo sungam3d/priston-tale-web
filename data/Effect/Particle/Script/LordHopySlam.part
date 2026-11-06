@@ -34,7 +34,7 @@ particlesystem "LordHopySlam" 1.00 {
     fade so final size = 110
     }
   eventsequence "dust" {
-    sourceblendmode = BLEND_ALPHA
+    sourceblendmode = BLEND_COLOR
     loops = 1
     numparticles = 14
     gravity = XYZ(0,0,0)

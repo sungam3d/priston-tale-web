@@ -49,7 +49,7 @@ particlesystem "LordHopyAura3" 1.00 {
     fade so final size = 30
     }
   eventsequence "stones" {
-    sourceblendmode = BLEND_ALPHA
+    sourceblendmode = BLEND_COLOR
     loops = 1
     numparticles = 5
     gravity = XYZ(0,0,0)
