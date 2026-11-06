@@ -55,7 +55,7 @@ particlesystem "LordHopyCharge" 1.00 {
     fade so final size = 1
     }
   eventsequence "stones" {
-    sourceblendmode = BLEND_COLOR
+    sourceblendmode = BLEND_LAMP
     loops = 1
     numparticles = 10
     gravity = XYZ(0,0,0)

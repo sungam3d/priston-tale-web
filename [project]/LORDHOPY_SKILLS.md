@@ -134,7 +134,7 @@ Summon him as a GM with `/monster "Lord Hopy"`.
 | Animations play but there are no effects, tint or phases | The server is still the old build, so `LORDHOPY` is not recognised and his code becomes 0 | Replace `server.exe` and confirm the file changed |
 | Dropped from the game when he appears | The client cannot load his model, usually a missing manifest line | Add his files to `data_manifest.txt` |
 | Effect missing, no error | Script not loaded: limit reached, or no manifest line | Check `MAX_TOKEN_VECTORS` and the manifest |
-| Dark squares around an effect | `BLEND_ALPHA` used with a `.bmp` that has no alpha, such as `Dust1.bmp` | Use `BLEND_COLOR`, where black comes out transparent |
+| Dark squares around an effect | A `.bmp` such as `Dust1.bmp` has no alpha. `BLEND_ALPHA` draws its black corners, and `BLEND_COLOR` still showed squares in the browser build | Use `BLEND_LAMP`, which only adds light, so black corners cannot show |
 | Script cut short | The engine reads scripts into a 6000-byte buffer | Keep each `.part` under 6000 bytes |
 | `.inx` will not load | Its data is signed with a hash of its own path | Keep it at `char\monster\LordHopy\LordHopy.inx`, or regenerate it |
 | Client rebuilds or quits | `LordHopy.ASE` or `.ini` sits beside the compiled files | Keep source files out of that folder |

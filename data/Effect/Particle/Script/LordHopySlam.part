@@ -34,7 +34,7 @@ particlesystem "LordHopySlam" 1.00 {
     fade so final size = 110
     }
   eventsequence "dust" {
-    sourceblendmode = BLEND_COLOR
+    sourceblendmode = BLEND_LAMP
     loops = 1
     numparticles = 14
     gravity = XYZ(0,0,0)
@@ -43,9 +43,9 @@ particlesystem "LordHopySlam" 1.00 {
     lifetime = 1.1
     texture = "effect\\particle\\Dust1.bmp"
     initial size = random(14,26)
-    initial color = rgba(130,115,105,130)
+    initial color = rgba(170,150,135,170)
     initial velocity = XYZ(random(-30,30),random(10,34),random(-30,30))
-    fade so at 0.61 color = rgba(90,80,80,200)
+    fade so at 0.61 color = rgba(110,100,95,200)
     fade so at 1.1 color = rgba(0,0,0,0)
     fade so final size = 46
     }
