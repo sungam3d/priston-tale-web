@@ -8,6 +8,7 @@
 /[[]project]/dist/site/
 /[[]project]/dist/server/backup/
 /[[]project]/dist/server/server.exe.dmp
+/[[]project]/data_watch/
 
 # --- accounts, characters, logs, crash dumps (private player data) ---
 DataServer/
@@ -18,7 +19,6 @@ missing_models.txt
 
 # --- toolchains and downloads (reinstall instead) ---
 /[[]project]/emsdk/
-/[[]project]/src/thirdparty/mingw/
 /[[]project]/src/thirdparty/dl/
 
 # --- build output ---

@@ -131,9 +131,11 @@ Add `?debugnet` to the address (`http://localhost/?debugnet`). The log under the
 
 ## Building from source
 
-- **Server:** Visual Studio 2022 or the free Build Tools with *Desktop development with C++* and *C++ ATL/MFC*. Then run `build.bat Release GL` in `[project]\src`; the output is `src\bin\ReleaseGL\server.exe`.
-- **Browser client:** install [emsdk](https://emscripten.org), then run `python [project]\src\web\build_web.py --release` (output in `src\web\out\`).
-- **Hosting package:** `python [project]\src\web\make_site.py` builds a clean `dist\` (site + server).
+See **[BUILDING.md](BUILDING.md)**: tools to install, where Emscripten must go, the `[project]` folder-name
+workaround, and which files to copy into place. In short:
+
+- **Server:** Visual Studio 2022 C++ with ATL/MFC, then `build.bat Release GL` in `[project]\src` → `bin\ReleaseGL\server.exe`.
+- **Browser client:** Emscripten 6.0.12 in `[project]\emsdk`, then `python web\build_web.py --release` from a bracket-free link to `[project]\src` → `web\out\game.js` + `game.wasm`.
 - **Test without IIS:** `python [project]\src\web\serve.py 8080 .` serves this folder on http://localhost:8080/ with the same WebSocket bridge.
 
 Priston Tale and its game data belong to their original publishers. This project is a fan-made web port for hosting your own world.
