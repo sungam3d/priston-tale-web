@@ -11717,10 +11717,10 @@ char/monster/Lizard_bigmama/Lizard_Bigmama_Green.smd	367761	4711492bfe05ce24
 char/monster/Lizard_bigmama/Lizard_Bigmama_W.tga	196652	f9f240225d3a48e4
 char/monster/Lizard_bigmama/Lizard_Bigmama_W_01.TGA	262188	d5d32d74662f1679
 char/monster/Lizard_bigmama/Lizard_Bigmama_W_02.TGA	262188	0e52255c3b1d2ec5
-char/monster/LordHopy/LordHopy.bmp	3145782	be0603bfb2c3a0c7
+char/monster/LordHopy/LordHopy.bmp	3145782	7a529e826947250c
 char/monster/LordHopy/LordHopy.inx	95268	9165fc2b26678f15
-char/monster/LordHopy/LordHopy.smb	743048	df016361de1c399c
-char/monster/LordHopy/LordHopy.smd	542564	b0a1c87a108b816b
+char/monster/LordHopy/LordHopy.smb	830400	abf0bae0c3b40872
+char/monster/LordHopy/LordHopy.smd	630836	5dbdef7fef07a1a0
 char/monster/MapleFairy/MapleFairy.inx	95268	ffcc7e3e69eca9ba
 char/monster/MapleFairy/MapleFairy.smb	2332064	85d076f79d63c1d0
 char/monster/MapleFairy/MapleFairy.smd	147450	a49e9cefb1e6519a
