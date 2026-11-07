@@ -3882,6 +3882,27 @@ smCHAR *OpenMonsterFromName( char *szName , int x, int y, int z , rsPLAYINFO *lp
 	return FALSE;
 }
 
+// Moves a summoned monster onto the map its owner is on now. FALSE if it cannot go there.
+int rsMoveMonsterToMasterField( smCHAR *lpChar )
+{
+	STG_AREA *lpFrom = (STG_AREA *)lpChar->lpExt1;
+	STG_AREA *lpTo = FindStageField( lpChar->lpMasterPlayInfo->Position.x , lpChar->lpMasterPlayInfo->Position.z );
+
+	if ( !lpFrom || !lpTo ) return FALSE;
+	if ( lpFrom==lpTo ) return TRUE;
+	if ( lpTo->FindEmptyMonTable()<0 ) return FALSE;
+
+	lpFrom->MonsterCount--;
+	lpFrom->DeleteMonTable( lpChar );
+
+	lpTo->MonsterCount++;
+	lpChar->lpExt1 = (void *)&lpTo->Head;
+	lpChar->lpStage = lpTo->lpStage;
+	lpTo->AddMonTable( lpChar );
+
+	return TRUE;
+}
+
 //해당 몬스터 출신 깃발 의 활성화 몬스터 수
 int rsGetMonCountFlag( smCHAR *lpChar )
 {
@@ -9515,6 +9536,10 @@ int srAutoCharMain( smCHAR *lpChar )
 
 						//소환몹이 소환한 경우
 						if ( lpChar==lpStgArea->lpCharMonster[cnt]->lpLinkChar || lpChar->lpLinkChar==lpStgArea->lpCharMonster[cnt] )
+							MonAttackFlag = 0;
+
+						// the same player's summons never fight each other
+						if ( lpChar->lpMasterPlayInfo==lpStgArea->lpCharMonster[cnt]->lpMasterPlayInfo )
 							MonAttackFlag = 0;
 
 					if ( MonAttackFlag ) {
@@ -31969,7 +31994,8 @@ smCHAR *rsSkillDamage_AroundMonster( smCHAR *lpChar )
 
 					lpTargetChar = lpStgArea->lpCharMonster[cnt];
 
-					if ( lpChar->smCharInfo.ClassClan!=0 && lpChar->smCharInfo.ClassClan==lpTargetChar->smCharInfo.ClassClan ) {
+					if ( ( lpChar->smCharInfo.ClassClan!=0 && lpChar->smCharInfo.ClassClan==lpTargetChar->smCharInfo.ClassClan ) ||
+						( lpChar->lpMasterPlayInfo && lpChar->lpMasterPlayInfo==lpTargetChar->lpMasterPlayInfo ) ) {	// nor the same player's summons
 						pw = 0;
 					}
 					else {

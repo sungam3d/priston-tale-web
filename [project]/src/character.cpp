@@ -81,6 +81,8 @@ extern rsSERVER_CONFIG		rsServerConfig;
 smCHAR *rsOpenSubMonster( smCHAR *lpMainChar , DWORD dwCharSoundCode , int x, int y, int z , int MaxFlag );
 //해당 몬스터 출신 깃발 의 활성화 몬스터 수
 int rsGetMonCountFlag( smCHAR *lpChar );
+// Moves a summoned monster onto the map its owner is on now
+int rsMoveMonsterToMasterField( smCHAR *lpChar );
 
 
 //상대 캐릭터에 기술 공격 가함 
@@ -5451,9 +5453,12 @@ Skip_5:
 		}
 		SavePlayBuff2();
 
-		if ( lpMasterPlayInfo && HoSkillCode && lpMasterPlayInfo->lpsmSock && smCharInfo.Life[0]>0 ) {
+		// Skill summons and crystal or /mymonster summons follow their owner. Holy Incantation's
+		// borrowed undead and fixed monsters such as towers stay put; a re-used player slot is not the owner.
+		if ( lpMasterPlayInfo && lpMasterPlayInfo->lpsmSock && smCharInfo.Life[0]>0 &&
+			( HoSkillCode || ( !PlayHolyIncantation[1] && !DontMoveFlag && lpMasterPlayInfo->dwObjectSerial==smCharInfo.Next_Exp ) ) ) {
 
-			if ( lpMasterPlayInfo->lpLinkChar!=this ) {
+			if ( HoSkillCode && lpMasterPlayInfo->lpLinkChar!=this ) {
 				smCharInfo.Life[0]=0;
 				SetMotionFromCode( CHRMOTION_STATE_DEAD );
 			}
@@ -5461,11 +5466,13 @@ Skip_5:
 				//소환 몹 거리 조절
 				x = (lpMasterPlayInfo->Position.x - pX)>>FLOATNS;
 				z = (lpMasterPlayInfo->Position.z - pZ)>>FLOATNS;
-				dist = x*x+z*z;
+				// x*x overflows on a warp to a far map, which would look close
+				if ( abs(x)>=500 || abs(z)>=500 ) dist = 500*500;
+				else dist = x*x+z*z;
 				if ( dist>=(500*500) ) {
 					if ( lpStage ) {
 						y = lpStage->GetHeight( lpMasterPlayInfo->Position.x,lpMasterPlayInfo->Position.z );
-						if ( y<0 ) {
+						if ( y<0 && ( HoSkillCode || !rsMoveMonsterToMasterField( this ) ) ) {
 							smCharInfo.Life[0]=0;
 							SetMotionFromCode( CHRMOTION_STATE_DEAD );
 						}
