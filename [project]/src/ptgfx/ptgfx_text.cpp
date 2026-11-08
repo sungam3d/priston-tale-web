@@ -119,7 +119,28 @@ struct PtFont {
 	std::map<int, PtGlyph *> glyphs;
 };
 
-static std::map<std::string, PtFont *> s_Fonts;		// LOGFONT key -> sized font
+static std::map<std::string, PtFont *> s_Fonts;		// LOGFONT key + code page -> sized font
+
+// The language setting's code page (lang\pt_lang.cpp): the game's text is in that
+// language's Windows code page whatever charset its fonts ask for. 0 = the font's own.
+UINT g_PtTextCodePage = 0;
+
+// A font for the glyphs Tahoma lacks: Korean, Japanese and Chinese. The fonts folder
+// first (the browser build's data\fonts: Noto Sans CJK, SIL Open Font License), then
+// what Windows has.
+static PtFontFile *ExtraFont( UINT cp )
+{
+	static const char *s_Korean[] = { "NotoSansKR-Regular.otf", "malgun.ttf", "gulim.ttc", 0 };
+	static const char *s_Japanese[] = { "NotoSansJP-Regular.otf", "msgothic.ttc", "meiryo.ttc", 0 };
+	static const char *s_Simplified[] = { "NotoSansSC-Regular.otf", "msyh.ttc", "simsun.ttc", 0 };
+	static const char *s_Traditional[] = { "NotoSansTC-Regular.otf", "msjh.ttc", "mingliu.ttc", 0 };
+	const char **list = cp==949 ? s_Korean : cp==932 ? s_Japanese : cp==936 ? s_Simplified : cp==950 ? s_Traditional : 0;
+	for ( int i=0; list && list[i]; i++ ) {
+		PtFontFile *f = LoadFontFile( list[i] );
+		if ( f ) return f;
+	}
+	return NULL;
+}
 
 static UINT CharsetToCodePage( BYTE cs )
 {
@@ -140,8 +161,9 @@ static PtFont *GetFont( HDC hdc )
 	LOGFONTA lf;
 	if ( !hFont || GetObjectA( hFont, sizeof(lf), &lf )!=sizeof(lf) ) return NULL;
 
+	UINT codePage = g_PtTextCodePage ? g_PtTextCodePage : CharsetToCodePage( lf.lfCharSet );
 	char key[128];
-	sprintf( key, "%d|%d|%d|%s", lf.lfHeight, lf.lfWeight, lf.lfCharSet, lf.lfFaceName );
+	sprintf( key, "%d|%d|%u|%s", lf.lfHeight, lf.lfWeight, codePage, lf.lfFaceName );
 	std::map<std::string, PtFont *>::iterator it = s_Fonts.find( key );
 	if ( it!=s_Fonts.end() ) return it->second;
 
@@ -159,14 +181,14 @@ static PtFont *GetFont( HDC hdc )
 		f = new PtFont;
 		f->pFile = pFile;
 		f->boldExtra = boldExtra;
-		f->codePage = CharsetToCodePage( lf.lfCharSet );
+		f->codePage = codePage;
 		int lfh = lf.lfHeight ? lf.lfHeight : 12;
 		// GDI: positive height = cell height (win ascent + descent), negative = em height.
 		f->scale = lfh>0 ? (float)lfh / ( pFile->winAscent + pFile->winDescent ) : (float)-lfh / pFile->unitsPerEm;
 		f->ascent = (int)floorf( pFile->winAscent * f->scale + 0.5f );
 		f->descent = (int)floorf( pFile->winDescent * f->scale + 0.5f );
 		f->height = f->ascent + f->descent;
-		f->pExtra = f->codePage!=1252 ? LoadFontFile( "gulim.ttc" ) : NULL;
+		f->pExtra = ExtraFont( f->codePage );
 		f->scaleExtra = f->pExtra ? (float)f->height / ( f->pExtra->winAscent + f->pExtra->winDescent ) : 0;
 	}
 	s_Fonts[key] = f;

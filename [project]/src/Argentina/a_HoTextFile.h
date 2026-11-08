@@ -33,7 +33,7 @@ char *HoTextSelectMessage[12] = {" Desea borrar? ",
 				};
 
 char *HoTextTempscronInfo[5] = {" Tempskron es una tribu que pone las habilidades f\355sicas y la t\351cnica en su m\341s alta estima, y es tambi\351n la \372nica tribu con la capacidad t\351cnica para usar maquinaria. ",  //  Tempskron es una tribu que pone las habilidades físicas y la técnica en su más alta estima, y es también la única tribu con la capacidad técnica para usar maquinaria. 
-								/* Maybe " La tribu Tempskron es renombrada por sus habilidades físicas y técnicas eficientes... "*/
+								/* Maybe " La tribu Tempskron es renombrada por sus habilidades f\355sicas y t\351cnicas eficientes... "*/	//  La tribu Tempskron es renombrada por sus habilidades físicas y técnicas eficien
                                 " Renombrado por sus habilidades con las m\341quinas, son la \372nica clase que puede usar aparatos de ataque. ",  //  Renombrado por sus habilidades con las máquinas, son la única clase que puede usar aparatos de ataque. 
 								" Los Luchadores nacen con la pasi\363n del combate, y son excelentes con hachas en mano. ",  //  Los Luchadores nacen con la pasión del combate, y son excelentes con hachas en mano. 
 								" Maestros de las armas largas, usan su amplio campo visaul para aumentar sus habilidades con las armas hasta hacerlas mortales. ",

@@ -5,8 +5,9 @@
 //
 // Live settings go through Module.ptOpts, which the game reads once per frame when
 // its version (v) changes (Winmain.cpp PtWeb_PollOptions): music / effects volume
-// (ptsound master volumes), view (draw distance in map cells) and weather (0 = the
-// server's, 1 + weather.h PTWX_* = your own). Shadow strength
+// (ptsound master volumes), view (draw distance in map cells), weather (0 = the
+// server's, 1 + weather.h PTWX_* = your own) and lang (lang\pt_lang.h PT_LANG_*,
+// the game's built-in text). Shadow strength
 // is Module.ptShadowDark and shadow quality Module.ptShadowQuality (the shadow map's
 // size, 1024..8192), both read every frame by ptgfx_shadow.cpp.
 // Restart settings are read when the game starts: Module.ptShadows, and the image
@@ -19,9 +20,12 @@
 	if (!window.Module) return;
 	var KEY = 'pt-settings';
 	var DEF = { quality: 'max', shadows: true, shadowDark: 0.6, shadowQuality: 4096, view: 38, music: 70, musicOn: true, effects: 80, effectsOn: true,
-		wxOwn: false, wxKind: 2 };
+		wxOwn: false, wxKind: 2, lang: 0 };
 	// weather.h PTWX_* order
 	var WEATHER = ['Clear', 'Cloudy', 'Rain', 'Storm', 'Fog', 'Snow', 'Blizzard', 'Dust haze'];
+	// lang\pt_lang.h PT_LANG_* order, each in its own language
+	var LANGS = ['English', '한국어 (Korean)', '日本語 (Japanese)', '简体中文 (Chinese, simplified)', '繁體中文 (Chinese, traditional)',
+		'ไทย (Thai)', 'Tiếng Việt (Vietnamese)', 'Português (Brazil)', 'Español (Argentina)'];
 	var VIEW_MIN = 16, VIEW_GAME = 38, VIEW_MAX = 110;		// map cells (64 world units); 110 = unlimited
 	var s = {};
 	try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) {}
@@ -33,7 +37,7 @@
 	function vol(v, on) { return on ? Math.pow(v/100, 2) : 0; }		// slider 0-100, felt as linear
 	function pushLive() {
 		Module.ptOpts = { v: ++version, music: vol(s.music, s.musicOn), effects: vol(s.effects, s.effectsOn),
-			view: s.view==VIEW_GAME ? 0 : s.view, weather: s.wxOwn ? 1 + (s.wxKind|0) : 0 };
+			view: s.view==VIEW_GAME ? 0 : s.view, weather: s.wxOwn ? 1 + (s.wxKind|0) : 0, lang: s.lang|0 };
 		Module.ptShadowDark = s.shadowDark;
 		Module.ptShadowQuality = s.shadowQuality;
 	}
@@ -127,6 +131,12 @@
 		'<div class="pt-set-box">' +
 		'<div class="pt-set-head"><h2>Settings</h2><button type="button" class="act" id="setClose">Close</button></div>' +
 
+		'<h3>Language</h3>' +
+		'<div class="pt-row"><label for="setLang">Game text</label><div class="ctl"><select id="setLang">' +
+			LANGS.map(function (l, i) { return '<option value="' + i + '">' + l + '</option>'; }).join('') + '</select></div></div>' +
+		'<p class="note">Menus, messages, skills and quests change straight away. Names of monsters and items, NPC chat and server messages stay in English. ' +
+			'Text the game already put on screen changes when it is shown again.</p>' +
+
 		'<h3>Graphics</h3>' +
 		'<div class="pt-row"><label>Image quality</label><div class="ctl"><span class="pt-seg" id="setQuality">' +
 			'<button type="button" data-v="standard">Standard</button><button type="button" data-v="max">Max</button></span></div></div>' +
@@ -172,6 +182,7 @@
 		Array.prototype.forEach.call($(id).querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', b.dataset.v == String(val)); });
 	}
 	function render() {
+		$('setLang').value = s.lang|0;
 		seg('setQuality', s.quality);
 		seg('setShadows', s.shadows ? 1 : 0);
 		$('setShadowDark').value = Math.round(s.shadowDark*100);
@@ -220,6 +231,7 @@
 	slider('setEffects', function (v) { s.effects = v; });
 	$('setWxMode').addEventListener('click', function (e) { var v = e.target.dataset && e.target.dataset.v; if (v) { s.wxOwn = v == '1'; change(); } });
 	$('setWeather').addEventListener('change', function () { s.wxKind = +this.value; change(); });
+	$('setLang').addEventListener('change', function () { s.lang = +this.value; change(); });
 	$('setMusicOn').addEventListener('change', function () { s.musicOn = this.checked; change(); });
 	$('setEffectsOn').addEventListener('change', function () { s.effectsOn = this.checked; change(); });
 	$('setRestartBtn').addEventListener('click', function () { this.disabled = true; location.reload(); });

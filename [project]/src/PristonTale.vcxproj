@@ -139,6 +139,16 @@
     <ClCompile Include="HoBaram\HoPhysics.cpp" />
     <ClCompile Include="HoBaram\HoSky.cpp" />
     <ClCompile Include="HoBaram\HoTextFile.cpp" />
+    <ClCompile Include="lang\pt_lang.cpp" />
+    <ClCompile Include="lang\lang_EN.cpp" />
+    <ClCompile Include="lang\lang_KO.cpp" />
+    <ClCompile Include="lang\lang_JP.cpp" />
+    <ClCompile Include="lang\lang_CN.cpp" />
+    <ClCompile Include="lang\lang_TW.cpp" />
+    <ClCompile Include="lang\lang_TH.cpp" />
+    <ClCompile Include="lang\lang_VN.cpp" />
+    <ClCompile Include="lang\lang_BR.cpp" />
+    <ClCompile Include="lang\lang_AR.cpp" />
     <ClCompile Include="HoBaram\LowLevelPetSystem.cpp" />
     <ClCompile Include="HoBaram\NewEffect\HoEffect\HoEffectController.cpp" />
     <ClCompile Include="HoBaram\NewEffect\HoEffect\HoEffectMain.cpp" />
@@ -303,6 +313,8 @@
     <ClInclude Include="HoBaram\HoPhysics.h" />
     <ClInclude Include="HoBaram\HoSky.h" />
     <ClInclude Include="HoBaram\HoTextFile.h" />
+    <ClInclude Include="lang\pt_lang.h" />
+    <ClInclude Include="lang\pt_lang_tu.h" />
     <ClInclude Include="HoBaram\LowLevelPetSystem.h" />
     <ClInclude Include="HoBaram\NewEffect\HoEffect\HoEffectController.h" />
     <ClInclude Include="HoBaram\NewEffect\HoEffect\HoEffectEvent.h" />

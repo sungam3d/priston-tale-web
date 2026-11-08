@@ -16,9 +16,10 @@
 
 #ifdef PT_WEB
 #include <emscripten.h>
+#include "lang\\pt_lang.h"
 // Page settings (web\settings.js): Module.ptOpts = { v: version, music, effects
 // (0 = off .. 1), view (draw distance in map cells, 0 = the game's own), weather
-// (weather.h PTWX_SET_*) }. Read
+// (weather.h PTWX_SET_*), lang (lang\pt_lang.h PT_LANG_*) }. Read
 // once per frame (PlayD3D), and only when the version changed - the page never
 // calls into the game itself.
 static int s_WebViewCells = 0;
@@ -34,6 +35,7 @@ static void PtWeb_PollOptions()
 	if ( s_WebViewCells>110 ) s_WebViewCells = 110;		// the map table is 256 cells across
 	PtWeather_Setting = EM_ASM_INT({ var o = Module['ptOpts']; return o && o.weather ? (o.weather|0) : 0; });
 	PtSound_SetMasterVolume( (float)music, (float)effects );
+	PtLang_Set( EM_ASM_INT({ var o = Module['ptOpts']; return o && o.lang ? (o.lang|0) : 0; }) );
 }
 #endif
 #include "smwsock.h"

@@ -1,0 +1,159 @@
+"""Writes lang\\lang_*.cpp: every language's built-in text, compiled side by side for the
+language setting (lang\\pt_lang.cpp). Run again after changing a language folder:
+
+  python web\\gen_lang.py
+
+Each lang_XX.cpp includes that language's text headers inside namespace PtLang_XX and
+lists the text variables it finds in them (only those the game also has in English,
+since the English ones are the variables the game reads). Skill, crafting and class
+tables are compiled whole; pt_lang.cpp copies only their text.
+lang_EN.cpp also lists the game's own (live) variables, declared with the types of
+its English copies so their sizes are known.
+"""
+import os, re
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+SRC = os.path.dirname(HERE)
+OUT = os.path.join(SRC, 'lang')
+
+# code, folder, file prefix, macro the original source uses, code page
+LANGS = [
+    ('EN', 'English',   'e',  '_LANGUAGE_ENGLISH',   1252),
+    ('KO', 'Korean',    'k',  '_LANGUAGE_KOREAN',    949),
+    ('JP', 'Japanese',  'j',  '_LANGUAGE_JAPANESE',  932),
+    ('CN', 'Chinese',   'c',  '_LANGUAGE_CHINESE',   936),
+    ('TW', 'Taiwan',    't',  '_LANGUAGE_TAIWAN',    950),
+    ('TH', 'thai',      'th', '_LANGUAGE_THAI',      874),
+    ('VN', 'veitnam',   'v',  '_LANGUAGE_VEITNAM',   1258),
+    ('BR', 'Brazil',    'b',  '_LANGUAGE_BRAZIL',    1252),
+    ('AR', 'Argentina', 'a',  '_LANGUAGE_ARGENTINA', 1252),
+]
+# (the TalkText files exist too, but the game never compiles them: their text is unused)
+TEXT_KINDS = ['sinMsg', 'HoTextFile', 'TextMessage', 'QuestMsg', 'VolText', 'JobCode']
+# names to leave out of the lists, if a language defines one only under an #ifdef
+SKIP = set()
+
+DECL_TYPES = r'(?:char|sMESSAGEBOX2|sMESSAGEBOX3|sMESSAGEBOX)'
+
+
+def find_file(folder, prefix, kind):
+    d = os.path.join(SRC, folder)
+    want = ('%s_%s.h' % (prefix, kind)).lower()
+    for f in os.listdir(d):
+        if f.lower() == want:
+            return os.path.join(folder, f)
+    return None
+
+
+def text_files(lang):
+    """kind -> header (relative to src) holding this language's text of that kind"""
+    code, folder, prefix = lang[:3]
+    files = {}
+    for kind in TEXT_KINDS:
+        if code == 'KO' and kind in ('sinMsg', 'HoTextFile'):
+            files[kind] = os.path.join('Korean', 'K_%s.h' % kind)     # moved out of sinMsg.cpp / HoTextFile.cpp
+            continue
+        f = find_file(folder, prefix, kind)
+        if f:
+            files[kind] = f
+    return files
+
+
+def flatten(code):
+    """The file at brace depth 0, without comments, strings or initializers"""
+    out, i, depth, n = [], 0, 0, len(code)
+    while i < n:
+        c = code[i]
+        if code.startswith('//', i):
+            j = code.find('\n', i)
+            i = n if j < 0 else j
+            continue
+        if code.startswith('/*', i):
+            j = code.find('*/', i + 2)
+            i = n if j < 0 else j + 2
+            continue
+        if c in '"\'':
+            j = i + 1
+            while j < n and code[j] != c:
+                j += 2 if code[j] == '\\' else 1
+            i = j + 1
+            if depth == 0:
+                out.append('""')
+            continue
+        if c == '{':
+            depth += 1
+        elif c == '}':
+            depth -= 1
+            i += 1
+            continue
+        if depth == 0:
+            out.append(c)
+        i += 1
+    return ''.join(out)
+
+
+def names_in(path):
+    text = open(os.path.join(SRC, path), encoding='utf-8-sig', errors='replace').read()
+    # an #ifdef'd Korean block in a dispatcher header (K_VolText.h): its names are the language's
+    found = []
+    for stmt in flatten(text).split(';'):
+        stmt = re.sub(r'^\s*#.*$', '', stmt, flags=re.M).strip()
+        m = re.match(r'(?:static\s+)?(?:const\s+)?' + DECL_TYPES + r'\b(.*)$', stmt, re.S)
+        if not m:
+            continue
+        for part in m.group(1).split(','):
+            d = re.match(r'\s*\*?\s*(\w+)\s*(?:\[[^\]]*\]\s*)*=', part)
+            if d:
+                found.append(d.group(1))
+    return found
+
+
+def write(path, lines):
+    data = '\n'.join(lines) + '\n'
+    if os.path.exists(path) and open(path, encoding='utf-8').read() == data:
+        return
+    with open(path, 'w', encoding='utf-8', newline='\n') as fp:
+        fp.write(data)
+    print('wrote', os.path.relpath(path, SRC))
+
+
+def main():
+    os.makedirs(OUT, exist_ok=True)
+    live = []                                       # English names, in order
+    for kind, f in text_files(LANGS[0]).items():
+        live += [x for x in names_in(f) if x not in live and x not in SKIP]
+    for lang in LANGS:
+        code, folder, prefix, macro, cp = lang
+        files = text_files(lang)
+        names = []
+        for kind in TEXT_KINDS:
+            if kind in files and kind != 'JobCode':
+                names += [x for x in names_in(files[kind]) if x in live and x not in names and x not in SKIP]
+        ns = 'PtLang_' + code
+        L = ['// lang_%s.cpp - generated by web\\gen_lang.py from %s\\: do not edit, run it again.' % (code, folder),
+             '#include "pt_lang_tu.h"', '',
+             '// the game\'s headers are in (English); from here on, the text headers are this language\'s',
+             '#define PT_LANG_TABLES', '#undef _LANGUAGE_ENGLISH', '#undef _LANGUAGE_ENGLISH_FIELDLEVEL',
+             '#define ' + macro, '', 'namespace %s {' % ns]
+        for kind in TEXT_KINDS:
+            if kind in files:
+                L.append('#include "..\\\\%s"' % files[kind].replace(os.sep, '\\\\'))
+        L += ['sSKILL_INFO sSkill_Info[SIN_MAX_SKILL] = {', '#include "..\\\\sinbaram\\\\sinSkill_Info.h"', '};',
+              'sCRAFTITEM_INFO sCraftItem_Info[MAX_CRAFTITEM_INFO] = {', '#include "..\\\\sinbaram\\\\sinCraftItem.h"', '};',
+              '}', '']
+        has_jobs = 'JobCode' in files
+        if code == 'EN':
+            L.append('// the game\'s own variables, with complete types taken from the English copies')
+            L += ['extern decltype(%s::%s) %s;' % (ns, x, x) for x in names]
+            L += ['', 'static const PtLangEntry s_Live[] = {'] + ['\tPT_LANG_ENTRY( , %s ),' % x for x in names] + ['};',
+                  'extern sSKILL_INFO sSkill_Info[SIN_MAX_SKILL];', 'extern sCRAFTITEM_INFO sCraftItem_Info[MAX_CRAFTITEM_INFO];',
+                  'extern const PtLangTable PtLang_LIVE_Table = { "live", 0, s_Live, sizeof(s_Live)/sizeof(s_Live[0]), sSkill_Info, sCraftItem_Info, JobDataBase };', '']
+        L += ['static const PtLangEntry s_Entries[] = {'] + ['\tPT_LANG_ENTRY( %s, %s ),' % (ns, x) for x in names] + ['};']
+        L.append('extern const PtLangTable PtLang_%s_Table = { "%s", %d, s_Entries, sizeof(s_Entries)/sizeof(s_Entries[0]), %s::sSkill_Info, %s::sCraftItem_Info, %s };'
+                 % (code, code, cp, ns, ns, (ns + '::JobDataBase') if has_jobs else '0'))
+        write(os.path.join(OUT, 'lang_%s.cpp' % code), L)
+        print('%s: %d text variables, files: %s' % (code, len(names), ', '.join(sorted(files))))
+
+
+if __name__ == '__main__':
+    main()

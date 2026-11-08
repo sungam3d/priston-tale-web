@@ -34,7 +34,7 @@ char *HoTextSelectMessage[12] = {"Voc\352 deseja deletar?",  // Você deseja del
 				};
 
 char *HoTextTempscronInfo[5] = {" Os Tempskrons s\343o a civiliza\347\343o mais avan\347ada do continente de Priston, sendo capazes de controlar todos os tipos de equipamentos, at\351 mesmo os mais modernos.",  //  Os Tempskrons são a civilização mais avançada do continente de Priston, sendo capazes de controlar todos os tipos de equipamentos, até mesmo os mais modernos.
-								/* Maybe " A tribo dos Tempskrons ,famosa por suas ténicas de combate e sua grande habilidade com váios tipos de armas"*/
+								/* Maybe " A tribo dos Tempskrons ,famosa por suas t\351nicas de combate e sua grande habilidade com v\341ios tipos de armas"*/	//  A tribo dos Tempskrons ,famosa por suas ténicas de combate e sua grande habilid
                                 " Conhecida pela sua tecnologia avan\347ada, a tribo dos Tempskrons \351 a un\355ca capaz de usar m\341quinas modernas a favor do combate.",  //  Conhecida pela sua tecnologia avançada, a tribo dos Tempskrons é a uníca capaz de usar máquinas modernas a favor do combate.
 								" Os Lutadores s\343o guerreiros natos, sua especialidade \351 a luta com Machados...",  //  Os Lutadores são guerreiros natos, sua especialidade é a luta com Machados...
 								" Personagens eficientes, podem usar suas t\351cnicas a favor de uma luta de qualidade,.",  //  Personagens eficientes, podem usar suas técnicas a favor de uma luta de qualidade,.

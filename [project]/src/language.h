@@ -10,10 +10,14 @@
 
 //#define _LANGUAGE_TAIWAN
 
+// lang\lang_*.cpp compile another language's text after the game's headers, and
+// define PT_LANG_TABLES so that including this file again doesn't bring English back.
+#ifndef PT_LANG_TABLES
 #define _LANGUAGE_ENGLISH			 //필리핀컴파일시 영문 주석 풀것
 //#define _LANGUAGE_PHILIPIN
 //#define _LANGUAGE_PHILIPIN_FIELDLEVEL
 #define _LANGUAGE_ENGLISH_FIELDLEVEL
+#endif
 
 //#define _LANGUAGE_THAI
 //#define _LANGUAGE_THAI_FIELDLEVEL		//아이언2와 아이스 막은거

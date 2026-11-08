@@ -26582,3 +26582,8 @@ wav/Effects/monster/LordHopy/move 1.wav	94538	af64f82af86d6872
 wav/Effects/monster/LordHopy/move 2.wav	71558	f2a64fdad9bd8142
 wav/Effects/monster/LordHopy/neutral 1.wav	20942	a11c4a210de20c75
 wav/Effects/monster/LordHopy/neutral 2.wav	23308	6e2bf9aa1bc4726f
+fonts/NotoSansKR-Regular.otf	4644748	eaea2b13b82e95ff
+fonts/NotoSansJP-Regular.otf	4533028	b95c34e20f74b908
+fonts/NotoSansSC-Regular.otf	8331336	f40715ac5a24acc6
+fonts/NotoSansTC-Regular.otf	5683368	225287a966f2b98d
+fonts/LICENSE-NotoSansCJK.txt	4301	c8fc5f7ca19428c1

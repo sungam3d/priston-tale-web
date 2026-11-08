@@ -5,6 +5,23 @@
 #include <strings.h>
 #include <wchar.h>
 #include <wctype.h>
+#include <emscripten.h>
+
+// The language setting's code page (ptgfx_text.cpp, set by lang\pt_lang.cpp): 0 = English
+extern UINT g_PtTextCodePage;
+
+// Korean, Japanese, Chinese, Thai and Vietnamese text through the browser's own
+// decoders. Returns the UTF-16 length, or -1 for a code page this doesn't know.
+// TextDecoder won't read shared memory, so the bytes are copied out first.
+EM_JS( int, PtWin_DecodeCodePage, ( int cp, const char *src, int len, unsigned short *dst, int cap ), {
+	var names = { 949: 'euc-kr', 932: 'shift_jis', 936: 'gbk', 950: 'big5', 874: 'windows-874', 1258: 'windows-1258' };
+	if ( !names[cp] ) return -1;
+	var cache = Module['ptDecoders'] || ( Module['ptDecoders'] = {} );
+	var dec = cache[cp] || ( cache[cp] = new TextDecoder( names[cp] ) );
+	var s = dec.decode( HEAPU8.slice( src, src + len ) ).normalize( 'NFC' );		// Vietnamese: base letter + mark -> one glyph
+	for ( var i = 0; i < s.length && i < cap; i++ ) HEAPU16[( dst >> 1 ) + i] = s.charCodeAt( i );
+	return s.length;
+} );
 
 extern "C" {
 
@@ -90,8 +107,16 @@ LPSTR WINAPI CharUpperA( LPSTR s )
 	return strupr( s );
 }
 
-// The data is English (code page 1252 / ASCII): no double-byte lead bytes.
-BOOL WINAPI IsDBCSLeadByte( BYTE ) { return FALSE; }
+// Lead bytes of the language setting's double-byte code page (English: none), so the
+// game's text wrapping doesn't cut a Korean, Japanese or Chinese character in half.
+BOOL WINAPI IsDBCSLeadByte( BYTE c )
+{
+	switch ( g_PtTextCodePage ) {
+	case 932:	return ( c>=0x81 && c<=0x9F ) || ( c>=0xE0 && c<=0xFC );
+	case 936: case 949: case 950:	return c>=0x81 && c<=0xFE;
+	}
+	return FALSE;
+}
 
 int WINAPIV wsprintfA( LPSTR buf, LPCSTR fmt, ... )
 {
@@ -103,7 +128,8 @@ int WINAPIV wsprintfA( LPSTR buf, LPCSTR fmt, ... )
 }
 int WINAPI wvsprintfA( LPSTR buf, LPCSTR fmt, va_list args ) { return vsprintf( buf, fmt, args ); }
 
-// Code pages: UTF-8, and code page 1252 for everything else (English data).
+// Code pages: UTF-8, the language setting's (PtWin_DecodeCodePage), and code page 1252
+// for everything else (the English data).
 static const unsigned short s_Cp1252[32] = {
 	0x20AC,0x0081,0x201A,0x0192,0x201E,0x2026,0x2020,0x2021,0x02C6,0x2030,0x0160,0x2039,0x0152,0x008D,0x017D,0x008F,
 	0x0090,0x2018,0x2019,0x201C,0x201D,0x2022,0x2013,0x2014,0x02DC,0x2122,0x0161,0x203A,0x0153,0x009D,0x017E,0x0178 };
@@ -111,6 +137,16 @@ static const unsigned short s_Cp1252[32] = {
 int WINAPI MultiByteToWideChar( UINT cp, DWORD, LPCCH src, int cb, LPWSTR dst, int cch )
 {
 	if ( cb<0 ) cb = (int)strlen( src ) + 1;
+	if ( cp!=CP_UTF8 && cp!=CP_ACP && cp!=1252 && cb>0 ) {
+		std::vector<unsigned short> w( cb );		// never more UTF-16 units than bytes
+		int n = PtWin_DecodeCodePage( (int)cp, src, cb, &w[0], cb );
+		if ( n>=0 ) {
+			if ( !dst || !cch ) return n;
+			if ( n>cch ) n = cch;
+			for ( int i=0; i<n; i++ ) dst[i] = w[i];
+			return n;
+		}
+	}
 	std::vector<WCHAR> out;
 	const unsigned char *s = (const unsigned char *)src;
 	for ( int i=0; i<cb; ) {

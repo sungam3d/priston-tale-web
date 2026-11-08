@@ -1,3 +1,3 @@
 ﻿
-personagem *parkTextTalk = "%s disse.";
+char *parkTextTalk = "%s disse.";
 

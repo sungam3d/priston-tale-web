@@ -1,3 +1,3 @@
 
-char *parkTextTalk = "%s 说.";
+char *parkTextTalk = "%s \313\265.";	// %s 说.
 
