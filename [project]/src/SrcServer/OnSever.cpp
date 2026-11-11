@@ -18445,14 +18445,52 @@ int InitAdminCommand()
 
 // *GM_CHEATS (test server only): any GM may make items with /@get and /@put, as a
 // level 4 GM could. The GM level is raised only for this one call.
+static int GmCheats_Whisper( rsPLAYINFO *lpPlayInfo , char *szMsg )
+{
+	TRANS_CHATMESSAGE	TransChatMessage;
+
+	if ( !lpPlayInfo->lpsmSock ) return FALSE;
+	lstrcpyn( TransChatMessage.szMessage , szMsg , 200 );
+	TransChatMessage.code = smTRANSCODE_WHISPERMESSAGE;
+	TransChatMessage.size = 32+lstrlen(TransChatMessage.szMessage);
+	TransChatMessage.dwIP = 0;
+	TransChatMessage.dwObjectSerial = 0;
+	return lpPlayInfo->lpsmSock->Send( (char *)&TransChatMessage , TransChatMessage.size , TRUE );
+}
+
 static int GmCheats_CreateItem( rsPLAYINFO *lpPlayInfo , rsPLAYINFO *lpPlayInfo2, char *szItem )
 {
 	int AdminMode = lpPlayInfo->AdminMode;
-	int val;
+	int val, cnt;
+	DWORD dwCode = 0;
+	char szMsg[256];
 
 	if ( rsServerConfig.GmCheats && AdminMode>0 && AdminMode<4 ) lpPlayInfo->AdminMode = 4;
 	val = CreateCommandItem( lpPlayInfo , lpPlayInfo2 , szItem );
 	lpPlayInfo->AdminMode = AdminMode;
+
+	if ( val!=TRUE && rsServerConfig.GmCheats ) {
+		// say why, so a GM is not left guessing
+		for(cnt=0;cnt<MAX_ITEM;cnt++) {
+			if ( lstrcmpi( szItem , sItem[cnt].LastCategory )==0 ) { dwCode = sItem[cnt].CODE; break; }
+		}
+		if ( !dwCode )
+			wsprintf( szMsg , "> No item has the code '%s'." , szItem );
+		else {
+			for(cnt=0;cnt<DefaultItemCount;cnt++) {
+				if ( DefaultItems[cnt].Item.CODE==dwCode ) break;
+			}
+			if ( cnt>=DefaultItemCount )
+				wsprintf( szMsg , "> '%s' is not in the server's item files (GameServer\\OpenItem)." , szItem );
+			else if ( DefaultItems[cnt].Item.UniqueItem )
+				wsprintf( szMsg , "> '%s' is a unique item: it can't be made with /@get." , szItem );
+			else if ( !FindStageField( lpPlayInfo->Position.x, lpPlayInfo->Position.z ) )
+				wsprintf( szMsg , "> No map under you to drop '%s' on." , szItem );
+			else
+				wsprintf( szMsg , "> '%s' could not be made." , szItem );
+		}
+		GmCheats_Whisper( lpPlayInfo , szMsg );
+	}
 
 	return val;
 }
@@ -19282,6 +19320,11 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 
 		//아이템 생성 명령
 		if ( GmCheats_CreateItem( lpPlayInfo , 0 , lpBuff )==TRUE ) {
+			if ( rsServerConfig.GmCheats ) {
+				char szDropMsg[128];
+				wsprintf( szDropMsg , "> Dropped %s at your feet." , lpBuff );
+				GmCheats_Whisper( lpPlayInfo , szDropMsg );
+			}
 			//wsprintf( TransChatMessage.szMessage , "아이템 %s를 생성했습니다" , lpBuff );
 			wsprintf( TransChatMessage.szMessage , srMsg_009 , lpBuff );
 			TransChatMessage.code = smTRANSCODE_WHISPERMESSAGE;
@@ -21172,6 +21215,17 @@ pRetry:
 		lpPlayInfo->ChatMsgMode = 0;
 
 		if ( lpBuff[0]=='/' || lpBuff[0]=='`' ) {
+			if ( rsServerConfig.GmCheats ) {
+				// test server: every command line received, with the sender's GM level
+				FILE *fpCmd = fopen( "LogDebug\\Commands.log" , "ab" );
+				if ( fpCmd ) {
+					SYSTEMTIME stCmd;
+					GetLocalTime( &stCmd );
+					fprintf( fpCmd , "%d:%d:%d %s (GM %d): %s\r\n" , stCmd.wHour , stCmd.wMinute , stCmd.wSecond ,
+						lpPlayInfo->smCharInfo.szName , lpPlayInfo->AdminMode , lpBuff );
+					fclose( fpCmd );
+				}
+			}
 			if ( RecvCommand( lpPlayInfo , lpBuff )>=0 ) break;
 		}
 		else {
