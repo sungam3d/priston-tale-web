@@ -2234,14 +2234,21 @@ int smSTAGE3D::DrawStage2(int x , int y, int z, int angX, int angY, int angZ , s
 	if ( x<(StageMapRect.left-STAGE_RECT_LIMIT) ) return FALSE;
 	if ( x>(StageMapRect.right+STAGE_RECT_LIMIT) ) return FALSE;
 
-	if ( z<(StageMapRect.bottom-STAGE_RECT_LIMIT2) ) 
-		return FALSE;
-	if ( z>(StageMapRect.top+STAGE_RECT_LIMIT2) ) 
-		return FALSE;
-	if ( x<(StageMapRect.right-STAGE_RECT_LIMIT2) ) 
-		return FALSE;
-	if ( x>(StageMapRect.left+STAGE_RECT_LIMIT2) ) 
-		return FALSE;
+	// Only on a map shorter than STAGE_RECT_LIMIT2 (240 cells) on that axis: on a longer one
+	// (Ancient Weapon, 20678 long in z) these lines cut through the map itself and the
+	// whole map stopped drawing past them.
+	if ( StageMapRect.bottom-StageMapRect.top<STAGE_RECT_LIMIT2 ) {
+		if ( z<(StageMapRect.bottom-STAGE_RECT_LIMIT2) )
+			return FALSE;
+		if ( z>(StageMapRect.top+STAGE_RECT_LIMIT2) )
+			return FALSE;
+	}
+	if ( StageMapRect.right-StageMapRect.left<STAGE_RECT_LIMIT2 ) {
+		if ( x<(StageMapRect.right-STAGE_RECT_LIMIT2) )
+			return FALSE;
+		if ( x>(StageMapRect.left+STAGE_RECT_LIMIT2) )
+			return FALSE;
+	}
 
 
 
