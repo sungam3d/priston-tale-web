@@ -1918,12 +1918,22 @@ void cINTERFACE::RButtonUp(int x , int y)
 int GetSkillPoint_LevelQuest( int Level , DWORD dwLevelQuestLog );
 int GetStatePoint_LevelQuest( int Level , DWORD dwLevelQuestLog );
 int SendPlayUpdateInfo();
+int AddChatBuff( char *szMsg );
+int SetSaveSoon( int ms );
 
-int sinGM_ApplyLevel( int Level )
+// SaveNow: FALSE when typed here (the chat line may not have reached the server yet,
+// so the save waits a few seconds); TRUE when the server's smTRANSCODE_GM_SETLEVEL arrives.
+int sinGM_ApplyLevel( int Level , int SaveNow )
 {
 	int cnt, Point, EPoint, Total, NewState, Up;
 
 	if ( !lpCurPlayer || Level<1 || Level>CHAR_LEVEL_MAX ) return FALSE;
+
+	if ( SaveNow && sinChar->Level==Level ) {
+		// already applied when it was typed: just save, now that the server has it too
+		SaveGameData();
+		return TRUE;
+	}
 
 	Up = ( Level>sinChar->Level );
 
@@ -1983,7 +1993,18 @@ int sinGM_ApplyLevel( int Level )
 	}
 
 	SendPlayUpdateInfo();
-	SaveGameData();
+	{
+		char szGmMsg[80];
+		if ( !SaveNow ) {
+			SetSaveSoon( 3000 );
+			wsprintf( szGmMsg , "GM: level %d, saving in 3 seconds" , sinChar->Level );
+		}
+		else if ( SaveGameData() )
+			wsprintf( szGmMsg , "GM: level %d, saving" , sinChar->Level );
+		else
+			wsprintf( szGmMsg , "GM: level %d, type /save" , sinChar->Level );
+		AddChatBuff( szGmMsg );
+	}
 	return TRUE;
 }
 

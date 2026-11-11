@@ -19961,7 +19961,9 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 	//len = rsCompString( "/내경험치내놔!" , szChatCommand );
 //해외
 	len = rsCompString( "/GiveMeExp!" , szChatCommand );
-	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || lpPlayInfo->AdminMode>=4 ) )
+	if ( !len )
+		len = rsCompString( "/ShowMeTheExp!" , szChatCommand );		// the name in the old GM notes
+	if ( len &&lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || lpPlayInfo->AdminMode>=4 ) )
 	{
 		lpBuff = szChatCommand + len;
 
@@ -21784,6 +21786,18 @@ pRetry:
 
 		//val = lpPlayInfo->lpRecordBase->RecvRecordDataFromClient( (TRANS_RECORD_DATAS *)SockInfo->Buff , lpPlayInfo->smCharInfo.Level , lpPlayInfo->CrackWarning , lpPlayInfo->lpRecordDataBuff );
 		val = lpPlayInfo->lpRecordBase->RecvRecordDataFromClient( (TRANS_RECORD_DATAS *)SockInfo->Buff , lpPlayInfo ); //->smCharInfo.Level , lpPlayInfo->CrackWarning , lpPlayInfo->lpRecordDataBuff );
+		if ( val<0 ) {
+			// every refused save, with the levels on both sides (LogDebug\SaveRefused.log)
+			FILE *fpRefused = fopen( "LogDebug\\SaveRefused.log" , "ab" );
+			if ( fpRefused ) {
+				SYSTEMTIME stRefused;
+				GetLocalTime( &stRefused );
+				fprintf( fpRefused , "%d:%d:%d %s code %d - server level %d, saved level %d, start exp %I64d\r\n" ,
+					stRefused.wHour , stRefused.wMinute , stRefused.wSecond , lpPlayInfo->smCharInfo.szName , val ,
+					lpPlayInfo->smCharInfo.Level , lpPlayInfo->lpRecordBase->TransRecordData.smCharInfo.Level , lpPlayInfo->spExp_Start );
+				fclose( fpRefused );
+			}
+		}
 		if ( val==-1 ) {
 			//저장 첵크섬 오류
 			smTransCommand.WParam = 1600;

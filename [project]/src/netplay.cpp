@@ -2560,8 +2560,8 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 			// GM /MakeMeLevel: the server has already moved its own level and start exp
 			lpTransCommand = (smTRANS_COMMAND *)pData->Buff;
 			{
-				extern int sinGM_ApplyLevel( int Level );
-				sinGM_ApplyLevel( lpTransCommand->WParam );
+				extern int sinGM_ApplyLevel( int Level , int SaveNow );
+				sinGM_ApplyLevel( lpTransCommand->WParam , TRUE );
 			}
 			break;
 
@@ -7244,6 +7244,13 @@ int	SaveGameData()
 		}
 	}
 	return FALSE;
+}
+
+// Save in a few seconds (GM /MakeMeLevel: gives the server time to read the chat command first)
+int SetSaveSoon( int ms )
+{
+	rsRecorder.dwNextRecordTime = dwPlayTime+ms;
+	return TRUE;
 }
 
 //게임 저장 상태 ( FALSE 저장중 ( 서버로부터 결과를 받지 못함 ) )
