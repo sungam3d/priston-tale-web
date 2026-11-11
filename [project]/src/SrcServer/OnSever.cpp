@@ -708,7 +708,8 @@ DWORD		dwPlayServTime = 0;
 DWORD		dwOffsetTime = 0;
 
 #define	CHR_MONSTER_MAX		1024		// was 400: GameServer\Monster has 646 *.inf - monsters past the limit were never loaded
-#define	DEF_ITEM_MAX		1000 // 장별
+#define	DEF_ITEM_MAX		2048 // was 1000: GameServer\OpenItem has 1459 files, and the ones past 1000
+								 // in name order (most weapons from WS on) were never loaded
 
 //다시 시작하는 카운터 ( 슬립 모드 대기시 )
 #define	REOPEN_COUNT_NUM	256
