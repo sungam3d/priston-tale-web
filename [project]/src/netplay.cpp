@@ -2391,8 +2391,8 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 					ReformCharForm();
 				}
 				else {
-					if ( lpCurPlayer->smCharInfo.ChangeJob>=0 && lpCurPlayer->smCharInfo.ChangeJob<4 ) {
-						ChangeModelSkin( lpCurPlayer , 0 , lpCurPlayer->smCharInfo.ChangeJob , 0 , GetFaceHairSkin(lpCurPlayer) );			//테스트 ( 일반얼굴 ) // 얼큰이 오류 수정
+					if ( lpCurPlayer->smCharInfo.ChangeJob>=0 && lpCurPlayer->smCharInfo.ChangeJob<=4 ) {
+						ChangeModelSkin( lpCurPlayer , 0 , JOB_FACE(lpCurPlayer->smCharInfo.ChangeJob) , 0 , GetFaceHairSkin(lpCurPlayer) );			//테스트 ( 일반얼굴 ) // 얼큰이 오류 수정
 						ReformCharForm();
 					}
 				}

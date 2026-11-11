@@ -1012,7 +1012,7 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 
 	if ( lpPlayInfo2->dwSkill_Berserker_Time ) {	//버서커 흡수력 감소
 		if ( lpPlayInfo2->dwSkill_Berserker_Time>dwPlayServTime ) {
-			TransAttackData.Power -= Berserker_SubAbsorb[lpPlayInfo2->dwSkill_Berserker_Param];
+			TransAttackData.Power -= Berserker_SubAbsorbOf( (int)lpPlayInfo2->dwSkill_Berserker_Param );	// or Bloody Berserker's
 			if ( TransAttackData.Power<0 ) return FALSE;
 		}
 		else {
@@ -1397,6 +1397,7 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 								break;
 
 							case SKILL_PLAY_CYCLONE_STRIKE:
+							case SKILL_PLAY_MORTAL_BLOW:
 								if ( (rand()%100)<GetCritical2( lpPlayInfo , lpCharInfo , dm_Critical_Temp ) ) {
 									pow = (pow*170)/100;						//크리티컬 공격가중
 #ifdef DISP_DAMAGE
@@ -1857,6 +1858,7 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 								break;
 
 							case SKILL_PLAY_CYCLONE_STRIKE:
+							case SKILL_PLAY_MORTAL_BLOW:
 								if ( (rand()%100)<GetCritical( lpPlayInfo , lpChar , dm_Critical_Temp ) ) {
 									pow = (pow*170)/100;						//크리티컬 공격가중
 #ifdef DISP_DAMAGE
@@ -3648,6 +3650,22 @@ int rsSetSkillAttack( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA
 				lpTransAttackData->Power += (lpTransAttackData->Power*30)/100;
 			}
 			break;
+
+		//Fighter tier 5 (the fifth rank only)
+		case SKILL_PLAY_DOWN_HIT:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_FIGHTER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Down_Hit_DamagePercent[Point])/100;
+			break;
+
+		case SKILL_PLAY_POWER_DASH:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_FIGHTER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Power_Dash_DamagePercent[Point])/100;
+			// the stun: monsters only, bosses spared (16 = one second)
+			if ( lpChar && lpChar->smCharInfo.State==smCHAR_STATE_ENEMY &&
+				lpChar->smCharInfo.wPlayClass[0]!=MONSTER_CLASS_BOSS && lpChar->smCharInfo.Life[0]>0 ) {
+				lpChar->PlayStunCount = 16*Power_Dash_StunTime[Point];
+			}
+			break;
 /*
 		case SKILL_PLAY_CYCLONE_STRIKE:
 			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_FIGHTER ) {
@@ -3827,7 +3845,7 @@ int rsSetSkillPlus( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA *
 			return TRUE;
 		}
 
-		lpTransAttackData->Power += Berserker_AddAttack[lpPlayInfo->dwSkill_Berserker_Param];
+		lpTransAttackData->Power += Berserker_AddAttackOf( (int)lpPlayInfo->dwSkill_Berserker_Param );	// or Bloody Berserker's
 	}
 
 	if ( lpPlayInfo->dwSkill_ForceOfNature_Time ) {
@@ -5124,6 +5142,18 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 			lpTransAttackData->Power+= (lpTransAttackData->Power*Cyclone_Strike_DamagePercent[Point])/100;
 			lpTransSkillAttackData->AttackSize = Cyclone_Strike_Area[Point];
 			lpTransSkillAttackData->Power = GetRandomPos( Cyclone_Strike_AreaDamage[Point][0] , Cyclone_Strike_AreaDamage[Point][1] );
+			lpTransSkillAttackData->AttackState = 0;
+			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
+			return TRUE;
+
+		case SKILL_PLAY_MORTAL_BLOW:		//Fighter tier 5: the target, plus those around the caster
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_FIGHTER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			if ( lpTransSkillAttackData->TargetCount>Mortal_Blow_AttackNum[Point]+1 ) return FALSE;
+
+			lpTransAttackData->Power = GetRandomPos( lpTransRangeAttack->Power[0] , lpTransRangeAttack->Power[1] );
+			lpTransAttackData->Power+= (lpTransAttackData->Power*Mortal_Blow_DamagePercent[Point])/100;
+			lpTransSkillAttackData->AttackSize = Mortal_Blow_Area[Point];
+			lpTransSkillAttackData->Power = GetRandomPos( Mortal_Blow_AreaDamage[Point][0] , Mortal_Blow_AreaDamage[Point][1] );
 			lpTransSkillAttackData->AttackState = 0;
 			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
 			return TRUE;

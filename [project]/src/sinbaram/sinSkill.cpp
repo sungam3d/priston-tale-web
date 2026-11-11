@@ -17,7 +17,7 @@ sUSESKILL sinSkill;
 sSKILL  *pUseSkill;			//사용하기전에 값을 셋팅해준다 
 sSKILL  ContinueSkill[10];	//지속적으로 사용되는 스킬 
 sSKILL  TempContinueSkill[10];	//지속적으로 사용되는 스킬 
-int SkillCountTime2[17] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+int SkillCountTime2[SIN_MAX_USE_SKILL] = {0};
 int ContinueSkillMouseIndex = 0;
 
 JOB_DATA_CODE *sinJobList;
@@ -313,7 +313,49 @@ sSKILL sSkill[SIN_MAX_SKILL] = {
 	{"\307\303\266\363\300\323 \277\376\300\314\272\352"    ,SKILL_FLAME_WAVE		,"MM63 F_Wave"},
 	{"\265\360\275\272\306\256\267\317\274\307"       ,SKILL_DISTORTION	    ,"MM66 Distortion","Mg4_DISTORTION.tga"},
 	{"\270\336\305\327\277\300"		    ,SKILL_M_METEO		    ,"MM70 Meteo"},
-		
+
+	// tier 5 (the fifth rank). Each must come after its class's fourth tier: SearchUseSkill
+	// fills the class's window slots in table order, so these land in slots 17..20.
+	{"Land Mining"		,SKILL_LAND_MINING		,"TM80 landminning"},
+	{"Hyper Sonic"		,SKILL_HYPER_SONIC		,"TM83 H_Sonic","Me5_H_Sonic.tga"},
+	{"Rolling Smash"	,SKILL_ROLLING_SMASH	,"TM86 R_Smash"},
+	{"Power Enhancement",SKILL_POWER_ENHANCEMENT,"TM90 P_Enhence","Me5_P_Enhence.tga"},
+
+	{"Down Hit"			,SKILL_DOWN_HIT			,"TF80 D_Hit"},
+	{"Power Dash"		,SKILL_POWER_DASH		,"TF83 P_Dash"},
+	{"Mortal Blow"		,SKILL_MORTAL_BLOW		,"TF86 M_Blow"},
+	{"Bloody Berserker"	,SKILL_BLOODY_BERSERKER	,"TF90 B_Berserker","Ft5_B_Berserker.tga"},
+
+	{"Dancing Reaper"	,SKILL_DANCING_REAPER	,"TP80 D_Reaper"},
+	{"Final Spear"		,SKILL_FINAL_SPEAR		,"TP83 F_Spear"},
+	{"Amplified"		,SKILL_AMPLIFIED		,"TP86 Amplified","Pk5_Amplified.tga"},
+	{"Side Spin Attack"	,SKILL_SIDE_SPIN_ATTACK	,"TP90 SS_Attack"},
+
+	{"Evade Shot"		,SKILL_EVADE_SHOT		,"TA80 E_Shot"},
+	{"Thunder Rope"		,SKILL_THUNDER_ROPE		,"TA83 S_Rope"},
+	{"Nature Splash"	,SKILL_NATURE_SPLASH	,"TA86 N_Splash"},
+	{"Circle Trap"		,SKILL_CIRCLE_TRAP		,"TA90 C_Trap"},
+
+	{"Soul Breaker"		,SKILL_SOUL_BREAKER		,"MN80 S_Breaker"},
+	{"Crescent Moon"	,SKILL_CRESCENT_MOON	,"MN83 C_Moon"},
+	{"Saint Blade"		,SKILL_SAINT_BLADE		,"MN86 S_Blade"},
+	{"Holy Benedic"		,SKILL_HOLY_BENEDIC		,"MN90 H_Benedic","Kn5_H_Benedic.tga"},
+
+	{"Talaria"			,SKILL_TALARIA			,"MA80 Talaria","At5_Talaria.tga"},
+	{"Galaxy Coup"		,SKILL_GALAXY_COUP		,"MA83 G_Coup"},
+	{"Summon Arcuda"	,SKILL_SUMMON_ARCUDA	,"MA86 S_Arcuda","At5_S_Arcuda.tga"},
+	{"Snippy Fear"		,SKILL_SNIPPY_FEAR		,"MA90 S_Fear"},
+
+	{"Spirit Impact"	,SKILL_SPIRIT_IMPACT	,"MP80 S_Impact"},
+	{"Piercing Ice"		,SKILL_PIERCING_ICE		,"MP83 P_Ice"},
+	{"Summon Ramiel"	,SKILL_SUMMON_RAMIEL	,"MP86 S_Ramiel","Pr5_S_Ramiel.tga"},
+	{"Blessing Krishna"	,SKILL_BLESSING_KRISHNA	,"MP90 B_Krishna","Pr5_B_Krishna.tga"},
+
+	{"Silraphim"		,SKILL_SILRAPHIM		,"MM80 Silraphim"},
+	{"Vis Tenus"		,SKILL_VIS_TENUS		,"MM83 V_Tenus"},
+	{"Prima Ignis"		,SKILL_PRIMA_IGNIS		,"MM86 P_Ignis"},
+	{"Third Anima"		,SKILL_THIRD_ANIMA		,"MM90 T_Anima","Ma5_T_Anima.tga"},
+
 	//공성전 클랜 스킬
 	{"\310\355\274\366\267\302 \273\363\275\302"	    ,CLANSKILL_ABSORB	 ,"","wa1-1.tga"},
 	{"\260\370\260\335\267\302 \273\363\275\302"      ,CLANSKILL_ATTACK	 ,"","wa1-3.tga"},
@@ -374,8 +416,20 @@ sSKILLBOX	sSkillBox[SIN_MAX_SKILLBOX] = {
 	{{681,461,681+49, 461+46},{681+47,461+5,681+47+5,461+40}},
 	{{722,511,722+49, 511+46},{722+47,511+5,722+47+5,511+40}},
 
-
+	// tier 5, on the second page (Skil25.bmp): its four slots sit where the first tier's do
+	{{27-10,502,27+49-10,502+46},{27+47-10,502+5,27+47+5-10,502+40}},
+	{{67-10,546,67+49-10,546+46},{67+47-10,546+5,67+47+5-10,546+40}},
+	{{77-10,466,77+49-10,466+46},{77+47-10,466+5,77+47+5-10,466+40}},
+	{{137-10,476,137+49-10,476+46},{137+47-10,476+5,137+47+5-10,476+40}},
 };
+
+// whether skill window slot i shows on the page that is open (page 2 = the tier 5 slots)
+extern int SkillMain2OpenFlag;
+static int SkillOnShownPage( int i )
+{
+	if ( i==0 ) return TRUE;			// normal attack: the fist box is on both pages
+	return SkillMain2OpenFlag ? ( i>=SIN_TIER5_FIRST ) : ( i<SIN_TIER5_FIRST );
+}
 
 sSKILLBOX sLeftRightSkill[2] = {
 	{{349,541,349+49,541+46},{349,558,349+5,558+35}},  //스킬 왼쪽 
@@ -556,14 +610,14 @@ void cSKILL::LoadUseSkillImage()
 
 	lpSkillButton[0] = LoadDibSurfaceOffscreen("Image\\SinImage\\Skill\\Skill_Normal.bmp"); //노멀 어택 
 	lpSkillButton_Gray[0] = LoadDibSurfaceOffscreen("Image\\SinImage\\Skill\\Skill_Normal.bmp"); //노멀 어택 
-	for(i = 0 ; i < 4 ; i++){
+	for(i = 0 ; i < 5 ; i++){		// 5: the fifth rank's title, drawn on the second page
 		wsprintf(TempTitleDirPath,"%s%s%d%s",TempDirPath,"JobTitle\\",i+1,".bmp");
 		lpSkillTitle[i] = LoadDibSurfaceOffscreen(TempTitleDirPath);
 
 	}
 
-	/////////////////버튼 이미지 로딩 
-	for(i = 1 ; i < 17 ; i++){ //노멀 어택 이미지를 뺀 나머지 스킬 이미지 
+	/////////////////버튼 이미지 로딩
+	for(i = 1 ; i < SIN_MAX_USE_SKILL ; i++){ //노멀 어택 이미지를 뺀 나머지 스킬 이미지
 		if(sinSkill.UseSkill[i].Flag){
 			if(sinSkill.UseSkill[i].FileName[0]){
 				wsprintf(ButtonImageDirPath,"%s%s%s%s",TempDirPath,"Button\\",sinSkill.UseSkill[i].FileName,".bmp");
@@ -597,21 +651,14 @@ void cSKILL::Release()
 		lpSelectSkill = 0;
 
 	}
-	for(i = 0 ; i < 4 ; i++){
+	for(i = 0 ; i < 5 ; i++){
 		if(lpSkillTitle[i]){
 			lpSkillTitle[i]->Release();
 			lpSkillTitle[i] = 0;
 
 		}
 	}
-	for(i = 0 ; i < 4 ; i ++){
-		if(lpSkillTitle[i]){
-			lpSkillTitle[i]->Release();
-			lpSkillTitle[i] = 0;
-
-		}
-	}
-	for(i = 0 ; i <17 ; i ++){
+	for(i = 0 ; i <SIN_MAX_USE_SKILL ; i ++){
 		if(lpSkillButton[i]){
 			lpSkillButton[i]->Release();
 			lpSkillButton[i] = 0;
@@ -717,12 +764,21 @@ void cSKILL::Draw()
 		}
 	}
 	//===========================================================================================
-	if(OpenFlag&&!SkillMain2OpenFlag){
-		for(i = 0 ; i < (int)sinChar->ChangeJob+1 ; i++){ //타이틀 
-			DrawSprite(SkillTitle[i][0],SkillTitle[i][1]+(256-sinMoveKindInter[SIN_SKILL]),lpSkillTitle[i],0,0,100,20);
+	if(OpenFlag){
+		if(SkillMain2OpenFlag){		// the second page: the fifth rank's title over its tier 5 column
+			if(sinChar->ChangeJob>=4 && lpSkillTitle[4])
+				DrawSprite(SkillTitle[0][0],SkillTitle[0][1]+(256-sinMoveKindInter[SIN_SKILL]),lpSkillTitle[4],0,0,100,20);
 		}
-		////////////////////스킬 버튼 
-		for(i = 1 ; i < ChangeJobSkillPlus ; i++){ //노멀 어택을 빼준다 
+		else {
+			int Titles = (int)sinChar->ChangeJob+1;
+			if(Titles > 4) Titles = 4;
+			for(i = 0 ; i < Titles ; i++){ //타이틀
+				DrawSprite(SkillTitle[i][0],SkillTitle[i][1]+(256-sinMoveKindInter[SIN_SKILL]),lpSkillTitle[i],0,0,100,20);
+			}
+		}
+		////////////////////스킬 버튼
+		for(i = 1 ; i < ChangeJobSkillPlus ; i++){ //노멀 어택을 빼준다
+			if(!SkillOnShownPage(i)) continue;
 			if(sinSkill.UseSkill[i].Flag && sinSkill.UseSkill[i].Use && SkillMasterFlag){//활성화
 				if(lpSkillButton[i]){  
 					DrawSprite(sinSkill.SkillBox[i].BoxRect.left , sinSkill.SkillBox[i].BoxRect.top +(256-sinMoveKindInter[SIN_SKILL]) ,
@@ -804,7 +860,8 @@ void cSKILL::Draw()
 		}
 
 		//////////////////// ShorKey 
-		for(i = 0 ; i < ChangeJobSkillPlus ; i++){   
+		for(i = 0 ; i < ChangeJobSkillPlus ; i++){
+			if(!SkillOnShownPage(i)) continue;
 			if(sinSkill.UseSkill[i].Flag){
 				if(sinSkill.UseSkill[i].ShortKey){
 					DrawSprite(sinSkill.SkillBox[i].BoxRect.left+9 , sinSkill.SkillBox[i].BoxRect.top-6+(256-sinMoveKindInter[SIN_SKILL]) ,
@@ -1050,8 +1107,9 @@ void cSKILL::Main()
 	if ( 269 < pCursorPos.x  && 287 > pCursorPos.x  &&  571 < pCursorPos.y  && 590 > pCursorPos.y  )
 		ShowSkillClose = 1;
 
-	if(OpenFlag&&!SkillMain2OpenFlag){ 
-		for(int i = 0; i < ChangeJobSkillPlus ; i++){ 
+	if(OpenFlag){
+		for(int i = 0; i < ChangeJobSkillPlus ; i++){
+			if(!SkillOnShownPage(i)) continue;
 			if(sinSkill.UseSkill[i].Flag){
 				if(sinSkill.SkillBox[i].BoxRect.left < pCursorPos.x && sinSkill.SkillBox[i].BoxRect.right > pCursorPos.x &&
 					sinSkill.SkillBox[i].BoxRect.top < pCursorPos.y && sinSkill.SkillBox[i].BoxRect.bottom > pCursorPos.y ){
@@ -1109,7 +1167,11 @@ void cSKILL::Main()
 		}
 
 	}
-	if(OpenFlag&&!SkillMain2OpenFlag){
+	if(SkillMain2OpenFlag && sinChar->ChangeJob<4){	// no fifth rank (any more): back to the first page
+		SkillMain2OpenFlag = 0;
+		SkillMain2ButtonFlag[0] = 0;
+	}
+	if(OpenFlag&&!SkillMain2OpenFlag&&sinChar->ChangeJob>=4){	// the second page holds the tier 5 skills
 		//오른쪽
 		if(765 < pCursorPos.x && 765+20 > pCursorPos.x &&
 		   482 < pCursorPos.y && 482+20 > pCursorPos.y ){
@@ -1340,7 +1402,7 @@ void cSKILL::KeyDown()
 
 				}
 				
-				for(int j=0; j < 17 ; j++){
+				for(int j=0; j < SIN_MAX_USE_SKILL ; j++){
 					if(j == SkillButtonIndex-1)continue;
 					if(sinSkill.UseSkill[SkillButtonIndex-1].ShortKey ==sinSkill.UseSkill[j].ShortKey){
 						sinSkill.UseSkill[j].ShortKey = 0;
@@ -1798,6 +1860,9 @@ void cSKILL::CheckingNowSkillState()
 	break;
 	case 3:
 		ChangeJobSkillPlus = 17;
+	break;
+	default:					// the fifth rank: + the four tier 5 skills
+		ChangeJobSkillPlus = 21;
 	break;
 
 	}
@@ -4461,11 +4526,76 @@ int cSKILL::ShowSkillInfo(sSKILL *pSkill , sSKILLBOX *pSkillBox ,  int Icon )
         break;
 		case SKILL_BOOST_HEALTH:
 			lstrcpy(szTempSkillDoc,LifeUp4); //생명력 추가량
-			lstrcat(szSkillInfoBuff,szTempSkillDoc); 
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
 			wsprintf(szTempSkillDoc2,"%d\r",Boost_Health_Life[pSkill->Point+i-1]);
 			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
 			LineCount++;
         break;
+		//[Fighter] tier 5
+		case SKILL_DOWN_HIT:
+			lstrcpy(szTempSkillDoc,AddPercentDamage4);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d%s\r",Down_Hit_DamagePercent[pSkill->Point+i-1],"%");
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+		break;
+		case SKILL_POWER_DASH:
+			lstrcpy(szTempSkillDoc,AddPercentDamage4);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d%s\r",Power_Dash_DamagePercent[pSkill->Point+i-1],"%");
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+
+			lstrcpy(szTempSkillDoc,"Stun Time:\r");
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d%s\r",Power_Dash_StunTime[pSkill->Point+i-1],SecName);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+		break;
+		case SKILL_MORTAL_BLOW:
+			lstrcpy(szTempSkillDoc,AddPercentDamage4);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d%s\r",Mortal_Blow_DamagePercent[pSkill->Point+i-1],"%");
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+
+			lstrcpy(szTempSkillDoc,AreaDamage4);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d-%d\r",Mortal_Blow_AreaDamage[pSkill->Point+i-1][0],Mortal_Blow_AreaDamage[pSkill->Point+i-1][1]);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+
+			lstrcpy(szTempSkillDoc,MaxAttackNum4);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d\r",Mortal_Blow_AttackNum[pSkill->Point+i-1]);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+
+			lstrcpy(szTempSkillDoc,AttackAreaName);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d\r",Mortal_Blow_Area[pSkill->Point+i-1]);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+		break;
+		case SKILL_BLOODY_BERSERKER:
+			lstrcpy(szTempSkillDoc,PlusDamageName);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d\r",Bloody_Berserker_AddAttack[pSkill->Point+i-1]);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+
+			lstrcpy(szTempSkillDoc,SubAbsorb4);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d\r",Bloody_Berserker_SubAbsorb[pSkill->Point+i-1]);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+
+			lstrcpy(szTempSkillDoc,CountinueTime);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d%s\r",Bloody_Berserker_Time[pSkill->Point+i-1],SecName);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+		break;
 		//[파이크맨]
 		case SKILL_ASSASSIN_EYE:
 			lstrcpy(szTempSkillDoc,CriticalAddDamage4);//크리티컬 공격력 증가
@@ -5912,7 +6042,8 @@ int cSKILL::CheckSkillData()
 	}
 
 	//스킬정보 테이블의 조작을 방지한다 
-	for(i=0;i< SIN_MAX_SKILL;i++){  
+	for(i=0;i< SIN_MAX_SKILL;i++){
+		if ( (sSkill_Info[i].CODE&sinSKILL_MASK1)!=GROUP_OTHERSKILL && (sSkill_Info[i].CODE&CHANGE_JOB5) ) continue;	// the tier 5 rows came later: the sum stays the original's
 		k = i+1;
 		SkillInfoDataCheckSum += k*sSkill_Info[i].RequireLevel;
 		SkillInfoDataCheckSum += k*sSkill_Info[i].UseStamina[0];

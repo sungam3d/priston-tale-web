@@ -320,6 +320,18 @@ struct smCHARTOOL
 #define SKILL_PLAY_PET_ATTACK2		0xC1
 
 #define SKILL_PLAY_SOD_ITEM			0xD0
+
+// tier 5 (the fifth rank): 0xD1.. (the other classes' come next, 4 each)
+#define SKILL_PLAY_DOWN_HIT			0xD1
+#define SKILL_PLAY_POWER_DASH		0xD2
+#define SKILL_PLAY_MORTAL_BLOW		0xD3
+#define SKILL_PLAY_BLOODY_BERSERKER	0xD4
+
+// A tier 5 skill's clip number in the class motion tables (char\tmABCD\M?Bip.inx):
+// those tables were built with a newer skill list (20 per class), so its clips are
+// matched by that number, not through SkillDataCode. 0 = not a tier 5 skill.
+int Tier5MotionSkillNum( int PlaySkillCode );
+
 //#define SKILL_PLAY_METEO			0xE0
 #define SKILL_PLAY_SPEACIAL			0xF0
 #define	SKILL_PLAY_LOVELY_LIFE		0xF1

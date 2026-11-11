@@ -2332,6 +2332,19 @@ int smCHAR::FindMotionCountFromCode( DWORD MotionCode )
 	return FindCnt;
 }
 
+// tier 5 skill -> its clip number in the class motion tables (each class has a
+// 20-number block there, tier 5 being its last 4: Fighter 37..40)
+int Tier5MotionSkillNum( int PlaySkillCode )
+{
+	switch( PlaySkillCode ) {
+	case SKILL_PLAY_DOWN_HIT:			return 37;
+	case SKILL_PLAY_POWER_DASH:			return 38;
+	case SKILL_PLAY_MORTAL_BLOW:		return 39;
+	case SKILL_PLAY_BLOODY_BERSERKER:	return 40;
+	}
+	return 0;
+}
+
 //모션 분류 코드로 모션을 바꾼다
 int smCHAR::SetMotionFromCode( DWORD MotionCode )
 {
@@ -2400,11 +2413,12 @@ int smCHAR::SetMotionFromCode( DWORD MotionCode )
 				//스킬 모션일 경우
 				cnt2 = 0;
 				skillCode = atSkill&0xFF;
+				int t5Num = Tier5MotionSkillNum( skillCode );		// tier 5: the clip's own number
 				while(1) {
 					//스킬 코드 검색
 					bSkill = smMotionInfo->MotionInfo[ cnt ].SkillCodeList[cnt2];
 					if ( bSkill==0 ) break;
-					if ( SkillDataCode[bSkill].dwPlaySkillCode==skillCode ) {
+					if ( t5Num ? ( bSkill==t5Num ) : ( SkillDataCode[bSkill].dwPlaySkillCode==skillCode ) ) {
 						break;
 					}
 					cnt2++;
@@ -11889,6 +11903,22 @@ int smCHAR::BeginSkill( int SkilCode , int Level , smCHAR *lpTarChar , int x, in
 		SkillPlaySound( SKILL_SOUND_SKILL_CYCLONE_STRIKE , pX,pY,pZ );
 		break;
 
+	//Fighter tier 5 (the older skills' effects for now)
+	case SKILL_PLAY_DOWN_HIT:
+		SkillWarriorDestroyerBlade( this, 3.0f );
+		break;
+	case SKILL_PLAY_POWER_DASH:
+		SkillWarriorDestroyerBlade( this, 2.0f );
+		SkillPlaySound( SKILL_SOUND_SKILL_AVANGING_CRASH , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_MORTAL_BLOW:
+		SkillWarriorCycloneStrikeBlade( this , 3 );
+		SkillPlaySound( SKILL_SOUND_SKILL_CYCLONE_STRIKE , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_BLOODY_BERSERKER:
+		SkillPlaySound( SKILL_SOUND_SKILL_BERSERKER	 , pX,pY,pZ );
+		break;
+
 	case SKILL_PLAY_ASSASSIN_EYE:
 		SkillPlaySound( SKILL_SOUND_SKILL_ASSASSIN_EYE	 , pX,pY,pZ );
 		break;
@@ -14519,6 +14549,52 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 		}
 		break;
 
+	//Fighter tier 5
+	case SKILL_PLAY_DOWN_HIT:
+		//three strikes: the cast's, then one on each of the clip's first two events
+		if ( chrAttackTarget ) {
+			if ( AttackCritcal>=0 ) {
+				GetAttackPoint( &Pos2.x,&Pos2.y,&Pos2.z );
+				SkillWarriorDestroyerHit(&Pos2);
+				SetDynLight( Pos2.x,Pos2.y,Pos2.z , 100, 0,0,0, 400 );
+				SkillPlaySound( MotionEvent<3 ? SKILL_SOUND_SKILL_AVANGING_CRASH : SKILL_SOUND_SKILL_EXPANSION2 , pX,pY,pZ );
+			}
+			else
+				PlayWaponSoundDirect( pX,pY,pZ , 13 );
+
+			if ( this==lpCurPlayer && MotionEvent<3 ) {
+				cnt = dm_SendTransDamage( chrAttackTarget , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+				lpCurPlayer->AttackCritcal = cnt ? 0 : -1;
+			}
+		}
+		break;
+
+	case SKILL_PLAY_POWER_DASH:
+		if ( chrAttackTarget && AttackCritcal>=0 ) {
+			GetAttackPoint( &Pos2.x,&Pos2.y,&Pos2.z );
+			SkillWarriorDestroyerHit(&Pos2);
+			SetDynLight( Pos2.x,Pos2.y,Pos2.z , 120, 0,0,0, 400 );
+			SkillPlaySound( SKILL_SOUND_SKILL_EXPANSION2 , pX,pY,pZ );
+		}
+		break;
+
+	case SKILL_PLAY_MORTAL_BLOW:
+		if ( lpCurPlayer!=this && point ) {
+			dm_SelectRange( pX, pY, pZ, Mortal_Blow_Area[point-1] , TRUE , Mortal_Blow_AttackNum[point-1] );
+			dm_AddRangeDamage( chrAttackTarget );
+		}
+		for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
+			StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
+		}
+		break;
+
+	case SKILL_PLAY_BLOODY_BERSERKER:
+ 		if ( point ) {
+			SkillWarriorBetserker( this , (float)Bloody_Berserker_Time[point-1] );
+			AttackAnger = 200;
+		}
+		break;
+
 	case SKILL_PLAY_CYCLONE_STRIKE:
 		if ( lpCurPlayer!=this ) {
 			dm_SelectRange( pX, pY, pZ, Cyclone_Strike_Area[point-1] , TRUE , Cyclone_Strike_AttackNum[point-1] );
@@ -15302,7 +15378,7 @@ int smCHAR::SendTransAttack( smCHAR *lpChar , smWINSOCK *lpsmsock , int AttackCo
 
 	if ( lpPlayInfo->dwSkill_Berserker_Time ) {	//버서커 흡수력 감소
 		if ( lpPlayInfo->dwSkill_Berserker_Time>dwPlayServTime ) {
-			TransAttackData.Power -= Berserker_SubAbsorb[lpPlayInfo->dwSkill_Berserker_Param];
+			TransAttackData.Power -= Berserker_SubAbsorbOf( (int)lpPlayInfo->dwSkill_Berserker_Param );	// or Bloody Berserker's
 			if ( TransAttackData.Power<0 ) return FALSE;
 		}
 		else {

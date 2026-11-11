@@ -604,12 +604,21 @@ struct	RECORD_SKILL {
 */
 
 //스킬 저장
-int	RecordSkill( RECORD_SKILL *lpRecordSkill )
+int	RecordSkill( RECORD_SKILL *lpRecordSkill , RECORD_SKILL5 *lpSkill5 )
 {
 	int cnt;
 	int mcnt;
 
-	for(cnt=0;cnt<SIN_MAX_USE_SKILL;cnt++) {
+	// the tier 5 skills (17..20) have their own block; the 16-slot one wraps 16 onto 0
+	for(cnt=SIN_TIER5_FIRST;cnt<SIN_MAX_USE_SKILL;cnt++) {
+		mcnt = cnt-SIN_TIER5_FIRST;
+		int pt = sinSkill.UseSkill[cnt].Point;
+		lpSkill5->bSkillPoint[mcnt] = (BYTE)( pt>255 ? 255 : ( pt<0 ? 0 : pt ) );
+		lpSkill5->wSkillMastery[mcnt] = (WORD)( sinSkill.UseSkill[cnt].UseSkillCount<10000 ? sinSkill.UseSkill[cnt].UseSkillCount : 10000 );
+		lpSkill5->bShortKey[mcnt] = sinSkill.UseSkill[cnt].ShortKey|(sinSkill.UseSkill[cnt].MousePosi<<4);
+	}
+
+	for(cnt=0;cnt<SIN_TIER5_FIRST;cnt++) {
 		mcnt = cnt&15;							//스킬 저장 영역 강제로 보정 ( 배열을 16개만 잡아놔서 16번 배열은 0에 저장 )
 
 		lpRecordSkill->bSkillPoint[mcnt] = sinSkill.UseSkill[cnt].Point;
@@ -690,7 +699,7 @@ int GetStatePoint_LevelQuest( int Level , DWORD dwLevelQuestLog )
 
 
 //스킬 복구
-int	RestoreSkill( RECORD_SKILL *lpRecordSkill , DWORD dwLevelQuestLog )
+int	RestoreSkill( RECORD_SKILL *lpRecordSkill , DWORD dwLevelQuestLog , RECORD_SKILL5 *lpSkill5 )
 {
 	int cnt,mcnt;
 	int	Point,EPoint;
@@ -704,7 +713,7 @@ int	RestoreSkill( RECORD_SKILL *lpRecordSkill , DWORD dwLevelQuestLog )
 		lpRecordSkill->bShortKey[0] = 0;
 	}
 
-	for(cnt=0;cnt<SIN_MAX_USE_SKILL;cnt++) {
+	for(cnt=0;cnt<SIN_TIER5_FIRST;cnt++) {
 		mcnt = cnt&15;							//스킬 저장 영역 강제로 보정 ( 배열을 16개만 잡아놔서 16번 배열은 0에 저장 )
 
 		if ( cnt>0 ) {	//주먹은 제외
@@ -714,6 +723,20 @@ int	RestoreSkill( RECORD_SKILL *lpRecordSkill , DWORD dwLevelQuestLog )
 			sinSkill.UseSkill[cnt].MousePosi = lpRecordSkill->bShortKey[mcnt]>>4;
 			sinSkill.UseSkill[cnt].Position = cnt+1;
 			//Point += sinSkill.UseSkill[cnt].Point;
+		}
+	}
+	for(cnt=SIN_TIER5_FIRST;cnt<SIN_MAX_USE_SKILL;cnt++) {		// the tier 5 skills
+		mcnt = cnt-SIN_TIER5_FIRST;
+		sinSkill.UseSkill[cnt].Point = lpSkill5->bSkillPoint[mcnt];
+		sinSkill.UseSkill[cnt].UseSkillCount = lpSkill5->wSkillMastery[mcnt];
+		sinSkill.UseSkill[cnt].ShortKey = lpSkill5->bShortKey[mcnt]&0xF;
+		sinSkill.UseSkill[cnt].MousePosi = lpSkill5->bShortKey[mcnt]>>4;
+		sinSkill.UseSkill[cnt].Position = cnt+1;
+	}
+	if ( lpCurPlayer->smCharInfo.ChangeJob<4 ) {		// tier 5 points without the fifth rank: drop them (refunded below)
+		for(cnt=SIN_TIER5_FIRST;cnt<SIN_MAX_USE_SKILL;cnt++) {
+			sinSkill.UseSkill[cnt].Point = 0;
+			sinSkill.UseSkill[cnt].UseSkillCount = 0;
 		}
 	}
 
@@ -730,6 +753,8 @@ int	RestoreSkill( RECORD_SKILL *lpRecordSkill , DWORD dwLevelQuestLog )
 	sinSkill.UseSkill[0].Position = 1;
 
 
+	if ( lpRecordSkill->wSelectSkill[0]>=SIN_MAX_USE_SKILL ) lpRecordSkill->wSelectSkill[0] = 0;
+	if ( lpRecordSkill->wSelectSkill[1]>=SIN_MAX_USE_SKILL ) lpRecordSkill->wSelectSkill[1] = 0;
 	sinSkill.pLeftSkill = &sinSkill.UseSkill[ lpRecordSkill->wSelectSkill[0] ];
 	sinSkill.pRightSkill = &sinSkill.UseSkill[ lpRecordSkill->wSelectSkill[1] ];
 
@@ -776,7 +801,7 @@ int	RestoreSkill( RECORD_SKILL *lpRecordSkill , DWORD dwLevelQuestLog )
 
 
 //스킬 첵크
-int	CheckSkillPoint( int Level , RECORD_SKILL *lpRecordSkill , int *spTotal , DWORD dwLevelQuestLog )
+int	CheckSkillPoint( int Level , RECORD_SKILL *lpRecordSkill , int *spTotal , DWORD dwLevelQuestLog , RECORD_SKILL5 *lpSkill5 )
 {
 	int cnt,mcnt;
 	int	Point,EPoint;
@@ -786,13 +811,21 @@ int	CheckSkillPoint( int Level , RECORD_SKILL *lpRecordSkill , int *spTotal , DW
 	Point = 0;
 	EPoint = 0;
 
+	// the tier 5 skills share the fourth tier's (elite) points
+	if ( lpSkill5 ) {
+		for(cnt=0;cnt<RECORD_SKILL5_MAX;cnt++) {
+			if ( lpSkill5->bSkillPoint[cnt]>10 ) return FALSE;
+			EPoint += lpSkill5->bSkillPoint[cnt];
+		}
+	}
+
 	//for(cnt=1;cnt<SIN_MAX_USE_SKILL;cnt++) {
 	for(cnt=1;cnt<13;cnt++) {
 		if ( lpRecordSkill->bSkillPoint[cnt]>10 ) return FALSE;
 		Point += abs(lpRecordSkill->bSkillPoint[cnt]);
 	}
 
-	for(cnt=13;cnt<SIN_MAX_USE_SKILL;cnt++) {
+	for(cnt=13;cnt<SIN_TIER5_FIRST;cnt++) {		// 13..16 (16 is kept in [0]); tier 5 is counted above
 		mcnt = cnt&15;
 		if ( lpRecordSkill->bSkillPoint[mcnt]>10 ) return FALSE;
 		EPoint += abs(lpRecordSkill->bSkillPoint[mcnt]);
@@ -892,7 +925,7 @@ int RecordGameData( sGAME_SAVE_INFO *lpGameSaveInfo )
 	lpGameSaveInfo->TotalSubExp = GetTotalSubExp();
 
 	//스킬 저장
-	RecordSkill( &lpGameSaveInfo->SkillInfo );
+	RecordSkill( &lpGameSaveInfo->SkillInfo , &lpGameSaveInfo->Skill5Info );
 	//기본공격 단축키정보
 	lpGameSaveInfo->ShortKey_NormalAttack = sinSkill.UseSkill[0].ShortKey|( sinSkill.UseSkill[0].MousePosi<<4 );
 
@@ -1810,7 +1843,7 @@ int rsRECORD_DBASE::ResotrRecordData( smCHAR_INFO *lpCharInfo , sITEM *lpItems ,
 	CheckCharForm();
 
 	//스킬 복구
-	RestoreSkill( &TransRecordData.GameSaveInfo.SkillInfo , TransRecordData.GameSaveInfo.dwLevelQuestLog );
+	RestoreSkill( &TransRecordData.GameSaveInfo.SkillInfo , TransRecordData.GameSaveInfo.dwLevelQuestLog , &TransRecordData.GameSaveInfo.Skill5Info );
 	//기본공격 단축기 복구
 	sinSkill.UseSkill[0].ShortKey = TransRecordData.GameSaveInfo.ShortKey_NormalAttack&0xF;
 	sinSkill.UseSkill[0].MousePosi = TransRecordData.GameSaveInfo.ShortKey_NormalAttack>>4;
@@ -2855,7 +2888,7 @@ int rsRECORD_DBASE::RecvRecordDataFromClient( TRANS_RECORD_DATAS *lpTransRecord 
 		///////////////////////////////////////////////////////////////////////////
 
 		//스킬 첵크
-		if ( CheckSkillPoint( TransRecordData.smCharInfo.Level , &TransRecordData.GameSaveInfo.SkillInfo , 0 , TransRecordData.GameSaveInfo.dwLevelQuestLog )==FALSE ) {
+		if ( CheckSkillPoint( TransRecordData.smCharInfo.Level , &TransRecordData.GameSaveInfo.SkillInfo , 0 , TransRecordData.GameSaveInfo.dwLevelQuestLog , &TransRecordData.GameSaveInfo.Skill5Info )==FALSE ) {
 			//스킬포인트 조작 오류
 			return	-10;
 		}

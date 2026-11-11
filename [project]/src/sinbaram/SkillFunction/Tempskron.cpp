@@ -20,8 +20,10 @@ int CheckMastery;	//사용가능 숙련도
 int NotUseSkillElement[3] ={0,0,0};	//요구치를 충족하지 못한다면  
 
 //수정햇음!!
-int sinMasterSkill_Money[16] = {500,1000,1500,2000,3000,5000,7000,9000,10000,12000,15000,20000,25000,30000,35000,40000};	
-int sinMasterSkill_PlusMoney[16] = {500,600,700,800,1000,1200,1400,1600,2000,2500,3000,4000,5000,6000,7000,8000};	
+int sinMasterSkill_Money[SIN_MAX_USE_SKILL-1] = {500,1000,1500,2000,3000,5000,7000,9000,10000,12000,15000,20000,25000,30000,35000,40000,
+	50000,60000,70000,80000};	// + tier 5
+int sinMasterSkill_PlusMoney[SIN_MAX_USE_SKILL-1] = {500,600,700,800,1000,1200,1400,1600,2000,2500,3000,4000,5000,6000,7000,8000,
+	10000,12000,14000,16000};	// + tier 5
 
 
 #define GROUP_MECHANICIAN		0x01000000
@@ -31,7 +33,7 @@ int sinMasterSkill_PlusMoney[16] = {500,600,700,800,1000,1200,1400,1600,2000,250
 
 
 
-int sinMasteryIncreaIndex[16] = {5,5,5,5,7,7,7,7,9,9,9,9,14,15,16,17};
+int sinMasteryIncreaIndex[SIN_MAX_USE_SKILL-1] = {5,5,5,5,7,7,7,7,9,9,9,9,14,15,16,17,18,19,20,21};	// + tier 5
 
 
 //유지형스킬을 무기가바뀔때 취소한다
@@ -1918,6 +1920,7 @@ int F_Destoryer()
 }
 int F_Berserker()
 {
+	cSkill.CancelContinueSkill( SKILL_BLOODY_BERSERKER );	// one Berserker slot on the server: the newer cast wins
 	pUseSkill->UseTime = Berserker_Time[pUseSkill->Point-1];
 	sinContinueSkillSet(pUseSkill);
 	sinUseManaStamina(pUseSkill);
@@ -1932,6 +1935,36 @@ int F_Cyclone_Strike()
 int F_Boost_Health()
 {
 	return TRUE;
+}
+
+//Fighter tier 5
+int F_Down_Hit()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Power_Dash()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Mortal_Blow()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Bloody_Berserker()
+{
+	cSkill.CancelContinueSkill( SKILL_BERSERKER );		// the two share the server's slot: this one replaces it
+	pUseSkill->UseTime = Bloody_Berserker_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();
+	return TRUE;
+}
+int F_Tier5_Pending()
+{
+	return FALSE;
 }
 
 //파이크맨

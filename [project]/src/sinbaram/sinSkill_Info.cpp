@@ -710,3 +710,89 @@ int Meteo_UseMana[10]   = {100,104,108,112,116,120,124,128,132,136};
 int C_Skill_HpPoint[10]   ={100,110,120,130,140,150,160,170,180,190};//hp상승
 int C_Skill_AttPercent[10]={10,11,12,13,14,15,16,17,18,19};          //공격력 상승
 int C_Skill_EvaPercent[10]   ={10,11,12,13,14,15,16,17,18,19};       //회피율 상승
+
+
+/*----------------------------------------------------------------------------*
+*	Tier 5 (the fifth rank). Mana per rank for every class's four; the rest of
+*	the numbers come with each class's skills as they are made.
+*-----------------------------------------------------------------------------*/
+int Land_Mining_UseMana[10]			= {55,58,61,64,67,70,73,76,79,82};
+int Hyper_Sonic_UseMana[10]			= {80,85,90,95,100,105,110,115,120,125};
+int Rolling_Smash_UseMana[10]		= {60,63,66,69,72,75,78,81,84,87};
+int Power_Enhancement_UseMana[10]	= {85,90,95,100,105,110,115,120,125,130};
+
+int Down_Hit_UseMana[10]			= {58,61,64,67,70,73,76,79,82,85};
+int Power_Dash_UseMana[10]			= {70,75,80,85,90,95,100,105,110,115};
+int Mortal_Blow_UseMana[10]			= {63,66,69,72,75,78,81,84,87,90};
+int Bloody_Berserker_UseMana[10]	= {86,90,94,98,102,106,110,114,118,122};
+
+int Dancing_Reaper_UseMana[10]		= {58,61,64,67,70,73,76,79,82,85};
+int Final_Spear_UseMana[10]			= {63,66,69,72,75,78,81,84,87,90};
+int Amplified_UseMana[10]			= {86,90,94,98,102,106,110,114,118,122};
+int Side_Spin_Attack_UseMana[10]	= {70,75,80,85,90,95,100,105,110,115};
+
+int Evade_Shot_UseMana[10]			= {40,43,46,49,52,55,58,61,64,67};
+int Thunder_Rope_UseMana[10]		= {40,43,46,49,52,55,58,61,64,67};
+int Nature_Splash_UseMana[10]		= {45,48,51,54,57,60,63,66,69,72};
+int Circle_Trap_UseMana[10]			= {83,85,87,89,91,93,95,97,99,101};
+
+int Soul_Breaker_UseMana[10]		= {58,61,64,67,70,73,76,79,82,85};
+int Crescent_Moon_UseMana[10]		= {63,66,69,72,75,78,81,84,87,90};
+int Saint_Blade_UseMana[10]			= {58,61,64,67,70,73,76,79,82,85};
+int Holy_Benedic_UseMana[10]		= {86,90,94,98,102,106,110,114,118,122};
+
+int Talaria_UseMana[10]				= {55,57,59,62,65,68,72,76,80,84};
+int Galaxy_Coup_UseMana[10]			= {40,43,46,49,52,55,58,61,64,67};
+int Summon_Arcuda_UseMana[10]		= {73,75,77,80,83,86,90,94,98,102};
+int Snippy_Fear_UseMana[10]			= {45,48,51,54,57,60,63,66,69,72};
+
+int Spirit_Impact_UseMana[10]		= {120,125,130,135,140,145,150,155,160,165};
+int Piercing_Ice_UseMana[10]		= {135,139,143,147,151,155,159,163,167,171};
+int Summon_Ramiel_UseMana[10]		= {152,156,160,164,168,172,176,180,184,188};
+int Blessing_Krishna_UseMana[10]	= {166,170,174,178,182,186,190,194,198,202};
+
+int Silraphim_UseMana[10]			= {120,125,130,135,140,145,150,155,160,165};
+int Vis_Tenus_UseMana[10]			= {135,139,143,147,151,155,159,163,167,171};
+int Prima_Ignis_UseMana[10]			= {152,156,160,164,168,172,176,180,184,188};
+int Third_Anima_UseMana[10]			= {166,170,174,178,182,186,190,194,198,202};
+
+//[Fighter] tier 5
+//Down Hit: lifts the target and strikes it 3 times
+int Down_Hit_DamagePercent[10]		= {50,80,110,140,170,200,230,260,290,320};	//attack power +%
+int Down_Hit_AddHit[10]				= {5,10,15,20,25,30,35,40,45,50};			//attack rating +%
+
+//Power Dash: charges the target and stuns it (bosses are spared the stun)
+int Power_Dash_DamagePercent[10]	= {15,30,45,60,75,90,105,120,135,150};		//attack power +%
+int Power_Dash_StunTime[10]			= {10,13,16,19,22,25,28,31,34,37};			//stun, seconds
+int Power_Dash_Range[10]			= {190,190,190,190,190,190,190,190,190,190};	//charge reach
+
+//Mortal Blow: a slow spin hitting the target and the enemies around the caster
+int Mortal_Blow_DamagePercent[10]	= {40,60,80,100,120,140,160,180,200,220};	//the target: attack power +%
+int Mortal_Blow_AreaDamage[10][2]	= {{150,200},{170,230},{190,260},{210,290},{230,320},
+									   {250,350},{270,380},{290,410},{310,440},{330,470}};	//around: damage
+int Mortal_Blow_Area[10]			= {120,130,140,150,160,170,180,190,200,210};	//radius
+int Mortal_Blow_AttackNum[10]		= {5,5,6,6,7,7,8,8,9,9};					//most enemies struck
+
+//Bloody Berserker: more damage, less absorption (replaces Berserker)
+int Bloody_Berserker_AddAttack[10]	= {110,140,170,200,230,260,290,320,350,380};	//added attack power
+int Bloody_Berserker_SubAbsorb[10]	= {-5,-7,-9,-11,-13,-15,-17,-19,-21,-23};		//absorption
+int Bloody_Berserker_Time[10]		= {240,280,320,360,400,440,480,520,560,600};	//seconds
+
+// Berserker and Bloody Berserker share the server's one Berserker slot: the param
+// is the 0-based rank, with BERSERKER_PARAM_BLOODY set for Bloody Berserker.
+// (this file includes nothing, so the flag is repeated from Tempskron.h)
+#ifndef BERSERKER_PARAM_BLOODY
+#define	BERSERKER_PARAM_BLOODY	0x100
+#endif
+int Berserker_AddAttackOf( int dwParam )
+{
+	int pt = dwParam&0xFF;
+	if ( pt>9 ) pt = 9;
+	return (dwParam&BERSERKER_PARAM_BLOODY) ? Bloody_Berserker_AddAttack[pt] : Berserker_AddAttack[pt];
+}
+int Berserker_SubAbsorbOf( int dwParam )
+{
+	int pt = dwParam&0xFF;
+	if ( pt>9 ) pt = 9;
+	return (dwParam&BERSERKER_PARAM_BLOODY) ? Bloody_Berserker_SubAbsorb[pt] : Berserker_SubAbsorb[pt];
+}

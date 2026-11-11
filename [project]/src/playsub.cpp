@@ -5480,7 +5480,7 @@ int ChangeJobFace()
 	}
 */
 
-	ChangeModelSkin( lpCurPlayer , 0 , lpCurPlayer->smCharInfo.ChangeJob , 0 , 0 );			//전업얼굴
+	ChangeModelSkin( lpCurPlayer , 0 , JOB_FACE(lpCurPlayer->smCharInfo.ChangeJob) , 0 , 0 );			//전업얼굴
 	lpCurPlayer->smCharInfo.bUpdateInfo[0]++;
 	ReformCharForm();
 	SendSetObjectSerial( lpCurPlayer->dwObjectSerial );
@@ -6737,7 +6737,7 @@ int	ChangeBigHeadMode( int Mode , int Time )
 	else {
 		lpCurPlayer->smCharInfo.SizeLevel = 1;
 		lpCurPlayer->smCharInfo.dwEventTime_T = 0;
-		ChangeModelSkin( lpCurPlayer , 0 , lpCurPlayer->smCharInfo.ChangeJob , 0 , GetFaceHairSkin(lpCurPlayer) );				//정상 얼굴 // 얼큰이 오류 수정
+		ChangeModelSkin( lpCurPlayer , 0 , JOB_FACE(lpCurPlayer->smCharInfo.ChangeJob) , 0 , GetFaceHairSkin(lpCurPlayer) );				//정상 얼굴 // 얼큰이 오류 수정
 	}
 
 	lpCurPlayer->smCharInfo.bUpdateInfo[0]++;

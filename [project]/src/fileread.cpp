@@ -6204,7 +6204,8 @@ JOB_DATA_CODE	*GetJobDataCode(	DWORD BaseJob	, int	JobCnt )
 
 	cnt = 0;
 	JobCount = 0;
-	JobCount2 = JobCnt&3;
+	JobCount2 = JobCnt;					// ranks 0..4 (4: the fifth rank, tier 5 skills)
+	if ( JobCount2<0 || JobCount2>4 ) JobCount2 = 4;
 	bJob = BaseJob&0xFFFF;
 
 	if ( !JobCnt ) {

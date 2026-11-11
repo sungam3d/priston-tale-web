@@ -21851,7 +21851,7 @@ pRetry:
 
 		if ( val==-10 ) {
 			//스킬포인트 조작 오류
-			CheckSkillPoint( lpPlayInfo->lpRecordBase->TransRecordData.smCharInfo.Level , &lpPlayInfo->lpRecordBase->TransRecordData.GameSaveInfo.SkillInfo , &cnt , lpPlayInfo->lpRecordBase->TransRecordData.GameSaveInfo.dwLevelQuestLog );
+			CheckSkillPoint( lpPlayInfo->lpRecordBase->TransRecordData.smCharInfo.Level , &lpPlayInfo->lpRecordBase->TransRecordData.GameSaveInfo.SkillInfo , &cnt , lpPlayInfo->lpRecordBase->TransRecordData.GameSaveInfo.dwLevelQuestLog , &lpPlayInfo->lpRecordBase->TransRecordData.GameSaveInfo.Skill5Info );
 			smTransCommand.WParam = 6910;
 			smTransCommand.LParam = lpPlayInfo->lpRecordBase->TransRecordData.smCharInfo.Level;
 			smTransCommand.SParam = cnt;
@@ -31616,6 +31616,13 @@ int rsRecvProcessSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand
 			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_FIGHTER ) {
 				lpPlayInfo->dwSkill_Berserker_Time = dwPlayServTime+Berserker_Time[point]*1000;
 				lpPlayInfo->dwSkill_Berserker_Param = point;//Berserker_AddAttack[point];
+			}
+			break;
+
+		case SKILL_PLAY_BLOODY_BERSERKER:		// tier 5: takes Berserker's slot (and replaces it)
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_FIGHTER && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpPlayInfo->dwSkill_Berserker_Time = dwPlayServTime+Bloody_Berserker_Time[point]*1000;
+				lpPlayInfo->dwSkill_Berserker_Param = point|BERSERKER_PARAM_BLOODY;
 			}
 			break;
 

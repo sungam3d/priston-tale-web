@@ -2222,9 +2222,14 @@ void cINTERFACE::KeyDown()
 				{
 					#ifdef	_WINMODE_DEBUG
 					SendChatMessageToServer("MeLee: it's good /(-_-)/ ");
-					sinChar->ChangeJob++; //전업을 한다 
-					if(sinChar->ChangeJob > 3)sinChar->ChangeJob = 3;
+					sinChar->ChangeJob++; //전업을 한다
+					if(sinChar->ChangeJob > 4)sinChar->ChangeJob = 4;		// 4: the fifth rank (tier 5 skills)
+					// finish it like a rank-up quest: title, face, skill window, saved
+					sinJobList = GetJobDataCode(sinChar->JOB_CODE , sinChar->ChangeJob);
+					if(sinJobList) lstrcpy(cInvenTory.JobName,sinJobList->szName2);
 					cSkill.SearchUseSkill();
+					SaveGameData();
+					ChangeJobFace();
 					memset(sinTestBuff5,0,sizeof(sinTestBuff5));
 					memset(sinTestBuff6,0,sizeof(sinTestBuff6));
 					memset(sinBuff,0,sizeof(sinBuff));
@@ -2259,6 +2264,16 @@ void cINTERFACE::KeyDown()
 							memset(&sinQuest_ChangeJob4,0,sizeof(sQUEST_CHANGEJOB3));
 							SaveGameData();
 							SendChatMessageToServer("MrLee:Reconnect again!! ");
+						}
+						if(ResetQuset3Flag == 5){		// the fifth rank back to the fourth (to test the rank-up again)
+							if(sinChar->ChangeJob>=4){
+								sinChar->ChangeJob=3;
+								sinJobList = GetJobDataCode(sinChar->JOB_CODE , sinChar->ChangeJob);
+								if(sinJobList) lstrcpy(cInvenTory.JobName,sinJobList->szName2);
+								ChangeJobFace();
+							}
+							SaveGameData();
+							SendChatMessageToServer("GM: rank 5 reset. Reconnect to refund the tier 5 skill points.");
 						}
 
 						memset(sinTestBuff5,0,sizeof(sinTestBuff5));

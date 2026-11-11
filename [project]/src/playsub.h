@@ -258,6 +258,9 @@ int	AttackRecvCountUp();
 int	CheckCopyItem( sITEMINFO *lpItem );
 //집업 변경 얼굴 변화
 int ChangeJobFace();
+// The face of a rank (ChangeJob): faces 0..3 are the first four ranks and 4..6 the big-head
+// event faces (playmodel.h), so the fifth rank keeps the fourth rank's face
+#define JOB_FACE( ChangeJob )	( (ChangeJob)>3 ? 3 : (ChangeJob) )
 
 
 //예약 이펙트 초기화

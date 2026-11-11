@@ -67,6 +67,13 @@ int F_Berserker();          //버서커
 int F_Cyclone_Strike();     //싸이클론 스트라이크
 int F_Boost_Health();       //부스트 헬스
 
+//Tier 5
+int F_Down_Hit();
+int F_Power_Dash();
+int F_Mortal_Blow();
+int F_Bloody_Berserker();
+int F_Tier5_Pending();		// a tier 5 skill whose cast is not made yet: it can be learned, not used
+
 //////////////// 파이크맨 
 int F_Pike_Wind();			//파이크윈드 
 int F_Ice_Attribute();		//아이스 어트리뷰트 
@@ -280,6 +287,33 @@ extern int Cyclone_Strike_UseMana[10];
 //붓트 헬스
 extern int Boost_Health_Life[10];//생명력 영구적 추가
 
+//**Tier 5 (all classes' mana per rank: sinSkill_Info.cpp)
+extern int Land_Mining_UseMana[10], Hyper_Sonic_UseMana[10], Rolling_Smash_UseMana[10], Power_Enhancement_UseMana[10];
+extern int Down_Hit_UseMana[10], Power_Dash_UseMana[10], Mortal_Blow_UseMana[10], Bloody_Berserker_UseMana[10];
+extern int Dancing_Reaper_UseMana[10], Final_Spear_UseMana[10], Amplified_UseMana[10], Side_Spin_Attack_UseMana[10];
+extern int Evade_Shot_UseMana[10], Thunder_Rope_UseMana[10], Nature_Splash_UseMana[10], Circle_Trap_UseMana[10];
+extern int Soul_Breaker_UseMana[10], Crescent_Moon_UseMana[10], Saint_Blade_UseMana[10], Holy_Benedic_UseMana[10];
+extern int Talaria_UseMana[10], Galaxy_Coup_UseMana[10], Summon_Arcuda_UseMana[10], Snippy_Fear_UseMana[10];
+extern int Spirit_Impact_UseMana[10], Piercing_Ice_UseMana[10], Summon_Ramiel_UseMana[10], Blessing_Krishna_UseMana[10];
+extern int Silraphim_UseMana[10], Vis_Tenus_UseMana[10], Prima_Ignis_UseMana[10], Third_Anima_UseMana[10];
+
+//Fighter tier 5
+extern int Down_Hit_DamagePercent[10];
+extern int Down_Hit_AddHit[10];
+extern int Power_Dash_DamagePercent[10];
+extern int Power_Dash_StunTime[10];
+extern int Power_Dash_Range[10];
+extern int Mortal_Blow_DamagePercent[10];
+extern int Mortal_Blow_AreaDamage[10][2];
+extern int Mortal_Blow_Area[10];
+extern int Mortal_Blow_AttackNum[10];
+extern int Bloody_Berserker_AddAttack[10];
+extern int Bloody_Berserker_SubAbsorb[10];
+extern int Bloody_Berserker_Time[10];
+#define	BERSERKER_PARAM_BLOODY	0x100
+int Berserker_AddAttackOf( int dwParam );		// the server's Berserker param -> added attack
+int Berserker_SubAbsorbOf( int dwParam );		// -> absorption change (negative)
+
 
 ///////////////////////////파이크맨 스킬 전역변수
 //파이크 윈드 
@@ -458,8 +492,8 @@ extern int Force_Of_Nature_UseMana[10];
 
 
 //스킬 습득시 사용되는 돈 
-extern int sinMasterSkill_Money[16];
-extern int sinMasterSkill_PlusMoney[16];
+extern int sinMasterSkill_Money[SIN_MAX_USE_SKILL-1];
+extern int sinMasterSkill_PlusMoney[SIN_MAX_USE_SKILL-1];
 
 
 // 스킬 습득시 컬러 색을 바꾼다 
@@ -467,7 +501,7 @@ extern int SkillTextColor[10];
 
 //요구치를 충족못했을경우에는 효과를 준다 
 extern int NotUseSkillElement[3];	//요구치 충족 플렉 
-extern int sinMasteryIncreaIndex[16];
+extern int sinMasteryIncreaIndex[SIN_MAX_USE_SKILL-1];
 
 
 //공성전 클랜스킬 

@@ -909,6 +909,25 @@ int OpenPlaySkill( sSKILL *lpSkill )
 			}
 		}
 		break;
+
+	case SKILL_BLOODY_BERSERKER:		// tier 5
+		if ( lpCurPlayer->MotionInfo->State<0x100 ) {
+			if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+
+				lpCurPlayer->AttackSkil = SKILL_PLAY_BLOODY_BERSERKER;
+				lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+				lpCurPlayer->BeginSkill( lpCurPlayer->AttackSkil , 0 , 0 ,0,0,0 );
+
+				lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+				lpCurPlayer->MotionLoopSpeed = 70;
+				lpCurPlayer->MotionLoop = 1;
+
+				SendProcessSKillToServer( SKILL_PLAY_BLOODY_BERSERKER , lpSkill->Point , 0, 0 );
+
+				flag++;
+			}
+		}
+		break;
 /*
 	case SKILL_CYCLONE_STRIKE:
 		//CYCLONE_STRIKE
@@ -3310,6 +3329,59 @@ int Avalanche_ArrowNum[10]	= {3,3,3,4,4,4,5,5,5,6};
 			dm_SendRangeDamage( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ,  lpChar , 0 , 0 ,0,0, lpCurPlayer->AttackSkil );
 		}
 		return TRUE;
+
+	//Fighter tier 5
+	case SKILL_DOWN_HIT:
+		//lifts the target and strikes 3 times: now, then on the clip's first two events (like Destroyer)
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_DOWN_HIT;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+
+			lpCurPlayer->MotionLoopSpeed = GetAttackSpeedFrame( lpCurPlayer->smCharInfo.Attack_Speed , 1 );
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	case SKILL_POWER_DASH:
+		//one strike that stuns (the server stuns: monsters only, not bosses)
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_POWER_DASH;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	case SKILL_MORTAL_BLOW:
+		//the target, plus the enemies around the caster (like Cyclone Strike)
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_MORTAL_BLOW;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			dm_SelectRange( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ, Mortal_Blow_Area[lpSkill->Point-1] , TRUE , Mortal_Blow_AttackNum[lpSkill->Point-1] );
+			dm_AddRangeDamage( lpChar );
+			dm_SendRangeDamage( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ,  lpChar , 0 , 0 ,0,0, lpCurPlayer->AttackSkil );
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
 	//파이크맨
 	case SKILL_ASSASSIN_EYE:
 		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {

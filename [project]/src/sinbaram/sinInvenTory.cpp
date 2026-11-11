@@ -5466,6 +5466,13 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 				sinTempAbsorb += Berserker_SubAbsorb[ContinueSkill[i].Point-1];
 				SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_RED;
 			break;
+			case SKILL_BLOODY_BERSERKER:		// tier 5
+				sinTempDamage2[0]  += Bloody_Berserker_AddAttack[ContinueSkill[i].Point-1];
+				sinTempDamage2[1]  += Bloody_Berserker_AddAttack[ContinueSkill[i].Point-1];
+				sinTempAbsorb += Bloody_Berserker_SubAbsorb[ContinueSkill[i].Point-1];
+				SkillTextColor[SIN2_DAMAGE] = SIN_TEXT_COLOR_GOLD;
+				SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_RED;
+			break;
 			case SKILL_ASSASSIN_EYE:
 				//sinCritical += Assassin_Eye_AddCritical[ContinueSkill[i].Point-1];
 			break;
@@ -6355,6 +6362,7 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 
 				break;
 				case SKILL_BERSERKER:
+				case SKILL_BLOODY_BERSERKER:
 					SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_RED;
 				break;
 				case SCROLL_INVULNERABILITY:  //무적 스크롤 공격력 1/2
