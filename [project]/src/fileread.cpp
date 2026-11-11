@@ -2224,6 +2224,11 @@ int SetServerConfig( char *decode , char *lpPoint )
 		rsServerConfig.OfflinePasswords = TRUE;
 		flag++;
 	}
+	// test server only: GM gold/exp/level commands without the rest of *TEST_SERVER
+	if ( !flag && lstrcmpi( decode , "*GM_CHEATS" )==0 ) {
+		rsServerConfig.GmCheats = TRUE;
+		flag++;
+	}
 
 	if ( !flag && ( lstrcmp( decode , "*\267\316\261\327\300\316\261\335\301\366" )==0 ||
 		lstrcmpi( decode , "*DISABLE_LOGIN" )==0 ) ) {

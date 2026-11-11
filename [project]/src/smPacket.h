@@ -2663,6 +2663,8 @@ struct rsSERVER_CONFIG	{
 	int		OfflineMode;
 	// ...with a password per ID: the first login sets it (*OFFLINE_PASSWORDS, shared web server)
 	int		OfflinePasswords;
+	// GM gold/exp/level commands (/GiveMeMoney!, /GiveMeExp!, /MakeMeLevel) for any GM (*GM_CHEATS, test server only)
+	int		GmCheats;
 
 
 	#ifdef LOG_THE_PK

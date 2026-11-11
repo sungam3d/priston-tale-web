@@ -19963,7 +19963,7 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 	len = rsCompString( "/GiveMeExp!" , szChatCommand );
 	if ( !len )
 		len = rsCompString( "/ShowMeTheExp!" , szChatCommand );		// the name in the old GM notes
-	if ( len &&lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || lpPlayInfo->AdminMode>=4 ) )
+	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.GmCheats || lpPlayInfo->AdminMode>=4 ) )
 	{
 		lpBuff = szChatCommand + len;
 
@@ -19992,7 +19992,7 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 	// client's next save passes the level-jump (-12) and exp-gain (-9) checks, then tells
 	// the client to apply the same level (smTRANSCODE_GM_SETLEVEL).
 	len = rsCompString( "/MakeMeLevel" , szChatCommand );
-	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.OfflineMode || lpPlayInfo->AdminMode>=4 ) )
+	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.GmCheats || lpPlayInfo->AdminMode>=4 ) )
 	{
 		lpBuff = szChatCommand + len;
 		lpBuff = rsGetWord( szCmdBuff , lpBuff );
@@ -20030,7 +20030,7 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 //	len = rsCompString( "/내돈다내놔!" , szChatCommand );
 //해외
 	len = rsCompString( "/GiveMeMoney!" , szChatCommand );
-	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || lpPlayInfo->AdminMode>=4 ) ) {
+	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.GmCheats || lpPlayInfo->AdminMode>=4 ) ) {
 		lpBuff = szChatCommand + len;
 
 		lpBuff = rsGetWord( szCmdBuff , lpBuff );	//레벨
