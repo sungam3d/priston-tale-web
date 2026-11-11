@@ -7251,12 +7251,14 @@ int cINVENTORY::CheckMoneyLimit(int Money)
 			break;
 			//4차 전업(임시)
 			case 3:
+			case 4:		// tier 5: the fifth rank (without this, a rank 5 character could pick up no gold at all)
+			default:
 				if( ( sinChar->Money + Money) <= 100000000 )return TRUE;
 			break;
 
 		}
 	}
-	
+
 	cMessageBox.ShowMessage(MESSAGE_OVER_MONEY);
 	return FALSE;
 

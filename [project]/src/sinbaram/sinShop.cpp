@@ -1616,6 +1616,7 @@ int cSHOP::SellItemToShop(sITEM *pItem,int ItemCount)
 
 			break;
 			case 3:
+			case 4:		// tier 5: the fifth rank
 				if( ( sinChar->Money + pItem->SellPrice*ItemCount) >=100000000 ){
 					cMessageBox.ShowMessage(MESSAGE_OVER_MONEY);
 					cInvenTory.ReFormInvenItem();
@@ -2683,6 +2684,7 @@ int cMYSHOP::GetLimitMoney(int Money)
 				return ((50000000) - (Money + sinChar->Money));
 			break;
 			case 3:
+			case 4:		// tier 5: the fifth rank (it got no room at all)
 				return ((100000000) - (Money + sinChar->Money));
 			break;
 

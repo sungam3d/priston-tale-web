@@ -2470,10 +2470,13 @@ int sinSkillMaster(int ChangeJob)
 	case 3:
 		ChangeJobSkillPlus = 17;
 	break;
+	default:		// tier 5: the fifth rank shows the four tier 5 skills too
+		ChangeJobSkillPlus = 21;
+	break;
 	}
 
 
-	
+
 
 	SkillTreeCheckFlag = 1;
 	for(int i=1; i  < ChangeJobSkillPlus ; i++){	

@@ -693,6 +693,7 @@ void cMESSAGEBOX::LButtonDown(int x , int y)
 							break;
 							//4차전업(임시)
 							case 3:
+							case 4:		// tier 5: the fifth rank
 								if( ( sinChar->Money + sMessageBox2[i].Count) > 100000000 ){
 									sMessageBox2[i].Count = 100000000 - sinChar->Money;
 									if(sMessageBox2[i].Count < 0 ) sMessageBox2[i].Count = 0;
@@ -995,6 +996,7 @@ void cMESSAGEBOX::KeyDown()
 								break;
 								//4차전업(임시)
 								case 3:
+								case 4:		// tier 5: the fifth rank
 									if( ( sinChar->Money + sMessageBox2[i].Count) > 100000000 ){
 										sMessageBox2[i].Count = 100000000 - sinChar->Money;
 										if(sMessageBox2[i].Count < 0 ) sMessageBox2[i].Count = 0;
