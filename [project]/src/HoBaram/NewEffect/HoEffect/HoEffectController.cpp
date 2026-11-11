@@ -55,6 +55,16 @@ bool HoEffectEventController::AddEvent(HoEffectEventInterface *event)
 
 void HoEffectEventController::Init(HoEffectModelInterface *model)
 {
+    // An empty list leaves the model with no current event, as VC7 did (an empty vector's
+    // begin() was a NULL pointer). HoEffectParticleController creates particles through its own,
+    // empty controller and then runs them through its base class's, which holds the script's
+    // events: a valid position in the empty list was walked against the other list's end(),
+    // through unrelated memory - the crash on Destroyer's hit spark and other script effects.
+    if ( m_EffectEvents.empty() ) {
+        model->m_CurrentEvent = NULL;
+        return;
+    }
+
     std::vector<HoEffectEventInterface *>::iterator iter;
     for (iter = m_EffectEvents.begin();
          iter != m_EffectEvents.end() && !(*iter)->GetStartTime();

@@ -117,6 +117,8 @@ def main():
         '-sSTACK_SIZE=4MB', '--pre-js', os.path.join(HERE, 'pre.js'), '--shell-file', os.path.join(HERE, 'shell.html'),
         '-sEXPORTED_RUNTIME_METHODS=addRunDependency,removeRunDependency,FS', '-sEXPORTED_FUNCTIONS=_main,_malloc,_free,_PtNet_Receive', '-sFORCE_FILESYSTEM', '-sERROR_ON_UNDEFINED_SYMBOLS=1', '-Wl,--error-limit=0',
         '-o', os.path.join(outdir, 'game.html')] + ([] if release else ['-sASSERTIONS=1'])
+    # extra link flags for a test build, e.g. PT_LINK_FLAGS=--profiling-funcs (function names in crash stacks)
+    link += os.environ.get('PT_LINK_FLAGS', '').split()
     rsp = os.path.join(objdir, 'link.rsp')
     open(rsp, 'w').write('\n'.join('"%s"' % a.replace('\\', '/') if ' ' in a else a.replace('\\', '/') for a in link[1:]))
     r = subprocess.run([emxx, '@' + rsp], capture_output=True, text=True, errors='replace', env=env, cwd=SRC)
