@@ -2571,6 +2571,30 @@ cnt++;
 	printf( "[field] old maps are fields %d..%d\n", OldFieldFirst, cnt-1 );
 #endif
 
+	//////////////////////// 고대 병기 (Ancient Weapon) ////////////////////////
+	// A later dungeon whose map, monsters (level 115-130) and NPCs were in the data but
+	// not in this list. It sits at its own place in the world, clear of every other map.
+	sField[cnt].SetName( "AncientW\\ancientW.ase" , "AncientW" );			//71
+	sField[cnt].State			= FIELD_STATE_DUNGEON;
+	sField[cnt].BackImageCode[0]= 0;
+	sField[cnt].BackImageCode[1]= 0;
+	sField[cnt].BackImageCode[2]= 0;
+	sField[cnt].BackMusicCode	= BGM_CODE_DUNGEON;
+	sField[cnt].ServerCode		= PLAY_SERVER_CODE_EXTEND;
+	sField[cnt].SetCenterPos( 12778 , -59650 );					// between the shop and the warehouse keeper
+	sField[cnt].AddStartPoint( 12778 , -59650 );
+	sField[cnt].AddStageObject( "AncientW\\RotObj01.ASE" );
+	sField[cnt].AddStageObject( "AncientW\\RotObj02.ASE" );
+	sField[cnt].AddStageObject( "AncientW\\RotObj03.ASE" );
+	sField[cnt].AddStageObject( "AncientW\\RotObj04.ASE" );
+	sField[cnt].AddStageObject( "AncientW\\RotObj05.ASE" );
+	sField[cnt].AddStageObject( "AncientW\\RotObj06.ASE" );
+	sField[cnt].AddStageObject( "AncientW\\RotObj07.ASE" );
+	sField[cnt].AddStageObject( "AncientW\\RotObj08.ASE" );
+	sField[cnt].AddStageObject( "AncientW\\RotObj09.ASE" );
+	sField[cnt].AddStageObject( "AncientW\\RotObj10.ASE" );
+	cnt++;
+
 	//////////////////////// 확장 테스트용 ////////////////////
 
 

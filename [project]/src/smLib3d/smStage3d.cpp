@@ -2065,6 +2065,24 @@ int smSTAGE3D::SetupPolyAreas()
 
 }
 
+// The area grid is 256 cells of 64 units and wraps every 16384 world units, so on a
+// map longer than that (Ancient Weapon) a cell near the camera also lists faces from
+// the far end of the map. Those faces, drawn from that far away, blacked out the screen.
+// A face whose corners are all over half the grid away on one axis is such a copy:
+// no draw distance reaches it (the longest is 110 cells, 7040 units).
+#define STAGE_WRAP_HALF		(8192*fONE)
+
+static BOOL IsWrappedFace( smSTAGE_VERTEX *Vertex, smSTAGE_FACE *face, int cx, int cz )
+{
+	int farX = 0, farZ = 0;
+	for( int i=0; i<3; i++ ) {
+		smSTAGE_VERTEX *sv = &Vertex[ face->Vertex[i] ];
+		if ( abs( sv->x-cx )>STAGE_WRAP_HALF ) farX++;
+		if ( abs( sv->z-cz )>STAGE_WRAP_HALF ) farZ++;
+	}
+	return farX==3 || farZ==3;
+}
+
 // 렌더링을 위한 연산과 정렬
 int smSTAGE3D::RenderGeom()
 {
@@ -2104,7 +2122,7 @@ int smSTAGE3D::RenderGeom()
 					fnum = StageArea[clipW][clipH][cnt];
 					face = &Face[ fnum ];
 //					if ( face->sum != SumCount && CheckFace!=face ) {
-					if ( face->sum != SumCount ) { //&& (smMaterial[Face[ fnum ].Vertex[3]].UseState&Display sMATS_SCRIPT_NOTVIEW) ) {
+					if ( face->sum != SumCount && !IsWrappedFace( Vertex, face, CameraX<<FLOATNS, CameraZ<<FLOATNS ) ) { //&& (smMaterial[Face[ fnum ].Vertex[3]].UseState&Display sMATS_SCRIPT_NOTVIEW) ) {
 						rendface = smRender.AddStageFace( face );			// 렌더링 페이스로 추가
 					}
 					k++;
