@@ -940,7 +940,9 @@ DWORD WINAPI smLoaderThreadProc( void *pInfo )
 			smDPat = smPattern.LoadCharactor( smLoader[cnt].szLoadName );
 
 			if ( smDPat ) {
-				if ( lpD3DDevice && smDPat->UseCount==1 ) {
+				// every time, not only on the model's first load (UseCount==1): a model first
+				// loaded in a hand (SetTool) may not have had its textures read. Only unread ones are read.
+				if ( lpD3DDevice ) {
 
 					//wsprintf( szDebugPrint , "TEX_READ:%s",smLoader[cnt].szLoadName );
 					//AddChatBuff( szDebugPrint );
@@ -1664,6 +1666,17 @@ DWORD	dwItemCodeFromVillage_Cross[] ={
 
 
 
+// A weapon or shield model put in a hand needs its textures read. The original game read
+// every item's textures at start-up (LoadOftenItem); the web build skips that preload, so
+// without this the held item draws plain white. ReadTextures only reads ones not yet loaded.
+static void ReadToolTextures( smDPAT *lpDinaPat )
+{
+	if ( lpD3DDevice && lpDinaPat && lpDinaPat->Pat && lpDinaPat->Pat->smMaterialGroup ) {
+		lpDinaPat->Pat->smMaterialGroup->ReadTextures();
+		lpDinaPat->Pat->smMaterialGroup->CheckMatreialTextureSwap();
+	}
+}
+
 int smCHAR::SetTool( DWORD dwItemCode , int hvPosi  )
 {
 	char szToolMeshName[64];
@@ -1687,6 +1700,7 @@ int smCHAR::SetTool( DWORD dwItemCode , int hvPosi  )
 			if ( dwItemCode ) {
 				lpDinaRightPattern = smPattern.LoadCharactor( szToolMeshName );
 				if ( lpDinaRightPattern ) {
+					ReadToolTextures( lpDinaRightPattern );
 					HvRightHand.PatTool = lpDinaRightPattern->Pat;
 					for( cnt=0;cnt<lpDinaRightPattern->Pat->nObj3d;cnt++) {
 						if ( szX<lpDinaRightPattern->Pat->obj3d[cnt]->maxY ) 
@@ -1731,6 +1745,7 @@ int smCHAR::SetTool( DWORD dwItemCode , int hvPosi  )
 //				lpDinaLeftPattern = smPattern.LoadCharactor( "Shield\\Ds101.ASE" );
 				lpDinaLeftPattern = smPattern.LoadCharactor( szToolMeshName );
 				if ( lpDinaLeftPattern ) {
+					ReadToolTextures( lpDinaLeftPattern );
 					HvLeftHand.PatTool = lpDinaLeftPattern->Pat;
 					for( cnt=0;cnt<lpDinaLeftPattern->Pat->nObj3d;cnt++) {
 						if ( szX<lpDinaLeftPattern->Pat->obj3d[cnt]->maxY ) 
