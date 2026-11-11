@@ -18443,6 +18443,20 @@ int InitAdminCommand()
 }
 
 
+// *GM_CHEATS (test server only): any GM may make items with /@get and /@put, as a
+// level 4 GM could. The GM level is raised only for this one call.
+static int GmCheats_CreateItem( rsPLAYINFO *lpPlayInfo , rsPLAYINFO *lpPlayInfo2, char *szItem )
+{
+	int AdminMode = lpPlayInfo->AdminMode;
+	int val;
+
+	if ( rsServerConfig.GmCheats && AdminMode>0 && AdminMode<4 ) lpPlayInfo->AdminMode = 4;
+	val = CreateCommandItem( lpPlayInfo , lpPlayInfo2 , szItem );
+	lpPlayInfo->AdminMode = AdminMode;
+
+	return val;
+}
+
 int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 {
 	int len,cnt;
@@ -19254,7 +19268,7 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 
 	//아이템 생기는 치트
 	len = rsCompString( "/@get" , szChatCommand );
-	if ( len && lpPlayInfo->AdminMode>=3 ) {
+	if ( len && ( lpPlayInfo->AdminMode>=3 || ( lpPlayInfo->AdminMode && rsServerConfig.GmCheats ) ) ) {
 		lpBuff = szChatCommand + len;
 
 		//p = rsGetWord( szCmdBuff , lpBuff );	//ID 읽어옴
@@ -19267,7 +19281,7 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 		}
 
 		//아이템 생성 명령
-		if ( CreateCommandItem( lpPlayInfo , 0 , lpBuff )==TRUE ) {
+		if ( GmCheats_CreateItem( lpPlayInfo , 0 , lpBuff )==TRUE ) {
 			//wsprintf( TransChatMessage.szMessage , "아이템 %s를 생성했습니다" , lpBuff );
 			wsprintf( TransChatMessage.szMessage , srMsg_009 , lpBuff );
 			TransChatMessage.code = smTRANSCODE_WHISPERMESSAGE;
@@ -19283,7 +19297,7 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 
 	//아이템 생기는 치트
 	len = rsCompString( "/@put" , szChatCommand );
-	if ( len && lpPlayInfo->AdminMode>=3 ) {
+	if ( len && ( lpPlayInfo->AdminMode>=3 || ( lpPlayInfo->AdminMode && rsServerConfig.GmCheats ) ) ) {
 		lpBuff = szChatCommand + len;
 
 		lpBuff = rsGetWord( szCmdBuff , lpBuff );	//ID 읽어옴
@@ -19298,7 +19312,7 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 				else break;
 			}
 			//아이템 생성 명령
-			if ( CreateCommandItem( lpPlayInfo , lpPlayInfo2 , lpBuff )==TRUE ) {
+			if ( GmCheats_CreateItem( lpPlayInfo , lpPlayInfo2 , lpBuff )==TRUE ) {
 				//wsprintf( TransChatMessage.szMessage , "아이템 %s를 %s님께 보냈습니다" , lpBuff , lpPlayInfo2->smCharInfo.szName );
 				wsprintf( TransChatMessage.szMessage , srMsg_010 , lpBuff , lpPlayInfo2->smCharInfo.szName );
 				TransChatMessage.code = smTRANSCODE_WHISPERMESSAGE;
