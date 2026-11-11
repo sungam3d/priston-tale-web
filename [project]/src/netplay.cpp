@@ -2556,6 +2556,15 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
  			cSinSiege.SetTaxRate( lpTransCommand->SParam );	//세율 설정
 			break;
 
+		case smTRANSCODE_GM_SETLEVEL:
+			// GM /MakeMeLevel: the server has already moved its own level and start exp
+			lpTransCommand = (smTRANS_COMMAND *)pData->Buff;
+			{
+				extern int sinGM_ApplyLevel( int Level );
+				sinGM_ApplyLevel( lpTransCommand->WParam );
+			}
+			break;
+
 		case smTRANSCODE_ADDEXP:
 		case smTRANSCODE_ADDEXP_PARTY:
 			//경험치 획득

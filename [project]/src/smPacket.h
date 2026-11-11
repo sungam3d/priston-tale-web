@@ -494,6 +494,9 @@
 // 장별 - 입력창
 #define smTRANSCODE_ITEMDOC			0x50326008
 
+// GM /MakeMeLevel: server -> client, WParam = the new level
+#define smTRANSCODE_GM_SETLEVEL		0x50326010
+
 
 #define TRANS_BUFF_SIZE		4096
 

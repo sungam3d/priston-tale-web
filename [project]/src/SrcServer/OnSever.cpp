@@ -19986,6 +19986,44 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 		return TRUE;
 	}
 
+	// GM: /MakeMeLevel <level>. Moves the server's own level and start exp first, so the
+	// client's next save passes the level-jump (-12) and exp-gain (-9) checks, then tells
+	// the client to apply the same level (smTRANSCODE_GM_SETLEVEL).
+	len = rsCompString( "/MakeMeLevel" , szChatCommand );
+	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.OfflineMode || lpPlayInfo->AdminMode>=4 ) )
+	{
+		lpBuff = szChatCommand + len;
+		lpBuff = rsGetWord( szCmdBuff , lpBuff );
+		cnt = atoi(szCmdBuff);
+
+		if ( cnt>=1 && cnt<=CHAR_LEVEL_MAX ) {
+			lpPlayInfo->spExp_Start = GetNextExp( cnt-1 );
+			SetExp64( &lpPlayInfo->smCharInfo , lpPlayInfo->spExp_Start );
+			lpPlayInfo->smCharInfo.Level = cnt;
+
+			smTransCommand.size = sizeof( smTRANS_COMMAND );
+			smTransCommand.code = smTRANSCODE_GM_SETLEVEL;
+			smTransCommand.WParam = cnt;
+			smTransCommand.LParam = 0;
+			smTransCommand.SParam = 0;
+			smTransCommand.EParam = 0;
+			lpPlayInfo->lpsmSock->Send( (char *)&smTransCommand , smTransCommand.size , TRUE );
+
+			wsprintf( TransChatMessage.szMessage , "> Level %d. Log out and back in if the level doesn't stick." , cnt );
+		}
+		else
+			wsprintf( TransChatMessage.szMessage , "> Usage: /MakeMeLevel 1-%d" , CHAR_LEVEL_MAX );
+
+		TransChatMessage.code = smTRANSCODE_WHISPERMESSAGE;
+		TransChatMessage.size = 32+lstrlen(TransChatMessage.szMessage);
+		TransChatMessage.dwIP = 0;
+		TransChatMessage.dwObjectSerial = 0;
+		lpPlayInfo->lpsmSock->Send( (char *)&TransChatMessage , TransChatMessage.size , TRUE );
+
+		rsRecordAdminCommand( lpPlayInfo , szChatCommand , 1 );
+		return TRUE;
+	}
+
 	//돈 치트
 //	len = rsCompString( "/내돈다내놔!" , szChatCommand );
 //해외

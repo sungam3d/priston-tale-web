@@ -1909,6 +1909,84 @@ void cINTERFACE::RButtonUp(int x , int y)
 /*----------------------------------------------------------------------------*
 *							    KeyDown
 *-----------------------------------------------------------------------------*/	
+/*----------------------------------------------------------------------------*
+*	GM /MakeMeLevel <level>. The chat line goes to the server, which moves its
+*	own copy of the level and the start exp first and then sends
+*	smTRANSCODE_GM_SETLEVEL back here. Doing it in that order lets the next save
+*	pass the server's level-jump and exp-gain checks.
+*-----------------------------------------------------------------------------*/
+int GetSkillPoint_LevelQuest( int Level , DWORD dwLevelQuestLog );
+int GetStatePoint_LevelQuest( int Level , DWORD dwLevelQuestLog );
+int SendPlayUpdateInfo();
+
+int sinGM_ApplyLevel( int Level )
+{
+	int cnt, Point, EPoint, Total, NewState, Up;
+
+	if ( !lpCurPlayer || Level<1 || Level>CHAR_LEVEL_MAX ) return FALSE;
+
+	Up = ( Level>sinChar->Level );
+
+	CheckCharForm();
+	sinChar->Level = Level;
+	SetExp64( sinChar , ExpLevelTable[Level-1] );		// the exact start of the level
+	CodeXorCharInfo_Exp();
+	sinChar->Next_Exp = (int)ExpLevelTable[Level];
+
+	// Stat points: the same total the server's ReformCharStatePoint checks on save.
+	NewState = 99+((Level-1)*5) + GetStatePoint_LevelQuest( Level , sinQuest_levelLog );
+	Total = sinChar->Strength+sinChar->Spirit+sinChar->Talent+sinChar->Dexterity+sinChar->Health;
+	if ( Total>NewState ) {
+		// Going down: the spent stats no longer fit, so hand them back first.
+		ReformCharForm();
+		cCharStatus.InitCharStatus(1);
+		CheckCharForm();
+		Total = sinChar->Strength+sinChar->Spirit+sinChar->Talent+sinChar->Dexterity+sinChar->Health;
+	}
+	sinChar->StatePoint = NewState-Total;
+	if ( sinChar->StatePoint<0 ) sinChar->StatePoint = 0;
+
+	// Stop CheckLevel() from adding the stat points a second time.
+	OldLevel = Level;
+	OldLevelTemp = OldLevel+176;
+	ReformCharForm();
+
+	// Skill points, worked out the way RestoreSkill() does at login.
+	Point = 0; EPoint = 0;
+	for(cnt=1;cnt<13;cnt++) Point += sinSkill.UseSkill[cnt].Point;
+	for(cnt=13;cnt<SIN_MAX_USE_SKILL;cnt++) EPoint += sinSkill.UseSkill[cnt].Point;
+
+	if ( ( Level>=10 ? ((Level-8)/2)+GetSkillPoint_LevelQuest(Level,sinQuest_levelLog) : 0 )<Point ||
+		 ( Level>=60 ? ((Level-58)/2) : 0 )<EPoint ) {
+		// Going down: more skill points learned than the level allows, so reset them.
+		cSkill.InitSkillPoint(1);
+		Point = 0; EPoint = 0;
+	}
+
+	sinSkill.SkillPoint = 0;
+	if ( Level>=10 ) sinSkill.SkillPoint = ((Level-8)/2)-Point+GetSkillPoint_LevelQuest( Level , sinQuest_levelLog );
+	sinSkill.SkillPoint4 = 0;
+	if ( Level>=60 ) sinSkill.SkillPoint4 = ((Level-58)/2)-EPoint;
+	if ( sinSkill.SkillPoint<0 ) sinSkill.SkillPoint = 0;
+	if ( sinSkill.SkillPoint4<0 ) sinSkill.SkillPoint4 = 0;
+	cSkill.InitReformSkillPointForm();
+
+	cInvenTory.SetItemToChar();
+	sinSetLife( sinChar->Life[1] );
+	sinSetMana( sinChar->Mana[1] );
+	sinSetStamina( sinChar->Stamina[1] );
+	ReformCharForm();
+
+	if ( Up ) {
+		StartEffect( lpCurPlayer->pX,lpCurPlayer->pY+32*fONE,lpCurPlayer->pZ , EFFECT_LEVELUP1 );
+		esPlaySound( 7, 400 );
+	}
+
+	SendPlayUpdateInfo();
+	SaveGameData();
+	return TRUE;
+}
+
 char InputSecretCode[256];
 char sinBuff[256];
 int  ResetQuset3Flag = 0;
