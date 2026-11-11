@@ -38,9 +38,14 @@
 
 #ifdef	_LANGUAGE_ENGLISH				//영어
 
-#ifdef	_LANGUAGE_PHILIPIN				//영어
+#if defined(PT_SERVER_PORT)				// a test build beside the live server (web\build_web.py, PT_DEFINES)
+#define TCP_SERVPORT		PT_SERVER_PORT
+#define PT_PORT_STR2(p)		#p
+#define PT_PORT_STR(p)		PT_PORT_STR2(p)
+#define PT_SERVER_PORT_TEXT	PT_PORT_STR(PT_SERVER_PORT)
+#elif defined(_LANGUAGE_PHILIPIN)		//영어
 #define TCP_SERVPORT		10010
-#else 
+#else
 #define TCP_SERVPORT		10007
 #endif
 #endif

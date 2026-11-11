@@ -48,6 +48,9 @@ def main():
     env = emsdk_env()
     emxx = os.path.join(EMSDK, 'upstream', 'emscripten', 'em++.exe')
     flags = open(os.path.join(HERE, 'emflags.txt')).read().split()
+    # extra defines for a test build, e.g. PT_DEFINES=PT_SERVER_PORT=10008 (a server beside the live one);
+    # a changed define is not a changed file: delete web\obj to rebuild with it
+    flags += ['-D' + d for d in os.environ.get('PT_DEFINES', '').split()]
     opt = ['-O2'] if release else ['-O1', '-g2']
     incs = ['-I' + os.path.join(PTWIN, 'include'), '-I' + SRC] + ['-I' + os.path.join(SRC, d) for d in
             ['smLib3d', 'sinbaram', 'HoBaram', r'HoBaram\NewEffect\HoEffect\Script']] + ['-idirafter', MINGW]

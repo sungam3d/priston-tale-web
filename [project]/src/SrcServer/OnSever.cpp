@@ -593,6 +593,9 @@ SetWindowText( hwnd , "Hotuk GameServer [ PT_TAIWAN ]" );
 #ifdef _LANGUAGE_ENGLISH
 #ifdef _LANGUAGE_PHILIPIN
 SetWindowText( hwnd , "Hotuk GameServer [ PT_PHILIPPINE ]" );
+#elif defined(PT_SERVER_PORT)
+// a test server beside the live one (smwsock.h): say so, so it isn't closed by mistake
+SetWindowText( hwnd , "TEST GameServer [ PT_ENGLISH ] port " PT_SERVER_PORT_TEXT );
 #else
 SetWindowText( hwnd , "Hotuk GameServer [ PT_ENGLISH ]" );
 #endif
