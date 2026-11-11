@@ -15996,6 +15996,12 @@ int rsRecvBuyShopItem( rsPLAYINFO *lpPlayInfo  , TRANS_BUY_SHOPITEM *lpTransBuyS
 {
 	int money;
 
+	rsInvenTrace( lpPlayInfo , "BUY layout: sITEM size / info at / header at" , (int)sizeof(sITEM) ,
+		(int)((char *)&lpTransBuyShopItem->sItem.sItemInfo - (char *)&lpTransBuyShopItem->sItem) ,
+		(int)((char *)&lpTransBuyShopItem->sItem.sItemInfo.ItemHeader - (char *)&lpTransBuyShopItem->sItem.sItemInfo) );
+	rsInvenTrace( lpPlayInfo , "BUY request: code / serial the game sent" , (int)lpTransBuyShopItem->sItem.sItemInfo.CODE ,
+		(int)lpTransBuyShopItem->sItem.sItemInfo.ItemHeader.Head , (int)lpTransBuyShopItem->sItem.sItemInfo.ItemHeader.dwChkSum );
+
 	if ( !rsServerConfig.ServerInventoryMode ) {
 		lpPlayInfo->ServerMoney = 90000000;
 	}

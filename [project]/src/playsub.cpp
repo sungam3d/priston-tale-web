@@ -4173,8 +4173,11 @@ int ReformItem( sITEMINFO *lpItemInfo )
 	//신규 인증
 	DWORD dwCode;
 
-#ifdef _W_SERVER
-	// 서버측 인증 
+	// Only server.exe may issue an item a new serial. NetType.hpp defines _W_SERVER for the game
+	// too, so the game used to re-serial every item it re-checked (a bought item, for one): the
+	// server then no longer knew the item, refused to let it be dropped and stripped it on save.
+#ifdef PT_SERVER_EXE
+	// 서버측 인증
 extern time_t		tServerTime;
 
 	lpItemInfo->ItemHeader.Head = ItemFormKey+GetCurrentTime();
@@ -4216,7 +4219,7 @@ extern time_t		tServerTime;
 int ReformItem_AdjustTime( sITEMINFO *lpItemInfo , int TimeAdjust )
 {
 
-#ifdef _W_SERVER
+#ifdef PT_SERVER_EXE		// server.exe only: see ReformItem
 
 	//신규 인증
 	DWORD dwCode;
