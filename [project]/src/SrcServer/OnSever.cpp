@@ -12155,10 +12155,33 @@ int	rsDeleteInvenItem( rsPLAYINFO *lpPlayInfo , DWORD dwCode , DWORD dwHead , DW
 	return -1;
 }
 
+// *GM_CHEATS (test server): trace of the server's own item list per connection, to find
+// why players' items get stripped on save. LogDebug\InvenTrace.log
+int rsInvenTrace( rsPLAYINFO *lpPlayInfo , const char *szWhat , int a , int b , int c )
+{
+	FILE *fp;
+	SYSTEMTIME st;
+	int cnt, used = 0;
+
+	if ( !rsServerConfig.GmCheats || !lpPlayInfo ) return FALSE;
+	for( cnt=0;cnt<INVEN_ITEM_INFO_MAX;cnt++ ) if ( lpPlayInfo->InvenItemInfo[cnt].dwCode ) used++;
+
+	fp = fopen( "LogDebug\\InvenTrace.log" , "ab" );
+	if ( !fp ) return FALSE;
+	GetLocalTime( &st );
+	fprintf( fp , "%d:%02d:%02d conn %p sock %p id '%s' name '%s' recbuf %s | %s %d %d %d | list holds %d\r\n" ,
+		st.wHour , st.wMinute , st.wSecond , lpPlayInfo , lpPlayInfo->lpsmSock , lpPlayInfo->szID , lpPlayInfo->szName ,
+		lpPlayInfo->lpRecordDataBuff ? "yes" : "no" , szWhat , a , b , c , used );
+	fclose( fp );
+	return TRUE;
+}
+
 //인벤 아이템 추가
 int	rsAddInvenItem( rsPLAYINFO *lpPlayInfo , DWORD dwCode , DWORD dwHead , DWORD dwChkSum )
 {
 	int	cnt;
+
+	rsInvenTrace( lpPlayInfo , "add item" , (int)dwCode , (int)dwHead , (int)dwChkSum );
 	int	Empty;
 
 

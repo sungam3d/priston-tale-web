@@ -2523,6 +2523,13 @@ int rsRECORD_DBASE::SendRecordDataToClient( rsPLAYINFO *lpPlayInfo , char *szNam
 
 #define	RECORD_ITEM_INFO_HEAD_SIZE		44
 
+#ifdef _W_SERVER
+int rsInvenTrace( rsPLAYINFO *lpPlayInfo , const char *szWhat , int a , int b , int c );		// OnSever.cpp
+#define INVEN_TRACE(p,w,a,b,c)	rsInvenTrace(p,w,a,b,c)
+#else
+#define INVEN_TRACE(p,w,a,b,c)
+#endif
+
 //불러온 아이템 목록을 유저정보에 저장
 int rsRECORD_DBASE::MakeRecordItemList( rsPLAYINFO *lpPlayInfo )
 {
@@ -2613,6 +2620,7 @@ int rsRECORD_DBASE::MakeRecordItemList( rsPLAYINFO *lpPlayInfo )
 	lpPlayInfo->ThrowItemCount = ThrowItemCount;
 	memcpy( lpPlayInfo->ThrowItemInfo , ThrowItemInfo , sizeof(sTHROW_ITEM_INFO)*ThrowItemCount );
 
+	INVEN_TRACE( lpPlayInfo , "list built from saved character, items in save" , TransRecordData.ItemCount , ThrowItemCount , 0 );
 
 	return TRUE;
 }
@@ -3131,6 +3139,8 @@ int rsRecordMemoryBuff_CheckInvenItem( rsPLAYINFO *lpPlayInfo , int Mode )
 	lpRecItem = (BYTE *)&lpTransRecordData->Data;
 	BuffSize = 0;
 
+	INVEN_TRACE( lpPlayInfo , "CHECK before writing the character file, mode / items in it" , Mode , lpTransRecordData->ItemCount , 0 );
+	int TraceStripped = 0;
 
 	for( cnt=0;cnt<lpTransRecordData->ItemCount;cnt++ ) {
 		if ( cnt>=(INVENTORY_MAXITEM*2) ) break;
@@ -3139,7 +3149,7 @@ int rsRecordMemoryBuff_CheckInvenItem( rsPLAYINFO *lpPlayInfo , int Mode )
 		DecodeCompress( (BYTE *)lpRecItem , (BYTE *)&sRecordItem , RECORD_ITEM_INFO_HEAD_SIZE );
 
 
-		if ( sRecordItem.sItemInfo.CODE && 
+		if ( sRecordItem.sItemInfo.CODE &&
 			sRecordItem.sItemInfo.ItemHeader.Head && sRecordItem.sItemInfo.ItemHeader.dwChkSum ) {
 
 			flag = 0;
@@ -3213,6 +3223,8 @@ int rsRecordMemoryBuff_CheckInvenItem( rsPLAYINFO *lpPlayInfo , int Mode )
 
 				}
 
+				TraceStripped++;
+				INVEN_TRACE( lpPlayInfo , "  not in the list: item code / serial" , (int)sRecordItem.sItemInfo.CODE , (int)sRecordItem.sItemInfo.ItemHeader.Head , (int)sRecordItem.sItemInfo.ItemHeader.dwChkSum );
 				if ( cnt2>=lpTransRecordData->ThrowItemCount ) {
 					//로그에 기록
 					smTransCommand.WParam = 8000;
@@ -3267,6 +3279,7 @@ int rsRecordMemoryBuff_CheckInvenItem( rsPLAYINFO *lpPlayInfo , int Mode )
 		memcpy( lpTransRecordData->ThrowItemInfo , ThrowItemInfo, sizeof(sTHROW_ITEM_INFO)*ThrowItemCount );
 		lpTransRecordData->ThrowItemCount = ThrowItemCount;
 	}
+	INVEN_TRACE( lpPlayInfo , "CHECK done: items not in the list" , TraceStripped , ThrowItemCount , 0 );
 
 	//창고를 연적이 있으면 창고도 검사
 
