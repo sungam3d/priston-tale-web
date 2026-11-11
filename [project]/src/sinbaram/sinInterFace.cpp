@@ -1985,6 +1985,7 @@ int sinGM_ApplyLevel( int Level , int SaveNow )
 	sinSetLife( sinChar->Life[1] );
 	sinSetMana( sinChar->Mana[1] );
 	sinSetStamina( sinChar->Stamina[1] );
+	ResetEnergyGraph(4);		// the bars just jumped to the new maximum: not a hacked bar (7110 ban)
 	ReformCharForm();
 
 	if ( Up ) {
