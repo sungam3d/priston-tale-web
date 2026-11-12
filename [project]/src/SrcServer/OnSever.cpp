@@ -3738,7 +3738,7 @@ smCHAR *OpenMonster_QuestArena( rsPLAYINFO *lpPlayInfo , DWORD dwQuestCode , int
 			break;
 
 		case SIN_QUEST_CODE_CHANGEJOB4:
-			if ( lpPlayInfo->smCharInfo.JOB_CODE<=4 )
+			if ( JOB_IS_TEMPSKRON(lpPlayInfo->smCharInfo.JOB_CODE) )
 				dwSndCode = snCHAR_SOUND_NPC_SKILLMASTER;
 			else
 				dwSndCode = snCHAR_SOUND_NPC_MAGICMASTER;
@@ -14553,10 +14553,10 @@ int rsRecvMixtureResetItem( rsPLAYINFO *lpPlayInfo, sMIXTURE_RESET_ITEM_SERVER *
 	JOB_DATA_CODE *pJobDataCode = 0;
 
 	// 아이템의 특화정보를 얻기위한 코드 - GetJobDataCode() 함수를 써서 만들었다.
-	for( i=1; i<9; i++)		// 직업 8가지
-	{	
+	for( i=1; i<=JOBCODE_MAX; i++)		// 직업 8가지 (+ the Assassin, the Shaman and the Martial Artist)
+	{
 		pJobDataCode = GetJobDataCode( i, 0 );
-		if( pJobDataCode->JobBitCode == dwSpecialJob )
+		if( pJobDataCode && pJobDataCode->JobBitCode == dwSpecialJob )
 		{
 			dwJobCode = pJobDataCode->JobCode;
 			break;
@@ -14564,7 +14564,7 @@ int rsRecvMixtureResetItem( rsPLAYINFO *lpPlayInfo, sMIXTURE_RESET_ITEM_SERVER *
 	}
 
 	// for 루프를 전부 돌았다면...
-	if( i == 9 )
+	if( i > JOBCODE_MAX )
 	{
 		dwJobCode = 0;		
 		NotItemSpecial = 1;

@@ -2389,7 +2389,7 @@ int rsRECORD_DBASE::SendRecordDataToClient( rsPLAYINFO *lpPlayInfo , char *szNam
 	//SoD장 시작 보정
 	if ( lpTransRecord->GameSaveInfo.PlayStageNum==rsSOD_FIELD ) lpTransRecord->GameSaveInfo.PlayStageNum = rsSOD_VILLAGE;
 	if ( lpTransRecord->GameSaveInfo.PlayStageNum==QUEST_ARENA_FIELD ) {	//대전 격투장
-		if ( lpTransRecord->smCharInfo.JOB_CODE<=4 )
+		if ( JOB_IS_TEMPSKRON(lpTransRecord->smCharInfo.JOB_CODE) )
 			lpTransRecord->GameSaveInfo.PlayStageNum = START_FIELD_NUM;
 		else
 			lpTransRecord->GameSaveInfo.PlayStageNum = START_FIELD_MORYON;
@@ -2979,7 +2979,7 @@ int rsRECORD_DBASE::RecvRecordDataFromClient( TRANS_RECORD_DATAS *lpTransRecord 
 			//죽으면서 드롭한 사람 시작 좌표 마을로 보정 후 저장
 			TransRecordData.smCharInfo.Life[0] = TransRecordData.smCharInfo.Life[1]/2;
 
-			if ( TransRecordData.smCharInfo.JOB_CODE<5 ) {
+			if ( JOB_IS_TEMPSKRON(TransRecordData.smCharInfo.JOB_CODE) ) {
 				//템스크론
 				TransRecordData.GameSaveInfo.PlayStageNum = START_FIELD_NUM;
 				TransRecordData.GameSaveInfo.PosX = 746752;
@@ -3599,7 +3599,7 @@ int rsRECORD_DBASE::SendUserDataToClient( char *szID , smWINSOCK *lpsmSock , cha
 
 					if ( lpCharInfo->StartField==rsSOD_FIELD ) lpCharInfo->StartField = rsSOD_VILLAGE;
 					if ( lpCharInfo->StartField==QUEST_ARENA_FIELD ) {
-						if ( lpCharInfo->JOB_CODE<=4 )
+						if ( JOB_IS_TEMPSKRON(lpCharInfo->JOB_CODE) )
 							lpCharInfo->StartField = START_FIELD_NUM;
 						else
 							lpCharInfo->StartField = START_FIELD_MORYON;

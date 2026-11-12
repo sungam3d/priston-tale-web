@@ -948,7 +948,7 @@ InitGuideHelp();
 					}
 					//요건 템스크론
 					if(sinChar->ChangeJob == 0){ //1차전업
-						if(sinChar->JOB_CODE <=4 ){
+						if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE) ){
 							switch(sinQuest_ChangeJob.State){
 								case  0:
 									cMessageBox.ShowMessage3(MESSAGE_QUEST,""); //어쩔수없는 땜빵 
@@ -968,7 +968,7 @@ InitGuideHelp();
 							}
 						}
 						//요긴 모라이온 
-						if(sinChar->JOB_CODE >4 && sinChar->JOB_CODE <=8 ){  
+						if(!JOB_IS_TEMPSKRON(sinChar->JOB_CODE) ){  
 							switch(sinQuest_ChangeJob2.State){   
 								case  0: 
 									if((FindLastQuestCode(SIN_QUEST_CODE_CHANGEJOB2_NPC_M) ||FindLastQuestCode(SIN_QUEST_CODE_CHANGEJOB2_NPC_D)) && sinChar->ChangeJob < 1){

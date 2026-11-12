@@ -299,6 +299,7 @@ int dm_SendTransDamage( smCHAR *lpChar , int PowParam1, int PowParam2, int Attac
 	switch( lpCurPlayer->smCharInfo.JOB_CODE ) {
 		case JOBCODE_PRIESTESS:
 		case JOBCODE_MAGICIAN:
+		case JOBCODE_SHAMAN:
 			TransAttackData.Critical[1] = lpCurPlayer->smCharInfo.Spirit;			//정신력 저장
 			break;
 
@@ -306,6 +307,8 @@ int dm_SendTransDamage( smCHAR *lpChar , int PowParam1, int PowParam2, int Attac
 		case JOBCODE_FIGHTER:
 		case JOBCODE_PIKEMAN:
 		case JOBCODE_KNIGHT:
+		case JOBCODE_ASSASSIN:
+		case JOBCODE_MARTIALARTIST:
 			TransAttackData.Critical[1] = lpCurPlayer->smCharInfo.Strength;			//힘 저장
 			break;
 
@@ -796,6 +799,7 @@ int dm_SendRangeDamage( int x, int y, int z, smCHAR *lpMainTraget ,int PowParam1
 	switch( lpCurPlayer->smCharInfo.JOB_CODE ) {
 		case JOBCODE_PRIESTESS:
 		case JOBCODE_MAGICIAN:
+		case JOBCODE_SHAMAN:
 			lpTransSkill_AttackData->Critical[1] = lpCurPlayer->smCharInfo.Spirit;			//정신력 저장
 			break;
 
@@ -803,6 +807,8 @@ int dm_SendRangeDamage( int x, int y, int z, smCHAR *lpMainTraget ,int PowParam1
 		case JOBCODE_FIGHTER:
 		case JOBCODE_PIKEMAN:
 		case JOBCODE_KNIGHT:
+		case JOBCODE_ASSASSIN:
+		case JOBCODE_MARTIALARTIST:
 			lpTransSkill_AttackData->Critical[1] = lpCurPlayer->smCharInfo.Strength;			//힘 저장
 			break;
 

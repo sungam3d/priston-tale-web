@@ -188,6 +188,11 @@ JOBNAME_BIT BitMaskJobNames[] = {
 	{	"Magician"		,	0x0040	},
 	{	"Priest"		,	0x0080	},
 
+	// the later classes (JOB_CODE 9..11): their motion tables' bits (M6Bip/M7Bip/M8Bip)
+	{	"Assassin"		,	0x0100	},
+	{	"Shaman"		,	0x0200	},
+	{	"MartialArtist"	,	0x0400	},
+
 	{	"" , 0 },
 
 	{	"PureBody"		,	0x0040	},

@@ -129,7 +129,7 @@ int cHaQuest::HaCheckQuestElementary(int npcNum,int QuestKey,int KindClan)
 	int cnt=0;	
 
 	//0 모라이온 1 템스크론
-	if(sinChar->JOB_CODE < 5)
+	if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 		iJob_Index = 1; //템스크론
 	else
 		iJob_Index = 2; //모라이온

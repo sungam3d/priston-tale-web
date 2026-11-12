@@ -2863,7 +2863,7 @@ int StartField()
 	JobCode = lpCurPlayer->smCharInfo.JOB_CODE;
 	if ( JobCode==0 ) JobCode = NewCharInfo.JobCode;
 
-	if ( JobCode>4 && sField[START_FIELD_MORYON].szName[0] ) 
+	if ( !JOB_IS_TEMPSKRON(JobCode) && sField[START_FIELD_MORYON].szName[0] )
 		StartNum = START_FIELD_MORYON;				//직업이 모라이온 이다!
 	else
 		StartNum = START_FIELD_NUM;
@@ -2968,7 +2968,7 @@ int WarpStartField( int *mx, int *mz )
 	int cnt;
 	int	StartNum = START_FIELD_NUM;
 
-	if ( lpCurPlayer->smCharInfo.JOB_CODE>4 && sField[START_FIELD_MORYON].szName[0] ) {
+	if ( !JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) && sField[START_FIELD_MORYON].szName[0] ) {
 		StartNum = START_FIELD_MORYON;				//직업이 모라이온 이다!
 	}
 

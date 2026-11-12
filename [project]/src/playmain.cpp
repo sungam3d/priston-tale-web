@@ -2446,19 +2446,19 @@ int PlayPat3D()
 													switch( lpCharMsTrace->smCharInfo.wPlayClass[0] ) {
 														//NPC 퀘스트 처리
 														case 1001:
-															if ( lpCurPlayer->smCharInfo.JOB_CODE<=4 )
+															if ( JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) )
 																sinCheckLevelQuest30();
 															break;
 														case 1002:
-															if ( lpCurPlayer->smCharInfo.JOB_CODE>4 )
+															if ( !JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) )
 																sinCheckLevelQuest30();
 															break;
 														case 1003:
-															if ( lpCurPlayer->smCharInfo.JOB_CODE<=4 )
+															if ( JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) )
 																sinCheckLevelQuest55();
 															break;
 														case 1004:
-															if ( lpCurPlayer->smCharInfo.JOB_CODE>4 )
+															if ( !JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) )
 																sinCheckLevelQuest55_2();
 															break;
 														case 1005:

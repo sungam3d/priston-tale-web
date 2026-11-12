@@ -2686,13 +2686,13 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 
 				if ( StageField[ lpCurPlayer->OnStageField ]->FieldCode==3 ) {
 					//리카르텐
-					if ( lpCurPlayer->smCharInfo.JOB_CODE<5 ) {
+					if ( JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) ) {
 						sinSkillMaster(lpTransCommand->WParam);
 					}
 				}
 				if ( StageField[ lpCurPlayer->OnStageField ]->FieldCode==21 ) {
 					//필라이
-					if ( lpCurPlayer->smCharInfo.JOB_CODE>=5 )
+					if ( !JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) )
 					{
 						sinSkillMaster(lpTransCommand->WParam);
 					}

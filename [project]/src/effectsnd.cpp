@@ -1300,8 +1300,16 @@ int	CharPlaySound( smCHAR *lpChar )
 	vol = 400-vol;
 
 
-	if ( lpChar->smCharInfo.State==smCHAR_STATE_USER ) 
+	if ( lpChar->smCharInfo.State==smCHAR_STATE_USER ) {
 		dwCharSoundCode = lpChar->smCharInfo.JOB_CODE;
+		// the later classes have no sound set of their own (their numbers are monsters'
+		// sound codes): the Assassin and the Martial Artist sound as the Archer, the
+		// Shaman as the Magician
+		if ( dwCharSoundCode==JOBCODE_ASSASSIN || dwCharSoundCode==JOBCODE_MARTIALARTIST )
+			dwCharSoundCode = JOBCODE_ARCHER;
+		else if ( dwCharSoundCode==JOBCODE_SHAMAN )
+			dwCharSoundCode = JOBCODE_MAGICIAN;
+	}
 	else
 		dwCharSoundCode = lpChar->smCharInfo.dwCharSoundCode;
 

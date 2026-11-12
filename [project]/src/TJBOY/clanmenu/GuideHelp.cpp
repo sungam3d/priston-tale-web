@@ -311,7 +311,7 @@ void CGuideHelp::Main()
 				if(!bLButtonDown)
 				{
 					nPos = (i+nScl_Bar-12);
-					if(sinChar->JOB_CODE < 5)
+					if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 					{
 						CheckLevel(g_LevelLabel[nLevelHelpCount-nPos-1],sinChar->JOB_CODE);
 					}
@@ -1049,7 +1049,7 @@ void CGuideHelp::InitLevelHelpLabel()
 //해외 용(GetPrivateProfileString 이 부분 전부다)
 #define LEVELLABEL "./image/clanImage/Help/AutoHelp/LevelSubj.ini"
 
-	if(sinChar->JOB_CODE < 5) // 템스크론과 모라이언의 구분인것 같음 by teze
+	if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE)) // 템스크론과 모라이언의 구분인것 같음 by teze
 	{
 		GetPrivateProfileString("Level_1","Subj","Error",LevelHelp[0],1024,LEVELLABEL);
 		GetPrivateProfileString("Level_2","Subj","Error",LevelHelp[1],1024,LEVELLABEL);
@@ -1113,7 +1113,7 @@ void CGuideHelp::InitLevelHelpLabel()
 		GetPrivateProfileString("Level_80","Subj","Error",LevelHelp[27],1024,LEVELLABEL);		
 	}
 /*
-	if(sinChar->JOB_CODE < 5) // 템스크론과 모라이언의 구분인것 같음 by teze
+	if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE)) // 템스크론과 모라이언의 구분인것 같음 by teze
 	{		
 		strcpy(LevelHelp[0],"프리스톤 테일에 오신것을 환영합니다");
 		strcpy(LevelHelp[1],"포인트 분배는 이렇게");
@@ -1227,7 +1227,7 @@ void CGuideHelp::CheckLevel(int level)
 
 	if((level == 20) ||(level==21))
 	{
-		//if(sinChar->JOB_CODE <5)
+		//if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 		nLevelHelpCount = 15;
 	}
 	if((level >=22) &&(level < 25))
@@ -1235,7 +1235,7 @@ void CGuideHelp::CheckLevel(int level)
 	
 	if((level >=25) &&(level < 30))
 	{
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 		{
 			nLevelHelpCount = 17;
 		}
@@ -1246,7 +1246,7 @@ void CGuideHelp::CheckLevel(int level)
 	}
 	if((level >=30) &&(level < 40))
 	{
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 		{
 			nLevelHelpCount = 18;
 		}
@@ -1261,7 +1261,7 @@ void CGuideHelp::CheckLevel(int level)
 	
 	if((level >=40) &&(level < 50))
 	{
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 		{
 			nLevelHelpCount = 20;
 		}
@@ -1272,7 +1272,7 @@ void CGuideHelp::CheckLevel(int level)
 	}
 	if((level >=50) &&(level < 55))
 	{
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 		{
 			nLevelHelpCount = 21;
 		}
@@ -1283,7 +1283,7 @@ void CGuideHelp::CheckLevel(int level)
 	}
 	if((level >=55) &&(level < 60))
 	{
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 		{
 			nLevelHelpCount = 22;
 		}
@@ -1294,7 +1294,7 @@ void CGuideHelp::CheckLevel(int level)
 	}
 	if((level >=60) &&(level < 65))
 	{
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 		{
 			nLevelHelpCount = 23;
 		}
@@ -1305,7 +1305,7 @@ void CGuideHelp::CheckLevel(int level)
 	}
 	if((level >=65) &&(level < 70))
 	{
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 		{
 			nLevelHelpCount = 24;
 		}
@@ -1317,7 +1317,7 @@ void CGuideHelp::CheckLevel(int level)
 	/*
 	if((level >=70) &&(level < 80))
 	{
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 		{
 			nLevelHelpCount = 24;
 		}
@@ -1329,7 +1329,7 @@ void CGuideHelp::CheckLevel(int level)
 	//by teze
 	if((level >=70) &&(level < 75))
 	{
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 		{
 			nLevelHelpCount = 25;
 		}
@@ -1341,7 +1341,7 @@ void CGuideHelp::CheckLevel(int level)
 	//by teze
 	if((level >= 75) &&(level < 79))
 	{
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 		{
 			nLevelHelpCount = 26;
 		}
@@ -1356,7 +1356,7 @@ void CGuideHelp::CheckLevel(int level)
 
 	if(level >= 80)
 	{
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 		{
 			nLevelHelpCount = 28;
 		}

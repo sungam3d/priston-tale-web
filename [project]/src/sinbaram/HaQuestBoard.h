@@ -271,31 +271,31 @@ int SetQuestBoard()
 	//DWORD	dwHaQCode;
 	//dwHaQCode = 
 	case HAQUEST_CODE_ELEMENTARY_A:
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 			InterfaceParty.quest_Progress_Set(mgHaQuestName[0][0],mgHaQuestName[0][2]);
 		else
 			InterfaceParty.quest_Progress_Set(mgHaQuestName[1][0],mgHaQuestName[1][2]);			
 	break;
 	case HAQUEST_CODE_ELEMENTARY_B:
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 			InterfaceParty.quest_Progress_Set(mgHaQuestName[2][0],mgHaQuestName[2][2]);
 		else
 			InterfaceParty.quest_Progress_Set(mgHaQuestName[3][0],mgHaQuestName[3][2]);			
 	break;
 	case HAQUEST_CODE_ELEMENTARY_C:
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 			InterfaceParty.quest_Progress_Set(mgHaQuestName[4][0],mgHaQuestName[4][2]);
 		else
 			InterfaceParty.quest_Progress_Set(mgHaQuestName[5][0],mgHaQuestName[5][2]);			
 	break;
 	case HAQUEST_CODE_ELEMENTARY_D:
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 			InterfaceParty.quest_Progress_Set(mgHaQuestName[6][0],mgHaQuestName[6][2]);
 		else
 			InterfaceParty.quest_Progress_Set(mgHaQuestName[7][0],mgHaQuestName[7][2]);			
 	break;
 	case HAQUEST_CODE_ELEMENTARY_E:
-		if(sinChar->JOB_CODE <5)
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 			InterfaceParty.quest_Progress_Set(mgHaQuestName[8][0],mgHaQuestName[8][2]);
 		else
 			InterfaceParty.quest_Progress_Set(mgHaQuestName[9][0],mgHaQuestName[9][2]);			

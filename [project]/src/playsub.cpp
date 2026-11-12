@@ -69,14 +69,34 @@ static char *szNpcDirectory = "char\\npc\\";
 
 
 #ifdef _PLAY_MORYON
-#define MAX_JOBNUM	8
+#define MAX_JOBNUM	11		// 8 + the Assassin (9), the Shaman (10), the Martial Artist (11)
 #else
 #define MAX_JOBNUM	4
 #endif
 
 #include "playmodel.h"
 
-int ArmorJobNum[9] = { 0, 1, 0, 3, 2, 5, 4, 7, 6 };
+// class -> armour row of szArmorNumFile (rows 8..10: e / me / f bodies)
+int ArmorJobNum[12] = { 0, 1, 0, 3, 2, 5, 4, 7, 6, 8, 9, 10 };
+
+// a class's head table (playmodel.h), NULL for none
+static char *(*GetClassFaceTable( int jobCode ))[HEAREPOTION_MAX]
+{
+	switch( jobCode ) {
+		case 1:		return szModel_FighterFaceName;
+		case 2:		return szModel_MechFaceName;
+		case 3:		return szModel_ArcherFaceName;
+		case 4:		return szModel_PikeFaceName;
+		case 5:		return szModel_AtalantaFaceName;
+		case 6:		return szModel_KnightFaceName;
+		case 7:		return szModel_Magican;
+		case 8:		return szModel_PristessFaceName;
+		case JOBCODE_ASSASSIN:		return szModel_AssassinFaceName;
+		case JOBCODE_SHAMAN:		return szModel_ShamanFaceName;
+		case JOBCODE_MARTIALARTIST:	return szModel_MartialFaceName;
+	}
+	return NULL;
+}
 
 int	PlayerArmor = 0;
 
@@ -864,6 +884,12 @@ char *GetFaceHairSkin( smCHAR *lpChar )
 		case 8:		//프리스티스
 			szHeadName = szModel_PristessFaceName[FaceCode][HairCode];
 			break;
+		case JOBCODE_ASSASSIN:
+		case JOBCODE_SHAMAN:
+		case JOBCODE_MARTIALARTIST:
+			if ( FaceCode<FACE_MODEL_MAX && HairCode<HEAREPOTION_MAX )
+				szHeadName = GetClassFaceTable( lpChar->smCharInfo.JOB_CODE )[FaceCode][HairCode];
+			break;
 	}
 
 	return szHeadName;
@@ -981,7 +1007,7 @@ int FindFaceSkin( smCHAR *lpChar , char *lpHeadName , char ***lpSelFace , char *
 		case 8:		//프리스티스
 			for( cnt=0;cnt<FACE_MODEL_MAX;cnt++ ) {
 				for( cnt2=0;cnt2<HEAREPOTION_MAX;cnt2++ ) {
-					if ( lstrcmpi(szModel_PristessFaceName[cnt][cnt2] , lpHeadName )==0 ) 
+					if ( lstrcmpi(szModel_PristessFaceName[cnt][cnt2] , lpHeadName )==0 )
 					{
 						*lpSelFace = szModel_PristessFaceName[cnt];
 						*lpSelFaceName = szModel_PristessFaceName[cnt][cnt2];
@@ -990,6 +1016,25 @@ int FindFaceSkin( smCHAR *lpChar , char *lpHeadName , char ***lpSelFace , char *
 					}
 				}
 				if ( cnt2<HEAREPOTION_MAX ) break;
+			}
+			break;
+		case JOBCODE_ASSASSIN:
+		case JOBCODE_SHAMAN:
+		case JOBCODE_MARTIALARTIST:
+			{
+				char *(*lpTable)[HEAREPOTION_MAX] = GetClassFaceTable( lpChar->smCharInfo.JOB_CODE );
+				for( cnt=0;cnt<FACE_MODEL_MAX;cnt++ ) {
+					for( cnt2=0;cnt2<HEAREPOTION_MAX;cnt2++ ) {
+						if ( lstrcmpi(lpTable[cnt][cnt2] , lpHeadName )==0 )
+						{
+							*lpSelFace = lpTable[cnt];
+							*lpSelFaceName = lpTable[cnt][cnt2];
+							FaceCode = cnt; HairCode= cnt2 ; FindCount++;
+							break;
+						}
+					}
+					if ( cnt2<HEAREPOTION_MAX ) break;
+				}
 			}
 			break;
 	}
@@ -1127,6 +1172,11 @@ int	ChangeModelSkin( smCHAR *lpChar , int ComicArmor , int ComicHeadNum , char *
 			break;
 		case 8:		//프리스티스
 			lstrcpy( szHeadName , szModel_PristessFaceName[SelCount][HairCode] );
+			break;
+		case JOBCODE_ASSASSIN:
+		case JOBCODE_SHAMAN:
+		case JOBCODE_MARTIALARTIST:
+			lstrcpy( szHeadName , GetClassFaceTable( jobNum )[SelCount][HairCode] );
 			break;
 	}
 
@@ -5337,7 +5387,35 @@ int	CheckUserModel( smCHAR_INFO *lpCharInfo )
 	lpBuff = &lpCharInfo->szModelName[len-3];
 	if ( lstrcmpi( lpBuff , "ini" )!=0 ) return FALSE;
 
-	//직업별 얼굴 확인
+	//직업별 얼굴 확인: the head must be one of the class's heads (playmodel.h). A fifth rank
+	// head is its fourth rank one with "c.inf" made "d.inf" (ChangeModelSkin), so check that.
+	{
+		char *(*lpTable)[HEAREPOTION_MAX] = GetClassFaceTable( lpCharInfo->JOB_CODE );
+		char szHead[64];
+
+		if ( !lpTable ) return FALSE;
+
+		if ( !lpCharInfo->szModelName2[0] ) {
+			//얼굴없음 아무얼굴이나 설정해주자!
+			lstrcpy( lpCharInfo->szModelName2 , lpTable[0][0] );
+			return TRUE;
+		}
+
+		lstrcpyn( szHead , lpCharInfo->szModelName2 , sizeof(szHead) );
+		len = lstrlen( szHead );
+		if ( len>5 && lstrcmpi( szHead+len-5 , "d.inf" )==0 )
+			szHead[len-5] = 'c';
+
+		for(cnt=0;cnt<_CHANGE_JOB_COUNT_MAX;cnt++) {
+			for(cnt2=0;cnt2<_FACE_COUNT_MAX;cnt2++) {
+				if ( lstrcmpi( lpTable[cnt][cnt2] , szHead )==0 )
+					return TRUE;
+			}
+		}
+		return FALSE;
+	}
+
+#if 0	// the per-class version of the above (eight classes, no fifth rank heads)
 	switch( lpCharInfo->JOB_CODE ) {
 	case 1:
 		for(cnt=0;cnt<_CHANGE_JOB_COUNT_MAX;cnt++) {
@@ -5458,6 +5536,7 @@ int	CheckUserModel( smCHAR_INFO *lpCharInfo )
 	}
 
 	return FALSE;
+#endif
 }
 
 

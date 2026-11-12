@@ -54,5 +54,27 @@
 	{	"Arc Angel"		,"Arc Angel"		,JOB_CODE_CELESTIAL	,	8	,BROOD_CODE_MORAYION },
 	{	"Elemental Master"	,"Elemental Master"	,JOB_CODE_ARCHMAGE	,	7	,BROOD_CODE_MORAYION },
 
+	// The later classes (JOB_CODE 9 Assassin, 10 Shaman, 11 Martial Artist): starting stats,
+	// sight and growth functions as the later game has them. No job bits are free, so each
+	// takes the bit the later game gave it (shared with a second or third rank above, which no
+	// item names). They stay LAST: sinItem.cpp's list stops at the first row without a bit.
+	{	"Assassin"		,"Assassin"		,0x00000010		,	9	,BROOD_CODE_TEMPSKRON , 80,3,3,2,1,2,0},
+	{	"Rogue"			,"Rogue"		,0x00000010		,	9	,BROOD_CODE_TEMPSKRON },
+	{	"Shadow"		,"Shadow"		,0x00000010		,	9	,BROOD_CODE_TEMPSKRON },
+	{	"Shadow Walker"		,"Shadow Walker"	,0x00000010		,	9	,BROOD_CODE_TEMPSKRON },
+	{	"Shadow Master"		,"Shadow Master"	,0x00000010		,	9	,BROOD_CODE_TEMPSKRON },
+
+	{	"Shaman"		,"Shaman"		,0x00100000		,	10	,BROOD_CODE_MORAYION  , 200,2,1,2,3,2,1},
+	{	"Summoner"		,"Summoner"		,0x00100000		,	10	,BROOD_CODE_MORAYION },
+	{	"High Summoner"		,"High Summoner"	,0x00100000		,	10	,BROOD_CODE_MORAYION },
+	{	"Soul Catcher"		,"Soul Catcher"		,0x00100000		,	10	,BROOD_CODE_MORAYION },
+	{	"Soul Master"		,"Soul Master"		,0x00100000		,	10	,BROOD_CODE_MORAYION },
+
+	{	"MartialArtist"		,"Martial Artist"	,0x00000020		,	11	,BROOD_CODE_TEMPSKRON , 80,3,3,2,1,2,0},
+	{	"Striker"		,"Striker"		,0x00000020		,	11	,BROOD_CODE_TEMPSKRON },
+	{	"Trick Artist"		,"Trick Artist"		,0x00000020		,	11	,BROOD_CODE_TEMPSKRON },
+	{	"Master"		,"Master"		,0x00000020		,	11	,BROOD_CODE_TEMPSKRON },
+	{	"Grand Master"		,"Grand Master"		,0x00000020		,	11	,BROOD_CODE_TEMPSKRON },
+
 	{	"","",0,0,0 }
 };

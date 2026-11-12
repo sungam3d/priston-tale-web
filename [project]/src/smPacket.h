@@ -2778,6 +2778,23 @@ struct	sSOD_SCORE {
 #define	JOBCODE_PRIESTESS			8
 #define	JOBCODE_MAGICIAN			7
 
+// the three later classes (tier 5 project). Their numbers are the ones the data's motion
+// tables use: M6Bip (Assassin) tags its clips 0x100, M7Bip (Shaman) 0x200, M8Bip (Martial
+// Artist) 0x400, i.e. 1<<(class-1)
+#define	JOBCODE_ASSASSIN			9
+#define	JOBCODE_SHAMAN				10
+#define	JOBCODE_MARTIALARTIST		11
+#define	JOBCODE_MAX					11
+#ifndef NEW_CHAR_JOB_MAX
+#define NEW_CHAR_JOB_MAX	6		// rows of TempNewCharacterInit / MorNewCharacterInit (HoLogin.cpp)
+#endif
+
+// Tempskron or Morion. The old code tells them apart with "class<=4"; the Assassin and the
+// Martial Artist are Tempskron, the Shaman Morion
+#ifndef JOB_IS_TEMPSKRON
+#define	JOB_IS_TEMPSKRON(job)		( ((job)&0xFFFF)<=4 || ((job)&0xFFFF)==9 || ((job)&0xFFFF)==11 )
+#endif
+
 
 #define	CHAR_EVENT_STARPOINT		300
 

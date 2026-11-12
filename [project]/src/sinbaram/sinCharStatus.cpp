@@ -1174,7 +1174,7 @@ void cCHARSTATUS::CheckLevel()
 				break;
 				case 10:
 					/*
-					if(sinChar->JOB_CODE < 5 ){ //템스크론
+					if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE) ){ //템스크론
 						cHelpPet.PetMessageHelp("*Level_Message10_T");
 					}
 					else{ //모라이온
@@ -1275,7 +1275,7 @@ int cCHARSTATUS::InitCharStatus(int kind)
 	cMessageBox.ShowMessage(MESSAGE_GYUNGFUM_OK);
 	Total = sinChar->Strength+sinChar->Spirit+sinChar->Talent+sinChar->Dexterity+sinChar->Health+sinChar->StatePoint;
 
-	for(int i = 0 ; i < 4 ; i++){
+	for(int i = 0 ; i < NEW_CHAR_JOB_MAX ; i++){
 		if(sinChar->JOB_CODE == TempNewCharacterInit[i][0] ){
 			sinChar->Strength  = TempNewCharacterInit[i][1];
 			sinChar->Spirit    = TempNewCharacterInit[i][2];
@@ -1397,7 +1397,7 @@ int cCHARSTATUS::InitCharStatus_Attribute(int kind)
 	cMessageBox.ShowMessage(MESSAGE_GYUNGFUM_OK);
 	Total = sinChar->Strength+sinChar->Spirit+sinChar->Talent+sinChar->Dexterity+sinChar->Health+sinChar->StatePoint;
 	
-	for(int i = 0 ; i < 4 ; i++)
+	for(int i = 0 ; i < NEW_CHAR_JOB_MAX ; i++)
 	{
 		if(sinChar->JOB_CODE == TempNewCharacterInit[i][0])
 		{

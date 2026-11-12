@@ -519,7 +519,7 @@ void cMESSAGEBOX::LButtonDown(int x , int y)
 					chaQuest.showFuryQuestItem(1);
 				}
 				if( i == MESSAGE_CHANGE_JOB4_2){
-					if(sinChar->JOB_CODE <=4 ){
+					if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE) ){
 						WarpField2(START_FIELD_NUM); //돌아간다
 					}else
 					{
@@ -2042,7 +2042,7 @@ int cMESSAGEBOX::CheckOkMessageBox2(int Kind)
 			SaveGameData(); //전업후 저장한다
 
 			ChangeJobFace();
-			if(sinChar->JOB_CODE <=4 ){
+			if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE) ){
 				WarpField2(START_FIELD_NUM); //돌아간다
 			}else
 			{

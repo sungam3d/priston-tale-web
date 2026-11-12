@@ -231,9 +231,9 @@ char *QuestFilePath4[] ={
 int sinCheckChageJob()
 {
 	if(CheckQuestButtonShow1 && sinChar->Level >= 20 && sinChar->ChangeJob == 0){ //2차전업
-		if(!sinQuest_ChangeJob.CODE && sinChar->JOB_CODE <=4)
+		if(!sinQuest_ChangeJob.CODE && JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 			sinChangeJobButtonShow = 1;
-		if(!sinQuest_ChangeJob2.CODE && sinChar->JOB_CODE >4 && sinChar->JOB_CODE <=8){
+		if(!sinQuest_ChangeJob2.CODE && !JOB_IS_TEMPSKRON(sinChar->JOB_CODE)){
 			if( !FindLastQuestCode(SIN_QUEST_CODE_CHANGEJOB2_NPC_M) && !FindLastQuestCode(SIN_QUEST_CODE_CHANGEJOB2_NPC_D) && sinChar->ChangeJob < 1){
 				sinChangeJobButtonShow2 = 1;
 			}
@@ -347,7 +347,7 @@ int sinLoadQuest(int CODE ,void *Buff )	//퀘스트 데이타를 로드한다
 		}		
 		if(chaQuest.sHaQuestElementary[Quest_B].State==2 || chaQuest.sHaQuestElementary[Quest_B].State==3){
 			chaQuest.haSetQuestTimer(&chaQuest.sHaQuestElementary[Quest_B]);
-			if(sinChar->JOB_CODE < 5)
+			if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 				lstrcpy(chaQuest.szQuestMonsterName,haQuestMonsterName[0]);
 			else
 				lstrcpy(chaQuest.szQuestMonsterName,haQuestMonsterName[1]);
@@ -364,7 +364,7 @@ int sinLoadQuest(int CODE ,void *Buff )	//퀘스트 데이타를 로드한다
 		}
 		if(chaQuest.sHaQuestElementary[Quest_D].State==2 || chaQuest.sHaQuestElementary[Quest_D].State==3){
 			chaQuest.haSetQuestTimer(&chaQuest.sHaQuestElementary[Quest_D]);
-			if(sinChar->JOB_CODE < 5)
+			if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 				lstrcpy(chaQuest.szQuestMonsterName,haQuestMonsterName[2]);
 			else
 				lstrcpy(chaQuest.szQuestMonsterName,haQuestMonsterName[3]);
@@ -379,7 +379,7 @@ int sinLoadQuest(int CODE ,void *Buff )	//퀘스트 데이타를 로드한다
 		}		
 		if(chaQuest.sHaQuestElementary[Quest_E].State==2 || chaQuest.sHaQuestElementary[Quest_E].State==3){
 			chaQuest.haSetQuestTimer(&chaQuest.sHaQuestElementary[Quest_E]);
-			if(sinChar->JOB_CODE < 5)
+			if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 				lstrcpy(chaQuest.szQuestMonsterName,haQuestMonsterName[4]);
 			else
 				lstrcpy(chaQuest.szQuestMonsterName,haQuestMonsterName[5]);
@@ -828,7 +828,7 @@ int CheckChangeJob3QuestItem(DWORD Monster_CODE)
 	if(chaQuest.sHaQuestElementary[Quest_B].CODE){
 		if(chaQuest.sHaQuestElementary[Quest_B].Kind &&chaQuest.sHaQuestElementary[Quest_B].Kind==Monster_CODE){
 			chaQuest.sHaQuestElementary[Quest_B].Monster[0]++;
-			if(sinChar->JOB_CODE <5)
+			if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 #ifdef _LANGUAGE_CHINESE
 				wsprintf(szTemp, sinLevelQusetDoc, chaQuest.sHaQuestElementary[Quest_B].Monster[0], haQuestMonsterName[0]);
 #else
@@ -873,7 +873,7 @@ int CheckChangeJob3QuestItem(DWORD Monster_CODE)
 		if(chaQuest.sHaQuestElementary[Quest_D].Kind &&chaQuest.sHaQuestElementary[Quest_D].Kind==Monster_CODE)
 		{
 			chaQuest.sHaQuestElementary[Quest_D].Monster[0]++;
-			if(sinChar->JOB_CODE <5)
+			if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 #ifdef _LANGUAGE_CHINESE
 				wsprintf(szTemp, sinLevelQusetDoc, chaQuest.sHaQuestElementary[Quest_D].Monster[0], haQuestMonsterName[2]);
 #else
@@ -919,7 +919,7 @@ int CheckChangeJob3QuestItem(DWORD Monster_CODE)
 		if(chaQuest.sHaQuestElementary[Quest_E].Kind &&chaQuest.sHaQuestElementary[Quest_E].Kind==Monster_CODE)
 		{
 			chaQuest.sHaQuestElementary[Quest_E].Monster[0]++;
-			if(sinChar->JOB_CODE <5)
+			if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE))
 #ifdef _LANGUAGE_CHINESE
 				wsprintf(szTemp, sinLevelQusetDoc, chaQuest.sHaQuestElementary[Quest_E].Monster[0], haQuestMonsterName[4]);
 #else

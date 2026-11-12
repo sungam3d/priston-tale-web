@@ -4290,10 +4290,21 @@ int cITEM::SearchSpecialItemJob(DWORD SpecialJob_CODE) //특화 캐릭터 전용
 	char    szTemp2[64];
 	CountSpecialName = 0;
 
+	// Name the classes (the base rows, which carry a sight) whose bit the item has. Rank rows
+	// share bits now (the fifth rank, the Assassin's and the Martial Artist's bits), so they
+	// are named only for a bit no class has.
+	int bBaseRowsOnly = 0;
+	for( cnt=0; JobDataBase[cnt].JobBitCode; cnt++ ) {
+		if ( JobDataBase[cnt].Sight && (JobDataBase[cnt].JobBitCode & SpecialJob_CODE) ) {
+			bBaseRowsOnly = 1;
+			break;
+		}
+	}
+
 	cnt = 0;
 	while(1) {
 		if ( JobDataBase[cnt].JobBitCode ==0 )break;
-		if ( JobDataBase[cnt].JobBitCode & SpecialJob_CODE ) {
+		if ( (JobDataBase[cnt].JobBitCode & SpecialJob_CODE) && (!bBaseRowsOnly || JobDataBase[cnt].Sight) ) {
 			wsprintf(szTemp,SpecialName3,JobDataBase[cnt].szName2);
 			lstrcpy(szTemp2,"  \r");
 			lstrcat(szInfoBuff,szTemp);
