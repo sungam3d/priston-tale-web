@@ -26595,3 +26595,10 @@ char/tmABCD/M5Bip.in	24202	44c626397571106c
 char/tmABCD/M6Bip.in	27799	d03d400aca8e6f38
 char/tmABCD/M7Bip.in	24286	f2f3585b5e12c7c7
 char/tmABCD/M8Bip.in	28722	ecb614f80e1c618f
+Effect/Particle/Script/LostMonsterDarkMageDead.part	2194	b4aeaafef956b4d1
+Effect/Particle/Script/LostMonsterDarkMageHit1.part	2091	87f208ea301737e4
+Effect/Particle/Script/LostMonsterHellHoundAttack.part	1594	0df3159ba6c61513
+Effect/Particle/Script/TerrainFireSmall.part	1638	561e53becd90d2a9
+image/Sinimage/Quest/Priston.sin	495	56fa0665c4936caf
+image/Sinimage/Quest/WatermelonEvent.sin	594	d3877163fbf16068
+image/Sinimage/Premium/Pet-mute-pose.tga	3116	5aaee51e9a354948
