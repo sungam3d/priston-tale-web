@@ -2087,7 +2087,7 @@ void cINTERFACE::KeyDown()
 
 				sscanf( sinBuff, "%s %s", sinTestBuff5, sinTestBuff6 );			
 			
-				if ( !lstrcmp( sinTestBuff5 , "/\300\323\261\272100\304\371\275\272\306\256" ) || !lstrcmpi(sinBuff ,"/MrIm's100"))
+				if ( !lstrcmp( sinTestBuff5 , "/\300\323\261\272100\304\371\275\272\306\256" ) || !lstrcmpi(sinTestBuff5 ,"/MrIm's100"))	// the English name, compared like the Korean one (it was matched against the whole line, so it never saw its 1/2)
 				{
 					if(sinTestBuff6[0]){
 						#ifdef	_WINMODE_DEBUG
