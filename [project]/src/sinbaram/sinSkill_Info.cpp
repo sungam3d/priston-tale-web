@@ -796,6 +796,26 @@ int Amplified_Time[10]				= {120,140,160,180,200,220,240,260,280,300};	//seconds
 int Side_Spin_DamagePercent[10]		= {40,60,80,100,120,140,160,180,200,220};	//attack power +%
 int Side_Spin_LifeAbsorb[10]		= {10,13,16,19,22,25,28,31,34,37};			//% of the hit back as life
 
+//[Archer] tier 5
+//Evade Shot: leaps back and shoots, stunning the target (bosses are spared the stun)
+int Evade_Shot_DamagePercent[10]	= {65,78,91,104,117,130,143,156,169,182};	//attack power +%
+int Evade_Shot_StunTime[10]			= {4,6,8,10,12,13,14,15,16,17};				//stun, seconds
+
+//Thunder Roop: a lightning arrow with more reach and accuracy
+int Thunder_Rope_Range[10]			= {20,25,30,35,40,45,50,55,60,65};			//shooting range +
+int Thunder_Rope_DamagePercent[10]	= {80,100,120,140,160,180,200,220,240,260};	//attack power +%
+int Thunder_Rope_AddHit[10]			= {55,57,61,67,75,85,97,111,127,145};		//attack rating +%
+
+//Nature Splash: an arrow bursting on the enemies around the target
+int Nature_Splash_DamagePercent[10]	= {70,90,110,130,150,170,190,210,230,250};	//attack power +%
+int Nature_Splash_Area[10]			= {95,100,105,110,115,120,125,130,135,140};	//radius
+
+//Circle Trap: traps the enemies around the target and slows them
+int Circle_Trap_DamagePercent[10]	= {115,135,155,175,195,215,235,255,275,295};	//attack power +%
+int Circle_Trap_Area[10]			= {95,100,105,110,115,120,125,130,135,140};	//radius
+int Circle_Trap_Slow[10]			= {10,12,14,16,18,20,22,24,26,28};			//slower by %
+int Circle_Trap_SlowTime10[10]		= {5,10,15,20,25,30,35,40,45,50};			//slow, tenths of a second
+
 //[Fighter] tier 5
 //Down Hit: lifts the target and strikes it 3 times
 int Down_Hit_DamagePercent[10]		= {50,80,110,140,170,200,230,260,290,320};	//attack power +%

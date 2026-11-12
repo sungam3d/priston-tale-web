@@ -4554,6 +4554,26 @@ int cSKILL::ShowSkillInfo(sSKILL *pSkill , sSKILLBOX *pSkillBox ,  int Icon )
 			T5TIP("Attack Power:\r", "+%d%s\r", Power_Enhancement_Damage[T5P], "%");
 			T5TIP(CountinueTime, "%d%s\r", Power_Enhancement_Time[T5P], SecName);
 		break;
+		//[Archer] tier 5
+		case SKILL_EVADE_SHOT:
+			T5TIP(AddPercentDamage4, "%d%s\r", Evade_Shot_DamagePercent[T5P], "%");
+			T5TIP("Stun Time:\r", "%d%s\r", Evade_Shot_StunTime[T5P], SecName);
+		break;
+		case SKILL_THUNDER_ROPE:
+			T5TIP(AddPercentDamage4, "%d%s\r", Thunder_Rope_DamagePercent[T5P], "%");
+			T5TIP("Attack Rating:\r", "+%d%s\r", Thunder_Rope_AddHit[T5P], "%");
+			T5TIP("Shot Range:\r", "+%d\r", Thunder_Rope_Range[T5P]);
+		break;
+		case SKILL_NATURE_SPLASH:
+			T5TIP(AddPercentDamage4, "%d%s\r", Nature_Splash_DamagePercent[T5P], "%");
+			T5TIP(AttackAreaName, "%d\r", Nature_Splash_Area[T5P]);
+		break;
+		case SKILL_CIRCLE_TRAP:
+			T5TIP(AddPercentDamage4, "%d%s\r", Circle_Trap_DamagePercent[T5P], "%");
+			T5TIP(AttackAreaName, "%d\r", Circle_Trap_Area[T5P]);
+			T5TIP("Slow:\r", "%d%s\r", Circle_Trap_Slow[T5P], "%");
+			T5TIP("Slow Time:\r", "%d.%d%s\r", Circle_Trap_SlowTime10[T5P]/10, Circle_Trap_SlowTime10[T5P]%10, SecName);
+		break;
 		//[Pikeman] tier 5
 		case SKILL_DANCING_REAPER:
 			T5TIP(AddPercentDamage4, "%d%s\r", Dancing_Reaper_DamagePercent[T5P], "%");

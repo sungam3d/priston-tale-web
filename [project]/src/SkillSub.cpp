@@ -1370,6 +1370,15 @@ int GetSkillDistRange( sSKILL *lpSkill , int AttackRange , int AttackMode )
 	case SKILL_VIRTUAL_LIFE:
 		return 200*fONE;
 
+	//tier 5
+	case SKILL_THUNDER_ROPE:
+		if ( lpSkill->Point ) {
+			cnt = AttackRange+Thunder_Rope_Range[lpSkill->Point-1]*fONE;
+			LastAttackRange = cnt;
+			return cnt;
+		}
+		break;
+
 	}
 
 	return NULL;
@@ -3471,6 +3480,58 @@ int Avalanche_ArrowNum[10]	= {3,3,3,4,4,4,5,5,5,6};
 				if ( life>lpCurPlayer->smCharInfo.Life[1] ) life = lpCurPlayer->smCharInfo.Life[1];
 				if ( sinGetLife()>0 ) sinSetLife( life );
 			}
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	//Archer tier 5
+	case SKILL_EVADE_SHOT:			//one shot that stuns (the server stuns: monsters only, not bosses)
+	case SKILL_THUNDER_ROPE:		//one shot, with more reach and accuracy
+		if ( lpCurPlayer->CheckShootingTest(lpChar)==FALSE ) {
+			lpCurPlayer->AttackCritcal = -1;
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_STAND );
+			return TRUE;
+		}
+		if ( lpSkill->Point && lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = (lpSkill->CODE==SKILL_EVADE_SHOT) ? SKILL_PLAY_EVADE_SHOT : SKILL_PLAY_THUNDER_ROPE;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			temp = lpCurPlayer->smCharInfo.Attack_Rating;
+			if ( lpSkill->CODE==SKILL_THUNDER_ROPE )
+				lpCurPlayer->smCharInfo.Attack_Rating += (temp*Thunder_Rope_AddHit[lpSkill->Point-1])/100;
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			lpCurPlayer->smCharInfo.Attack_Rating = temp;
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+			else
+				DamageExp( lpChar , cnt );
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	case SKILL_NATURE_SPLASH:		//an arrow bursting on the target and the enemies around it
+	case SKILL_CIRCLE_TRAP:			//the same, and the server slows them
+		if ( lpCurPlayer->CheckShootingTest(lpChar)==FALSE ) {
+			lpCurPlayer->AttackCritcal = -1;
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_STAND );
+			return TRUE;
+		}
+		if ( lpSkill->Point && lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			int area = (lpSkill->CODE==SKILL_NATURE_SPLASH) ? Nature_Splash_Area[lpSkill->Point-1] : Circle_Trap_Area[lpSkill->Point-1];
+			lpCurPlayer->AttackSkil = (lpSkill->CODE==SKILL_NATURE_SPLASH) ? SKILL_PLAY_NATURE_SPLASH : SKILL_PLAY_CIRCLE_TRAP;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			dm_SelectRange( lpChar->pX, lpChar->pY, lpChar->pZ, area , TRUE , 12 );
+			dm_AddRangeDamage( lpChar );
+			dm_SendRangeDamage( lpChar->pX, lpChar->pY, lpChar->pZ,  lpChar , 0 , 0 ,0,0, lpCurPlayer->AttackSkil );
 
 			lpCurPlayer->MotionLoopSpeed = 70;
 			lpCurPlayer->MotionLoop = 1;

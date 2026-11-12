@@ -14739,6 +14739,35 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 		}
 		break;
 
+	//Archer tier 5 (the older shots' effects for now)
+	case SKILL_PLAY_EVADE_SHOT:
+	case SKILL_PLAY_THUNDER_ROPE:
+		if ( chrAttackTarget && MotionEvent==1 && GetAttackPoint( &x,&y,&z )==TRUE ) {
+			StartSkillDest( x,y,z , chrAttackTarget->pX,chrAttackTarget->pY+(24*fONE),chrAttackTarget->pZ , SKILL_PERFECT_AIM );
+			if ( (AttackSkil&0xFF)==SKILL_PLAY_THUNDER_ROPE )
+				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 60, 60,200,0, 500 );
+			SkillPlaySound( SKILL_SOUND_PERFECT_AIM , pX,pY,pZ );
+		}
+		break;
+
+	case SKILL_PLAY_NATURE_SPLASH:
+	case SKILL_PLAY_CIRCLE_TRAP:
+		if ( chrAttackTarget && point ) {
+			if ( lpCurPlayer!=this ) {
+				dm_SelectRange( chrAttackTarget->pX, chrAttackTarget->pY, chrAttackTarget->pZ,
+					(AttackSkil&0xFF)==SKILL_PLAY_NATURE_SPLASH ? Nature_Splash_Area[point-1] : Circle_Trap_Area[point-1] , TRUE , 12 );
+				dm_AddRangeDamage( chrAttackTarget );
+			}
+			if ( MotionEvent==1 && GetAttackPoint( &x,&y,&z )==TRUE ) {
+				StartSkillDest( x,y,z, chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ, SKILL_ARROW_OF_RAGE , point );
+				SkillPlaySound( SKILL_SOUND_WIND_ARROW , pX,pY,pZ );
+			}
+			for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
+				StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
+			}
+		}
+		break;
+
 	//Pikeman tier 5
 	case SKILL_PLAY_DANCING_REAPER:
 	case SKILL_PLAY_SIDE_SPIN_ATTACK:

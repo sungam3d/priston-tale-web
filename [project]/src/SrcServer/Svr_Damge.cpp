@@ -1886,6 +1886,12 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 
 						lpChar->PlayStunCount = 0;			//중립모드 해제
 
+						if ( SkillCode==SKILL_PLAY_CIRCLE_TRAP && lpChar->smCharInfo.wPlayClass[0]!=MONSTER_CLASS_BOSS ) {
+							//Archer tier 5: Circle Trap slows (16 = one second)
+							lpChar->PlaySlowCount = (16*Circle_Trap_SlowTime10[SkillPoint])/10;
+							lpChar->PlaySlowSpeed = 256-(256*Circle_Trap_Slow[SkillPoint])/100;
+						}
+
 						Dmg3 = pow;
 
 						pow -= ( pow * lpChar->smCharInfo.Absorption )/100;
@@ -3669,6 +3675,21 @@ int rsSetSkillAttack( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA
 			}
 			break;
 
+		//Archer tier 5 (the fifth rank only)
+		case SKILL_PLAY_EVADE_SHOT:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ARCHER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Evade_Shot_DamagePercent[Point])/100;
+			// the stun: monsters only, bosses spared (16 = one second)
+			if ( lpChar && lpChar->smCharInfo.State==smCHAR_STATE_ENEMY &&
+				lpChar->smCharInfo.wPlayClass[0]!=MONSTER_CLASS_BOSS && lpChar->smCharInfo.Life[0]>0 ) {
+				lpChar->PlayStunCount = 16*Evade_Shot_StunTime[Point];
+			}
+			break;
+		case SKILL_PLAY_THUNDER_ROPE:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ARCHER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Thunder_Rope_DamagePercent[Point])/100;
+			break;
+
 		//Pikeman tier 5 (the fifth rank only)
 		case SKILL_PLAY_DANCING_REAPER:
 			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_PIKEMAN || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
@@ -5210,6 +5231,26 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 			pow += GetRandomPos( Final_Spear_AreaDamage[Point][0] , Final_Spear_AreaDamage[Point][1] );
 			lpTransAttackData->Power = pow;
 			lpTransSkillAttackData->AttackSize = Final_Spear_Area[Point];
+			lpTransSkillAttackData->Power = pow;
+			lpTransSkillAttackData->AttackState = 0;
+			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
+			return TRUE;
+
+		case SKILL_PLAY_NATURE_SPLASH:		//Archer tier 5: weapon damage +%, the target and those around it
+		case SKILL_PLAY_CIRCLE_TRAP:		//(Circle Trap also slows them: RecvRangeAttack)
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ARCHER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			if ( lpTransSkillAttackData->TargetCount>13 ) return FALSE;
+
+			pow = GetRandomPos( lpTransRangeAttack->Power[0] , lpTransRangeAttack->Power[1] );
+			if ( dwSkillCode==SKILL_PLAY_NATURE_SPLASH ) {
+				pow += (pow*Nature_Splash_DamagePercent[Point])/100;
+				lpTransSkillAttackData->AttackSize = Nature_Splash_Area[Point];
+			}
+			else {
+				pow += (pow*Circle_Trap_DamagePercent[Point])/100;
+				lpTransSkillAttackData->AttackSize = Circle_Trap_Area[Point];
+			}
+			lpTransAttackData->Power = pow;
 			lpTransSkillAttackData->Power = pow;
 			lpTransSkillAttackData->AttackState = 0;
 			dm_Critical_Temp = lpTransRangeAttack->Critical[0];

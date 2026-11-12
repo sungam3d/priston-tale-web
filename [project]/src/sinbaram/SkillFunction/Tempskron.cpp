@@ -2023,6 +2023,12 @@ int F_Side_Spin_Attack()
 	return TRUE;
 }
 
+//Archer tier 5 (all four are shots)
+int F_Evade_Shot()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Thunder_Rope()	{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Nature_Splash()	{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Circle_Trap()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+
 //파이크맨
 int F_Assassin_Eye()
 {

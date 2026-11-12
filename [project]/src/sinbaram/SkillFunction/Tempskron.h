@@ -329,6 +329,23 @@ int F_Final_Spear();
 int F_Amplified();
 int F_Side_Spin_Attack();
 
+//Archer tier 5
+extern int Evade_Shot_DamagePercent[10];
+extern int Evade_Shot_StunTime[10];
+extern int Thunder_Rope_Range[10];
+extern int Thunder_Rope_DamagePercent[10];
+extern int Thunder_Rope_AddHit[10];
+extern int Nature_Splash_DamagePercent[10];
+extern int Nature_Splash_Area[10];
+extern int Circle_Trap_DamagePercent[10];
+extern int Circle_Trap_Area[10];
+extern int Circle_Trap_Slow[10];
+extern int Circle_Trap_SlowTime10[10];
+int F_Evade_Shot();
+int F_Thunder_Rope();
+int F_Nature_Splash();
+int F_Circle_Trap();
+
 //Fighter tier 5
 extern int Down_Hit_DamagePercent[10];
 extern int Down_Hit_AddHit[10];
