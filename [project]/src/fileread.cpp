@@ -904,6 +904,14 @@ char *szFallStandSmallWord = "작은착지";
 	//모션 파일 없구 .. 동작 모음만 있으면..모션 생성
 	//######################################################################################
 	//작 성 자 : 오 영 석
+#ifdef PT_WEB
+	// The web build never rebuilds a motion file from its parts: the data has the merged
+	// .smb (m1..m8.smb), and an empty talk-motion name would otherwise count as "missing"
+	// and download and merge every part (tens of MB per character).
+	for(cnt=MotionFileListCnt-1;cnt>=0;cnt--)
+		delete szMotionFileList[cnt];
+	MotionFileListCnt = 0;
+#endif
 	if( MotionFileListCnt )
 	//if( MotionFileListCnt > 1 )
 	{
