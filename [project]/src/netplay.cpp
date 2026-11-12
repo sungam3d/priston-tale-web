@@ -2565,6 +2565,26 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 			}
 			break;
 
+		case smTRANSCODE_GM_GODMODE:
+			// GM /IDDQD (the server checked the GM may)
+			lpTransCommand = (smTRANS_COMMAND *)pData->Buff;
+			{
+				extern int sinGM_GodMode;
+				sinGM_GodMode = lpTransCommand->WParam ? 1 : 0;
+				AddChatBuff( (char *)( sinGM_GodMode ? "> God mode ON: life, mana and stamina stay full" : "> God mode OFF" ) , 0 );
+				ResetEnergyGraph( 4 );
+			}
+			break;
+
+		case smTRANSCODE_GM_DECKOUT:
+			// GM /DeckMeOut!: empty the slots its items go into
+			lpTransCommand = (smTRANS_COMMAND *)pData->Buff;
+			{
+				extern int sinGM_DeckOutClearSlots( DWORD dwPositionMask , int ItemCount );
+				sinGM_DeckOutClearSlots( (DWORD)lpTransCommand->WParam , lpTransCommand->LParam );
+			}
+			break;
+
 		case smTRANSCODE_ADDEXP:
 		case smTRANSCODE_ADDEXP_PARTY:
 			//경험치 획득

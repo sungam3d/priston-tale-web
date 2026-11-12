@@ -18551,6 +18551,173 @@ static int GmCheats_CreateItem( rsPLAYINFO *lpPlayInfo , rsPLAYINFO *lpPlayInfo2
 	return val;
 }
 
+/*----------------------------------------------------------------------------*
+*	GM /DeckMeOut! [aging]: the best item the player can wear in every slot, for
+*	their level and stats, rolled at its best with their class's specialisation,
+*	optionally aged (keeping its level requirement so it still goes on). The client
+*	first empties those slots (smTRANSCODE_GM_DECKOUT), then gets the items the
+*	usual way (smTRANSCODE_PUTITEM), which it puts straight on.
+*-----------------------------------------------------------------------------*/
+extern int Random_MaxMode;
+
+static DWORD DeckItemClass( DWORD dwCode )
+{
+	for ( int cnt=0; cnt<MAX_ITEM; cnt++ )
+		if ( sItem[cnt].CODE==dwCode ) return sItem[cnt].Class;
+	return 0;
+}
+
+// the item's number in its family (WA129 -> 29); 0 when unknown
+static int DeckItemOrdinal( DWORD dwCode )
+{
+	for ( int cnt=0; cnt<MAX_ITEM; cnt++ ) {
+		if ( sItem[cnt].CODE==dwCode ) {
+			const char *szKey = sItem[cnt].LastCategory;
+			return lstrlen(szKey)==5 ? atoi( szKey+3 ) : 0;
+		}
+	}
+	return 0;
+}
+
+static DWORD DeckWeaponFamily( int JobCode )
+{
+	switch( JobCode ) {
+		case JOBCODE_FIGHTER:		return sinWA1;
+		case JOBCODE_MECHANICIAN:	return sinWC1;
+		case JOBCODE_ARCHER:		return sinWS1;
+		case JOBCODE_PIKEMAN:		return sinWP1;
+		case JOBCODE_ATALANTA:		return sinWT1;
+		case JOBCODE_KNIGHT:		return sinWS2;
+		case JOBCODE_MAGICIAN:
+		case JOBCODE_PRIESTESS:		return sinWM1;
+		case JOBCODE_ASSASSIN:		return sinWD1;
+		case JOBCODE_SHAMAN:		return sinWN1;
+		case JOBCODE_MARTIALARTIST:	return sinWV1;
+	}
+	return 0;
+}
+
+// the best item of a family the player can wear, made into *lpItem
+static int DeckPickItem( rsPLAYINFO *lpPlayInfo , DWORD dwFamily , int Aging , sITEMINFO *lpItem )
+{
+	smCHAR_INFO *lpChar = &lpPlayInfo->smCharInfo;
+	int JobCode = lpChar->JOB_CODE&0xFFFF;
+	int Tried[DEF_ITEM_MAX/8];
+	int TriedCount = 0;
+	int cnt, best, i;
+
+	while( TriedCount<DEF_ITEM_MAX/8 ) {
+		best = -1;
+		for ( cnt=0; cnt<DefaultItemCount; cnt++ ) {
+			sITEMINFO *lpDef = &DefaultItems[cnt].Item;
+			if ( (lpDef->CODE&sinITEM_MASK2)!=dwFamily || lpDef->UniqueItem ) continue;
+			if ( lpDef->Level>lpChar->Level ) continue;
+			if ( !CanClassUseWeapon( JobCode, lpDef->CODE ) ) continue;
+			int ord = DeckItemOrdinal( lpDef->CODE );
+			if ( ord<=0 || ord>30 ) continue;				// event, costume and premium items
+			for ( i=0; i<TriedCount; i++ ) if ( Tried[i]==cnt ) break;
+			if ( i<TriedCount ) continue;
+			if ( best<0 || lpDef->Level>DefaultItems[best].Item.Level ||
+				( lpDef->Level==DefaultItems[best].Item.Level && ord>DeckItemOrdinal(DefaultItems[best].Item.CODE) ) )
+				best = cnt;
+		}
+		if ( best<0 ) return FALSE;
+		Tried[TriedCount++] = best;
+
+		Random_MaxMode = 1;
+		CreateDefItem( lpItem , &DefaultItems[best] , JobCode );
+		Random_MaxMode = 0;
+
+		if ( lpItem->Level>lpChar->Level || lpItem->Strength>lpChar->Strength || lpItem->Spirit>lpChar->Spirit ||
+			lpItem->Talent>lpChar->Talent || lpItem->Dexterity>lpChar->Dexterity || lpItem->Health>lpChar->Health )
+			continue;				// the player can't wear it yet: the next best
+
+		if ( Aging>0 ) {
+			DWORD dwFam = lpItem->CODE&sinITEM_MASK2;
+			if ( (dwFam>=sinWA1 && dwFam<=sinDA2) || dwFam==sinOA2 || dwFam==sinOM1 ) {
+				int Level = lpItem->Level;
+				SetAgingItem( lpItem , Aging );
+				lpItem->Level = Level;			// still wearable
+				ReformItem( lpItem );
+			}
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static int GmDeckOut( rsPLAYINFO *lpPlayInfo , int Aging )
+{
+	smCHAR_INFO *lpChar = &lpPlayInfo->smCharInfo;
+	int JobCode = lpChar->JOB_CODE&0xFFFF;
+	int Caster = ( JobCode==JOBCODE_MAGICIAN || JobCode==JOBCODE_PRIESTESS || JobCode==JOBCODE_SHAMAN );
+	sITEMINFO Items[12];
+	int Count = 0;
+	DWORD dwMask = 0;
+	smTRANS_COMMAND	smTransCommand;
+	char szMsg[256];
+	int cnt;
+
+	struct { DWORD dwFamily; DWORD dwSlots; } Slots[] = {
+		{ Caster ? sinDA2 : sinDA1 , INVENTORY_POS_ARMOR },
+		{ sinDB1 , INVENTORY_POS_BOOTS },
+		{ sinDG1 , INVENTORY_POS_GLOVES },
+		{ sinOA2 , INVENTORY_POS_ARMLET },
+		{ sinOA1 , INVENTORY_POS_AMULET },
+		{ sinOS1 , INVENTORY_POS_SHELTOM },
+		{ sinOR1 , INVENTORY_POS_LRING },
+		{ sinOR1 , INVENTORY_POS_RRING },
+	};
+
+	if ( !lpPlayInfo->lpsmSock ) return FALSE;
+
+	// the weapon, and the off hand if it leaves one free
+	DWORD dwWeapon = DeckWeaponFamily( JobCode );
+	if ( dwWeapon && DeckPickItem( lpPlayInfo , dwWeapon , Aging , &Items[Count] ) ) {
+		DWORD dwClass = DeckItemClass( Items[Count].CODE );
+		Count++;
+		dwMask |= INVENTORY_POS_RHAND;
+		if ( dwClass==ITEM_CLASS_WEAPON_TWO )
+			dwMask |= INVENTORY_POS_LHAND;
+		else if ( JobCode!=JOBCODE_ASSASSIN && JobCode!=JOBCODE_MARTIALARTIST && JobCode!=JOBCODE_ARCHER ) {
+			if ( DeckPickItem( lpPlayInfo , Caster ? sinOM1 : sinDS1 , Aging , &Items[Count] ) ) {
+				Count++;
+				dwMask |= INVENTORY_POS_LHAND;
+			}
+		}
+	}
+
+	for ( cnt=0; cnt<(int)(sizeof(Slots)/sizeof(Slots[0])); cnt++ ) {
+		if ( DeckPickItem( lpPlayInfo , Slots[cnt].dwFamily , Aging , &Items[Count] ) ) {
+			Count++;
+			dwMask |= Slots[cnt].dwSlots;
+		}
+	}
+
+	if ( !Count ) {
+		GmCheats_Whisper( lpPlayInfo , "> Nothing to wear was found for your level." );
+		return FALSE;
+	}
+
+	smTransCommand.size = sizeof( smTRANS_COMMAND );
+	smTransCommand.code = smTRANSCODE_GM_DECKOUT;
+	smTransCommand.WParam = dwMask;
+	smTransCommand.LParam = Count;
+	smTransCommand.SParam = 0;
+	smTransCommand.EParam = 0;
+	lpPlayInfo->lpsmSock->Send( (char *)&smTransCommand , smTransCommand.size , TRUE );
+
+	for ( cnt=0; cnt<Count; cnt++ )
+		rsPutItem2( lpPlayInfo , &Items[cnt] );
+
+	if ( Aging>0 )
+		wsprintf( szMsg , "> Decked out: %d items for level %d, aged +%d." , Count , lpChar->Level , Aging );
+	else
+		wsprintf( szMsg , "> Decked out: %d items for level %d." , Count , lpChar->Level );
+	GmCheats_Whisper( lpPlayInfo , szMsg );
+	return TRUE;
+}
+
 int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 {
 	int len,cnt;
@@ -20135,6 +20302,36 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 		TransChatMessage.dwObjectSerial = 0;
 		lpPlayInfo->lpsmSock->Send( (char *)&TransChatMessage , TransChatMessage.size , TRUE );
 
+		rsRecordAdminCommand( lpPlayInfo , szChatCommand , 1 );
+		return TRUE;
+	}
+
+	// GM: /DeckMeOut! [aging] - the best gear for the player's level and class (GmDeckOut)
+	len = rsCompString( "/DeckMeOut!" , szChatCommand );
+	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.GmCheats || lpPlayInfo->AdminMode>=4 ) )
+	{
+		lpBuff = szChatCommand + len;
+		lpBuff = rsGetWord( szCmdBuff , lpBuff );
+		cnt = szCmdBuff[0] ? atoi(szCmdBuff) : 0;
+		if ( cnt<0 ) cnt = 0;
+		if ( cnt>20 ) cnt = 20;
+		GmDeckOut( lpPlayInfo , cnt );
+		rsRecordAdminCommand( lpPlayInfo , szChatCommand , 1 );
+		return TRUE;
+	}
+
+	// GM: /IDDQD - god mode on or off (the client keeps life, mana and stamina full)
+	len = rsCompString( "/IDDQD" , szChatCommand );
+	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.GmCheats || lpPlayInfo->AdminMode>=4 ) )
+	{
+		lpPlayInfo->GmGodMode = !lpPlayInfo->GmGodMode;
+		smTransCommand.size = sizeof( smTRANS_COMMAND );
+		smTransCommand.code = smTRANSCODE_GM_GODMODE;
+		smTransCommand.WParam = lpPlayInfo->GmGodMode;
+		smTransCommand.LParam = 0;
+		smTransCommand.SParam = 0;
+		smTransCommand.EParam = 0;
+		lpPlayInfo->lpsmSock->Send( (char *)&smTransCommand , smTransCommand.size , TRUE );
 		rsRecordAdminCommand( lpPlayInfo , szChatCommand , 1 );
 		return TRUE;
 	}

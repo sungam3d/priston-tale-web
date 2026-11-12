@@ -496,6 +496,11 @@
 
 // GM /MakeMeLevel: server -> client, WParam = the new level
 #define smTRANSCODE_GM_SETLEVEL		0x50326010
+// GM /IDDQD: server -> client, WParam = 1 god mode on, 0 off
+#define smTRANSCODE_GM_GODMODE		0x50326011
+// GM /DeckMeOut!: server -> client before the items, WParam = the equipment slots
+// (INVENTORY_POS_* bits) to empty, LParam = how many items follow (smTRANSCODE_PUTITEM)
+#define smTRANSCODE_GM_DECKOUT		0x50326012
 
 
 #define TRANS_BUFF_SIZE		4096
@@ -1182,6 +1187,7 @@ public:
 
 	int				AdminMode;				//관리자 모드
 	int				HideMode;				//투명 모드 ( 관리자가 남에게 안보이게 다닐때 )
+	int				GmGodMode;				// GM /IDDQD is on (the client keeps life, mana and stamina full)
 	int				AdminIP;				//관리자 아이피 주소로 접속
 
 	DWORD			dwConnectTime;			//접속한 시간

@@ -1723,8 +1723,15 @@ int smCHAR::SetTool( DWORD dwItemCode , int hvPosi  )
 					HvRightHand.SizeMax = szX;
 					HvRightHand.SizeMin = szN;
 					HvRightHand.dwItemCode = dwItemCode;
-					//오른쪽 도구는 손에 붙임
-					HvRightHand.ObjBip = AnimPattern->GetObjectFromName(szBipName_RightHand) ;
+					//오른쪽 도구는 손에 붙임: a vambrace goes on the forearm, the Shaman's phantom
+					// hovers at the back; anything else in the weapon hand
+					HvRightHand.ObjBip = 0;
+					if ( (dwItemCode&sinITEM_MASK2)==sinWV1 )
+						HvRightHand.ObjBip = AnimPattern->GetObjectFromName("Bip01 R Forearm");
+					else if ( (dwItemCode&sinITEM_MASK2)==sinWN1 )
+						HvRightHand.ObjBip = AnimPattern->GetObjectFromName(szBipName_BackSpine);
+					if ( !HvRightHand.ObjBip )
+						HvRightHand.ObjBip = AnimPattern->GetObjectFromName(szBipName_RightHand) ;
 					dwActionItemCode = dwItemCode;
 
 					//wStickItems[smPLAYBUFF_ITEM_ACTION] = GetSinItemNumFromCode( dwActionItemCode );
@@ -1859,7 +1866,8 @@ int smCHAR::SetTool( DWORD dwItemCode , int hvPosi  )
 
 
 	if ( (dwActionItemCode&sinITEM_MASK2)==sinWS1 || (dwActionItemCode&sinITEM_MASK2)==sinWT1 ||
-		( (dwActionItemCode&sinITEM_MASK2)==sinWM1 && ( smCharInfo.JOB_CODE==7 || smCharInfo.JOB_CODE==8 ) ) ) {
+		( (dwActionItemCode&sinITEM_MASK2)==sinWM1 && ( smCharInfo.JOB_CODE==7 || smCharInfo.JOB_CODE==8 ) ) ||
+		( (dwActionItemCode&sinITEM_MASK2)==sinWN1 && smCharInfo.JOB_CODE==JOBCODE_SHAMAN ) ) {	// the Shaman casts with a phantom
 		//활 , 마법 지팡이
 		ShootingMode = TRUE;
 	}
@@ -2372,6 +2380,64 @@ int Tier5MotionSkillNum( int PlaySkillCode )
 	return 0;
 }
 
+// Motion clips name their weapons by the v3215 client's item table index (smMOTIONINFO
+// ItemCodeList, 16-bit). We match held items to them by key (MotionItemIndex.h).
+#include "MotionItemIndex.h"
+
+#define MOTION_ITEM_NONE	0xFFFE		// an item no clip names (0xFFFF is bare hands)
+
+static WORD *lpSlotMotionIndex = 0;		// per sItem entry
+
+static void BuildSlotMotionIndex()
+{
+	if ( lpSlotMotionIndex ) return;
+	lpSlotMotionIndex = new WORD[MAX_ITEM];
+	for ( int cnt=0; cnt<MAX_ITEM; cnt++ ) {
+		WORD wIndex = MOTION_ITEM_NONE;
+		const char *szKey = sItem[cnt].LastCategory;
+		if ( sItem[cnt].CODE && szKey[0] ) {
+			for ( int i=0; MotionItemIndexTable[i].szKey; i++ ) {
+				if ( lstrcmpi( MotionItemIndexTable[i].szKey, szKey )==0 ) { wIndex = MotionItemIndexTable[i].wIndex; break; }
+			}
+			if ( wIndex==MOTION_ITEM_NONE && lstrlen(szKey)==5 ) {
+				// newer than the motion files: its family's first item (e.g. WA101 for WA131)
+				char szFirst[8];
+				wsprintf( szFirst, "%c%c%c01", szKey[0], szKey[1], szKey[2] );
+				for ( int i=0; MotionItemIndexTable[i].szKey; i++ ) {
+					if ( lstrcmpi( MotionItemIndexTable[i].szKey, szFirst )==0 ) { wIndex = MotionItemIndexTable[i].wIndex; break; }
+				}
+			}
+		}
+		lpSlotMotionIndex[cnt] = wIndex;
+	}
+}
+
+WORD GetMotionItemIndexOfSlot( int ItemSlot )
+{
+	if ( ItemSlot<0 || ItemSlot>=MAX_ITEM ) return MOTION_ITEM_NONE;
+	BuildSlotMotionIndex();
+	return lpSlotMotionIndex[ItemSlot];
+}
+
+// an item code as a motion item index (0xFFFF for none held)
+WORD GetMotionItemIndexOfCode( DWORD dwItemCode )
+{
+	static DWORD dwLastCode = 0;
+	static WORD wLastIndex = MOTION_ITEM_NONE;
+
+	if ( !dwItemCode ) return 0xFFFF;
+	if ( dwItemCode==dwLastCode ) return wLastIndex;
+	BuildSlotMotionIndex();
+	for ( int cnt=0; cnt<MAX_ITEM; cnt++ ) {
+		if ( sItem[cnt].CODE==dwItemCode ) {
+			dwLastCode = dwItemCode;
+			wLastIndex = lpSlotMotionIndex[cnt];
+			return wLastIndex;
+		}
+	}
+	return MOTION_ITEM_NONE;
+}
+
 //모션 분류 코드로 모션을 바꾼다
 int smCHAR::SetMotionFromCode( DWORD MotionCode )
 {
@@ -2480,28 +2546,20 @@ int smCHAR::SetMotionFromCode( DWORD MotionCode )
 		}
 	}
 
+	// the clips for the held weapon (by its motion item index), or for bare hands (0xFFFF)
+	WORD wActMotionIndex = GetMotionItemIndexOfCode( dwActItemCode );
 	for( cnt=0;cnt<FindCnt;cnt++) {
 		itcnt = lpMotionInfo->MotionInfo[ FoundNum[cnt] ].ItemCodeCount;
 		if ( itcnt==0 ) {
 			FoundNum2[ FindCnt2++ ] = FoundNum[cnt];
 		}
 		else {
-			if ( dwActItemCode ) {
-				for ( cnt2=0;cnt2<itcnt;cnt2++) {
-					dwFindCode = lpMotionInfo->MotionInfo[ FoundNum[cnt] ].ItemCodeList[cnt2];
-					if ( dwActItemCode==(int)sItem[ dwFindCode ].CODE ) {
-						FoundNum2[ FindCnt2++ ] = FoundNum[cnt];
-						break;
-					}
-				}
-			}
-			else {
-				for ( cnt2=0;cnt2<itcnt;cnt2++) {
-					dwFindCode = lpMotionInfo->MotionInfo[ FoundNum[cnt] ].ItemCodeList[cnt2];
-					if ( dwFindCode==0xFF ) {
-						FoundNum2[ FindCnt2++ ] = FoundNum[cnt];
-						break;
-					}
+			if ( itcnt>MOTION_TOOL_MAX/2 ) itcnt = MOTION_TOOL_MAX/2;
+			for ( cnt2=0;cnt2<itcnt;cnt2++) {
+				dwFindCode = lpMotionInfo->MotionInfo[ FoundNum[cnt] ].ItemCodeList[cnt2];
+				if ( dwFindCode==wActMotionIndex ) {
+					FoundNum2[ FindCnt2++ ] = FoundNum[cnt];
+					break;
 				}
 			}
 		}
@@ -3989,8 +4047,8 @@ int smCHAR::EventAttack( int Flag )
 
 						}
 
-						if ( wp==sinWM1 ) {
-							//마법 지팡이
+						if ( wp==sinWM1 || wp==sinWN1 ) {
+							//마법 지팡이 (a phantom casts as a staff does)
 
 							if ( WeaponEffect ) {
 								switch( WeaponEffect ) {
@@ -4514,7 +4572,7 @@ int CastleSoulFountain_Area[4] = {	37040*fONE , 37158*fONE , -30286*fONE, -30102
 
 				//프리스티스 공격속도 보정 ( 양손무기 공격동작 프레임이 적어서 느리게 설정 )
 				if ( smCharInfo.JOB_CODE==8 && 
-					MotionInfo->ItemCodeCount && sItem[MotionInfo->ItemCodeList[0]].CODE==(sinWM1|sin04) ) {
+					MotionInfo->ItemCodeCount && MotionInfo->ItemCodeList[0]==GetMotionItemIndexOfCode(sinWM1|sin04) ) {
 						FrameStep -= 16;
 					}
 			}

@@ -23,6 +23,7 @@ static char line[512];
 
 //######################################################################################
 //작 성 자 : 오 영 석
+WORD GetMotionItemIndexOfSlot( int ItemSlot );		// character.cpp
 void ModelKeyWordEncode( DWORD dwFileCode, smMODELINFO *lpMODELINFO );
 int  ModelKeyWordDecode( DWORD dwFileCode, smMODELINFO *lpMODELINFO );
 void MotionKeyWordEncode( DWORD dwCode, smMODELINFO *lpMODELINFO );
@@ -638,16 +639,17 @@ char *szFallStandSmallWord = "작은착지";
 					if ( lstrcmp( strBuff , "\270\360\265\316" )==0 ) {
 						Info->MotionInfo[MotionLastPos].ItemCodeCount = 0; break; }
 
+					if ( Info->MotionInfo[MotionLastPos].ItemCodeCount>=MOTION_TOOL_MAX/2 ) break;
 					if ( lstrcmp( strBuff , "\276\370\300\275" )==0 ) {
 						Info->MotionInfo[MotionLastPos].ItemCodeList[
-								Info->MotionInfo[MotionLastPos].ItemCodeCount++] = 0xFF;
+								Info->MotionInfo[MotionLastPos].ItemCodeCount++] = 0xFFFF;		// bare hands
 					}
 					else {
-						//코드검색 하여 설정
+						//코드검색 하여 설정 (as the .inx files have it: the v3215 motion item index)
 						for(cnt=0;cnt<MAX_ITEM;cnt++) {
 							if ( lstrcmp( strBuff , sItem[cnt].LastCategory )==0 ) {
 								Info->MotionInfo[MotionLastPos].ItemCodeList[
-									Info->MotionInfo[MotionLastPos].ItemCodeCount++] = cnt;
+									Info->MotionInfo[MotionLastPos].ItemCodeCount++] = GetMotionItemIndexOfSlot( cnt );
 								break;
 							}
 						}
@@ -971,15 +973,27 @@ char *szFallStandSmallWord = "작은착지";
 static_assert( sizeof(smMODELINFO)==95268, "smMODELINFO must match the v3215 .inx size" );
 static_assert( SMMODELINFO_OLD_SIZE==67084, "old .inx size" );
 
+// character.cpp: an entry of our item table (sItem) as a v3215 motion item index
+WORD GetMotionItemIndexOfSlot( int ItemSlot );
+
 static void MotionInfoFromOld( BYTE *lpOld, smMOTIONINFO *lpNew, int Count )
 {
-	int headSize = MOTIONINFO_LIST_OFS + MOTION_TOOL_MAX_OLD;		//State ~ ItemCodeList[52]
-	int tailSize = MOTIONINFO_OLD_SIZE - headSize;					//dwJobCodeBit ~ MotionFrame
+	int headSize = MOTIONINFO_LIST_OFS;								//State ~ ItemCodeCount
+	int tailSize = MOTIONINFO_OLD_SIZE - headSize - MOTION_TOOL_MAX_OLD;	//dwJobCodeBit ~ MotionFrame
 
 	for ( int cnt=0; cnt<Count; cnt++ ) {
 		BYTE *lpDest = (BYTE *)&lpNew[cnt];
 		memcpy( lpDest, lpOld, headSize );
-		memcpy( lpDest + MOTIONINFO_LIST_OFS + MOTION_TOOL_MAX, lpOld + headSize, tailSize );
+		memcpy( lpDest + MOTIONINFO_LIST_OFS + MOTION_TOOL_MAX, lpOld + headSize + MOTION_TOOL_MAX_OLD, tailSize );
+
+		// the old list: one byte per weapon, our item table's index (0xFF bare hands)
+		BYTE *lpList = lpOld + headSize;
+		int n = lpNew[cnt].ItemCodeCount;
+		if ( n<0 || n>MOTION_TOOL_MAX/2 ) n = 0;
+		lpNew[cnt].ItemCodeCount = n;
+		for ( int i=0; i<MOTION_TOOL_MAX/2; i++ )
+			lpNew[cnt].ItemCodeList[i] = i<n ? ( lpList[i]==0xFF ? 0xFFFF : GetMotionItemIndexOfSlot( lpList[i] ) ) : 0;
+
 		lpOld += MOTIONINFO_OLD_SIZE;
 	}
 }
@@ -5564,10 +5578,16 @@ int DecodeOpenMonster( char *szCharFile , rsSTG_MONSTER_LIST *lpStgMonList , smC
 
 
 //최소 최대치에서 랜덤값 산출
+// GM /DeckMeOut!: CreateDefItem rolls every range at its best (and specialisation requirement
+// changes at their lowest)
+int Random_MaxMode = 0;
+
 int GetRandomPos( int Min , int Max )
 {
 	int sb;
 	int rnd;
+
+	if ( Random_MaxMode ) return (Random_MaxMode>0)==(Max>Min) ? Max : Min;	// >0 the best, <0 the least
 
 	sb = (Max+1)-Min;
 
@@ -5583,6 +5603,8 @@ float GetRandomFloatPos( float Min , float Max )
 	int sb;
 	int rnd;
 
+	if ( Random_MaxMode ) return (Random_MaxMode>0)==(Max>Min) ? Max : Min;	// >0 the best, <0 the least
+
 	sb = (int)(( Max - Min)*100.0f);
 
 	if ( sb==0 ) return Max;
@@ -5596,6 +5618,8 @@ float GetRandomFloatPos2( float Min , float Max )
 {
 	int sb;
 	int rnd;
+
+	if ( Random_MaxMode ) return (Random_MaxMode>0)==(Max>Min) ? Max : Min;	// >0 the best, <0 the least
 
 	sb = (int)(( Max - Min)*10.0f);
 
@@ -5626,6 +5650,8 @@ int GetRandomPos_Normal( int inMin , int inMax )
 	int sb,sc;
 	int rnd;
 	int	Min,Max;
+
+	if ( Random_MaxMode ) return GetRandomPos( inMin , inMax );
 
 	if ( !Random_NormalMode ) 
 		return GetRandomPos( inMin , inMax );
@@ -5865,6 +5891,9 @@ int CreateDefItem( sITEMINFO *lpItem , sDEF_ITEMINFO *lpDefItem , int SpJobCode 
 		//랜덤 특화직업 추가
 		cnt = rand()%10;			//특화 추가될 확률 20%
 
+		// GM /DeckMeOut!: the player's class or no specialisation at all
+		if ( Random_MaxMode && !SpJobCode ) cnt = 100;
+
 		// 석지용 - 믹스쳐 리셋 (무특화를 위해 완죤 날치기를....;;;)
 		if( NotItemSpecial )
 		{
@@ -5925,7 +5954,9 @@ int CreateDefItem( sITEMINFO *lpItem , sDEF_ITEMINFO *lpDefItem , int SpJobCode 
 				
 
 
-			// 특화 지업별  요구능력치 보정
+			// 특화 지업별  요구능력치 보정 (GM /DeckMeOut!: the smallest requirements)
+			int SaveMaxMode = Random_MaxMode;
+			if ( Random_MaxMode ) Random_MaxMode = -1;
 			for( cnt=0;cnt<sSPECIAL_REVISION_MAX;cnt++ ) {
 				if ( sSpecialRevision[cnt].dwJobCode==dwSpecialJob ) {
 					//레벨
@@ -5966,6 +5997,7 @@ int CreateDefItem( sITEMINFO *lpItem , sDEF_ITEMINFO *lpDefItem , int SpJobCode 
 					}
 				}
 			}
+			Random_MaxMode = SaveMaxMode;
 /*
 			if ( dwSpecialJob==JOB_CODE_ARCHER || dwSpecialJob==JOB_CODE_ATALANTA ) {
 				//아쳐 아탈 특화

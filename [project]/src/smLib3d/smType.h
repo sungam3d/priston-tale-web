@@ -420,7 +420,10 @@ struct smMOTIONINFO {
 	DWORD	EventFrame[4];					//이벤트 생성 프레임
 
 	int		ItemCodeCount;					//해당 아이템 리스트 카운터 ( 0 없음  -1 전체 해당 )
-	BYTE	ItemCodeList[MOTION_TOOL_MAX];	//해당 아이템 코드 리스트 
+	// the weapons this clip is for: 16-bit indices into the v3215 client's item table, as the
+	// .inx files store them (0xFFFF = bare hands). Older files (52 one-byte entries, our own item
+	// table's indices) and .ini files are converted to these on loading (fileread.cpp).
+	WORD	ItemCodeList[MOTION_TOOL_MAX/2];	//해당 아이템 코드 리스트
 	DWORD	dwJobCodeBit;					//해당 직업별 비트 마스크
 	BYTE	SkillCodeList[MOTION_SKIL_MAX];	//해당 스킬 번호
 	//BYTE	JobCodeList[MOTION_JOB_MAX];	//해당 스킬 번호

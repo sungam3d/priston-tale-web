@@ -5538,9 +5538,11 @@ int cAGING::AgingItem(int MakeItemFlag)
 
 
 	//크리티컬 
-	if( (pItem->CODE & sinITEM_MASK2) == sinWC1 || 
+	if( (pItem->CODE & sinITEM_MASK2) == sinWC1 ||
 		(pItem->CODE & sinITEM_MASK2) == sinWS2 ||
-		(pItem->CODE & sinITEM_MASK2) == sinWP1 ) {
+		(pItem->CODE & sinITEM_MASK2) == sinWP1 ||
+		(pItem->CODE & sinITEM_MASK2) == sinWD1 ||		// daggers as swords
+		(pItem->CODE & sinITEM_MASK2) == sinWV1 ) {		// vambraces as claws
 		pItem->sItemInfo.ItemAgingCount[1] = AgingLevelCritical[pItem->sItemInfo.ItemAgingNum[0]];
 		if(AgingItemFaildNum <= 2)
 			pItem->sItemInfo.ItemAgingCount[0] = pItem->sItemInfo.ItemAgingCount[1]/2;
@@ -5552,7 +5554,8 @@ int cAGING::AgingItem(int MakeItemFlag)
 		(pItem->CODE & sinITEM_MASK2) == sinWH1 ||
 		(pItem->CODE & sinITEM_MASK2) == sinWM1 ||
 		(pItem->CODE & sinITEM_MASK2) == sinWS1 ||
-		(pItem->CODE & sinITEM_MASK2) == sinWT1 ){
+		(pItem->CODE & sinITEM_MASK2) == sinWT1 ||
+		(pItem->CODE & sinITEM_MASK2) == sinWN1 ){		// phantoms as staves
 		pItem->sItemInfo.ItemAgingCount[1] = AgingLevelAttack[pItem->sItemInfo.ItemAgingNum[0]];
 		if(AgingItemFaildNum <= 2)
 			pItem->sItemInfo.ItemAgingCount[0] = pItem->sItemInfo.ItemAgingCount[1]/2;
@@ -5694,7 +5697,8 @@ int cAGING::CheckItem(sITEM *pItem)
 }
 
 // 박재원 - 에이징 아이템 추가(장갑, 부츠, 암릿)
-DWORD AgingItemCode3[15] = {sinWA1,sinWC1,sinWH1,sinWM1,sinWP1,sinWS1,sinWS2,sinWT1,sinDA1,sinDS1,sinOM1,sinDA2,sinDG1,sinDB1,sinOA2};
+#define AGING_ITEM_CODE3_MAX	18		// + the daggers, phantoms and vambraces
+DWORD AgingItemCode3[AGING_ITEM_CODE3_MAX] = {sinWA1,sinWC1,sinWH1,sinWM1,sinWP1,sinWS1,sinWS2,sinWT1,sinDA1,sinDS1,sinOM1,sinDA2,sinDG1,sinDB1,sinOA2,sinWD1,sinWN1,sinWV1};
 //에이징할 아이템의 공간을 체크한다 
 int cAGING::SetAgingItemAreaCheck(sITEM *pItem)
 {
@@ -5931,7 +5935,7 @@ int cAGING::SetAgingItemAreaCheck(sITEM *pItem)
 			pItem->ItemPosition = 0; //배열의 인덱스를 저장한다 
 			TradeColorIndex = SET_ITEM_CHECK_COLOR; //셋팅할영역
 			
-			for(int i =0 ; i < 15 ; i++){
+			for(int i =0 ; i < AGING_ITEM_CODE3_MAX ; i++){
 				if((pItem->CODE &  sinITEM_MASK2) == AgingItemCode3[i]){
 					AgingOkWeaponGroupFlag = 1;
 

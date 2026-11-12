@@ -4730,7 +4730,8 @@ int cINVENTORY::CharOnlySetItem(sITEM *pItem)
 {
 	//파티복 코스튬 착용제
 	//여자
-	if(sinChar->JOB_CODE == JOBCODE_PRIESTESS || sinChar->JOB_CODE == JOBCODE_ATALANTA || sinChar->JOB_CODE == JOBCODE_ARCHER){	
+	if(sinChar->JOB_CODE == JOBCODE_PRIESTESS || sinChar->JOB_CODE == JOBCODE_ATALANTA || sinChar->JOB_CODE == JOBCODE_ARCHER ||
+		sinChar->JOB_CODE == JOBCODE_ASSASSIN || sinChar->JOB_CODE == JOBCODE_MARTIALARTIST){
 		if((pItem->sItemInfo.CODE & sinITEM_MASK2) == sinDA1 || (pItem->sItemInfo.CODE & sinITEM_MASK2) == sinDA2 ){
 			if( (pItem->sItemInfo.CODE & sinITEM_MASK3) == sin31 || (pItem->sItemInfo.CODE & sinITEM_MASK3) == sin32 ||
 				(pItem->sItemInfo.CODE & sinITEM_MASK3) == sin35 || (pItem->sItemInfo.CODE & sinITEM_MASK3) == sin36 ||
@@ -4759,20 +4760,23 @@ int cINVENTORY::CharOnlySetItem(sITEM *pItem)
 		}
 	}
 
-	///////////// 법사
-	if(sinChar->JOB_CODE == 7 || sinChar->JOB_CODE == 8){
+	///////////// 법사 (and the Shaman)
+	if(sinChar->JOB_CODE == 7 || sinChar->JOB_CODE == 8 || sinChar->JOB_CODE == JOBCODE_SHAMAN){
 		if((pItem->sItemInfo.CODE & sinITEM_MASK2) == sinDA1){
 			pItem->sItemInfo.NotUseFlag = 1; //일반 갑옷은 법사가 착용할수엄따
 
 		}
 	}
-	else{ //전사 
+	else{ //전사
 		if((pItem->sItemInfo.CODE & sinITEM_MASK2) == sinDA2 ||
 			(pItem->sItemInfo.CODE & sinITEM_MASK2) == sinOM1 ){
 				pItem->sItemInfo.NotUseFlag = 1; //로브 와 오브는 는 전사가 착용할수엄따
 
 			}
-	}	
+	}
+
+	if ( !CanClassUseWeapon( sinChar->JOB_CODE, pItem->sItemInfo.CODE ) )
+		pItem->sItemInfo.NotUseFlag = 1;
 
 	return TRUE;
 }

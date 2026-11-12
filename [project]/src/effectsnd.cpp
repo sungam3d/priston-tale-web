@@ -1477,8 +1477,18 @@ int	WeaponPlaySound( smCHAR *lpChar )
 				break;
 
 			case sinWC1:
+			case sinWV1:		// vambraces scratch like claws
 				//클러
 				dwCode = 7;
+				break;
+
+			case sinWD1:		// daggers: the small blade swing
+				dwCode = 15;
+				break;
+
+			case sinWN1:		// phantoms: the spell sound (the Shaman casts with it)
+				if ( lpChar->WeaponEffect ) return TRUE;
+				dwCode = 17;
 				break;
 
 			case sinWS1:
@@ -1488,7 +1498,7 @@ int	WeaponPlaySound( smCHAR *lpChar )
 
 			case sinWM1:
 				//마법지팡이
-				if ( lpChar->smCharInfo.JOB_CODE==8 || lpChar->smCharInfo.JOB_CODE==7 ) {
+				if ( lpChar->smCharInfo.JOB_CODE==8 || lpChar->smCharInfo.JOB_CODE==7 || lpChar->smCharInfo.JOB_CODE==JOBCODE_SHAMAN ) {
 					if ( lpChar->WeaponEffect ) return TRUE;
 					//마법
 					if (HandType==ITEM_CLASS_WEAPON_ONE) 

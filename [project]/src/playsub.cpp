@@ -6420,6 +6420,19 @@ int CheckEnergyGraph()
 	int	Last_Grp;
 	int cnt;
 
+	// GM /IDDQD: keep life, mana and stamina full (anything that went round the setters)
+	{
+		extern int sinGM_GodMode;
+		if ( sinGM_GodMode && lpCurPlayer && lpCurPlayer->MotionInfo &&
+			lpCurPlayer->MotionInfo->State!=CHRMOTION_STATE_DEAD ) {
+			if ( sinGetLife()<lpCurPlayer->smCharInfo.Life[1] ) sinSetLife( lpCurPlayer->smCharInfo.Life[1] );
+			if ( sinGetMana()<lpCurPlayer->smCharInfo.Mana[1] ) sinSetMana( lpCurPlayer->smCharInfo.Mana[1] );
+			if ( sinGetStamina()<lpCurPlayer->smCharInfo.Stamina[1] ) sinSetStamina( lpCurPlayer->smCharInfo.Stamina[1] );
+			ResetEnergyGraph( 4 );
+			return TRUE;
+		}
+	}
+
 	Pos = lpCurPlayer->pZ;
 
 	Last_Grp = sChkLife[0]^sChkLife[1];

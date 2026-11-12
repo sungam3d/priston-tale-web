@@ -293,7 +293,8 @@ int dm_SendTransDamage( smCHAR *lpChar , int PowParam1, int PowParam2, int Attac
 	}
 
 
-	if ( ((lpCurPlayer->dwActionItemCode^sinWM1)&sinITEM_MASK2)!=0 )		//지팡이 크리티컬 없음
+	if ( ((lpCurPlayer->dwActionItemCode^sinWM1)&sinITEM_MASK2)!=0 &&		//지팡이 크리티컬 없음
+		((lpCurPlayer->dwActionItemCode^sinWN1)&sinITEM_MASK2)!=0 )		// nor phantoms
 		TransAttackData.Critical[0] = lpCurPlayer->smCharInfo.Critical_Hit;
 
 	switch( lpCurPlayer->smCharInfo.JOB_CODE ) {
