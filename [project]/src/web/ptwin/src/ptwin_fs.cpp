@@ -233,6 +233,17 @@ long PtFs_ManifestSize( const std::string &abs )
 	return n;
 }
 
+// A folder that only the manifest knows (none of its files fetched yet)
+static bool PtFs_ManifestIsDir( const std::string &abs )
+{
+	std::string rel;
+	if ( !GameRel( abs, rel ) ) return false;
+	pthread_mutex_lock( &s_DirLock );
+	bool d = s_ManDirs.count( rel )>0;
+	pthread_mutex_unlock( &s_DirLock );
+	return d;
+}
+
 // Names in a directory (local files + manifest), for FindFirstFile.
 std::vector<std::string> PtFs_List( const std::string &absDir )
 {
@@ -514,11 +525,17 @@ static void FillFindData( PtFind *f, const std::string &name, LPWIN32_FIND_DATAA
 	ZeroMemory( &st, sizeof(st) );
 	std::string full = f->dir + "/" + name;
 	long manSize = PtFs_ManifestSize( full );
-	if ( stat( full.c_str(), &st )!=0 && manSize>=0 ) {		// in the manifest, not fetched yet
+	if ( stat( full.c_str(), &st )!=0 ) {
 		ZeroMemory( &st, sizeof(st) );
-		st.st_mode = S_IFREG;
-		st.st_size = manSize;
-		st.st_mtime = 1262304000;
+		if ( manSize>=0 ) {				// in the manifest, not fetched yet
+			st.st_mode = S_IFREG;
+			st.st_size = manSize;
+			st.st_mtime = 1262304000;
+		}
+		else if ( PtFs_ManifestIsDir( full ) ) {		// a folder none of whose files are here yet
+			st.st_mode = S_IFDIR;			// (was reported as a file: the effect loaders skipped it)
+			st.st_mtime = 1262304000;
+		}
 	}
 	if ( st.st_mode ) {
 		pData->dwFileAttributes = S_ISDIR( st.st_mode ) ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
@@ -540,8 +557,14 @@ HANDLE WINAPI FindFirstFileA( LPCSTR szPattern, LPWIN32_FIND_DATAA pData )
 	std::string pat = k==std::string::npos ? p : p.substr( k+1 );
 	PtFind *f = new PtFind;
 	f->dir = PtFs_Resolve( dirPart.c_str() );
+	// Windows: a trailing ".*" also matches names with no dot ("*.*" is every file
+	// and folder; without this the effect loaders never saw their sub-folders)
+	std::string patNoExt;
+	if ( pat.size()>=2 && !pat.compare( pat.size()-2, 2, ".*" ) ) patNoExt = pat.substr( 0, pat.size()-2 );
 	for ( auto &n : PtFs_List( f->dir ) )
-		if ( WildMatch( pat.c_str(), n.c_str() ) ) f->names.push_back( n );
+		if ( WildMatch( pat.c_str(), n.c_str() ) ||
+			 ( !patNoExt.empty() && n.find( '.' )==std::string::npos && WildMatch( patNoExt.c_str(), n.c_str() ) ) )
+			f->names.push_back( n );
 	if ( f->names.empty() ) { delete f; SetLastError( ERROR_FILE_NOT_FOUND ); return INVALID_HANDLE_VALUE; }
 	FillFindData( f, f->names[f->next++], pData );
 	return (HANDLE)f;

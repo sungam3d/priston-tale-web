@@ -1071,7 +1071,7 @@ void HoEffectType_MusPel::Init(smCHAR *pChar, float endTime, float attackTime)
 	m_fEndTime = endTime;
 
 	smPAT3D *bone = (smPAT3D *)AssaSearchRes("b_muspel.ASE", SMMAT_BLEND_ALPHA);
-	m_pObj = bone->GetObjectFromName("Bip01");
+	m_pObj = bone ? bone->GetObjectFromName("Bip01") : NULL;
 	
 	m_fAttackTime = attackTime;
 }

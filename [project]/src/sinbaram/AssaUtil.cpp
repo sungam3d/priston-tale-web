@@ -410,7 +410,10 @@ void LoadAssaRes()
 	
 	if(smConfig.DebugMode)
 		DeleteFile(AssaErrorFile);
-	
+#ifdef PT_WEB
+	printf( "[assa] %d effect resources registered\n" , AssaResCount );	// was ~10 while sub-folders read as files
+#endif
+
 
 	//ReadTextures();
 }
