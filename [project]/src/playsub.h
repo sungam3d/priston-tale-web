@@ -260,7 +260,7 @@ int	CheckCopyItem( sITEMINFO *lpItem );
 int ChangeJobFace();
 // The face of a rank (ChangeJob): faces 0..3 are the first four ranks and 4..6 the big-head
 // event faces (playmodel.h). The fifth rank is JOB_FACE_RANK5: ChangeModelSkin gives it the
-// tier 5 heads ("...t.inf", hair styles 01..03) and the fourth rank's head for the others.
+// fifth rank's heads ("...d.inf", hair styles 01..03) and the fourth rank's head for the others.
 #define JOB_FACE_RANK5			7
 #define JOB_FACE( ChangeJob )	( (ChangeJob)>3 ? JOB_FACE_RANK5 : (ChangeJob) )
 

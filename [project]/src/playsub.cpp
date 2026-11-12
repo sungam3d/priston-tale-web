@@ -1130,12 +1130,13 @@ int	ChangeModelSkin( smCHAR *lpChar , int ComicArmor , int ComicHeadNum , char *
 			break;
 	}
 
-	// tier 5: the fifth rank's head is the fourth rank's "...c.inf" as "...t.inf" (hair styles
-	// 01..03 have one in every class; the others keep the fourth rank's head)
+	// tier 5: the fifth rank's head is the fourth rank's "...c.inf" as "...d.inf" (heads go
+	// none/a/b/c/d by rank; "t" is the big-head event head). Hair styles 01..03 have one in every
+	// class, loaded from its .inx (no .inf ships); the other styles keep the fourth rank's head.
 	if ( bRank5Head && HairCode<3 ) {
 		len = lstrlen( szHeadName );
 		if ( len>5 && lstrcmpi( szHeadName+len-5 , "c.inf" )==0 )
-			szHeadName[len-5] = 't';
+			szHeadName[len-5] = 'd';
 	}
 
 
