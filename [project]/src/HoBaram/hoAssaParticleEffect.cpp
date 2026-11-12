@@ -4420,6 +4420,21 @@ void AssaParticle_ClassUpWeapon(smCHAR* pChar)
 	}
 }
 
+// aging +21..+25: the light orb around the held weapon (one per character; it ends by
+// itself when the weapon goes or is no longer +21 or more)
+int GetAgingOrbLevel( smCHARTOOL *lpCharTool );		// playsub.cpp
+void AssaParticle_AgingOrb(smCHAR* pChar)
+{
+	if ( !pChar ) return;
+	if ( GetAgingOrbLevel( &pChar->HvRightHand )<=0 && GetAgingOrbLevel( &pChar->HvLeftHand )<=0 ) return;
+	if ( GetAssaCodeEffect(pChar, AGING_ORB_CODE)==FALSE ) {
+		int i = GetAssaEffect();
+		AssaAgingOrb *orb = new AssaAgingOrb;
+		orb->Start(pChar);
+		cAssaEffect[i] = orb;
+	}
+}
+
 void AssaParticle_StopClassUpWeapon(smCHAR* pChar)
 {
 	for(int i = 0; i < cASSAEFFECT_MAX; i++)

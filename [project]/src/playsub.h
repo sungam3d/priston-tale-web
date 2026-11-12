@@ -23,7 +23,7 @@
 #define	CHAR_LEVEL_MAX	120
 #else
 #ifdef _LANGUAGE_ENGLISH
-#define	CHAR_LEVEL_MAX	120
+#define	CHAR_LEVEL_MAX	200		// was 120 (raised 2026-11-12; LevelTable.h goes to 200)
 #else
 #define	CHAR_LEVEL_MAX	100
 #endif

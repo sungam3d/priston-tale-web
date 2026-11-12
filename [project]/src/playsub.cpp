@@ -1256,7 +1256,7 @@ static short	AgingBlinkColor[8][4] = {
 /*----------------------------------------------------------------------------*
 *Desc: 에이징 차수에 따른 무기 컬러값  		
 *-----------------------------------------------------------------------------*/
-const int  CONST_AGINGBCOLOR_MAX = 20;
+const int  CONST_AGINGBCOLOR_MAX = 22;		// ages 4..25 (was 20: rows for 4..20)
 
 static short	AgingBlinkColor[CONST_AGINGBCOLOR_MAX][6] =
 {
@@ -1277,6 +1277,13 @@ static short	AgingBlinkColor[CONST_AGINGBCOLOR_MAX][6] =
 	{ 130,	  0,	255,	0,	 5,	smTEXSTATE_FS_SCROLL10	},		//청보라
 	{ 220,	240,	 70,	0,	 5,	smTEXSTATE_FS_SCROLL10	},		//연한노랑
 	{ 240,	240,	240,	0,	 5,	smTEXSTATE_FS_SCROLL10	},		// 박재원 - 에이징 설정 변경(20차 에이징 무기 컬러값 수정)
+	// +21..+25: +20's white (each a shade apart, so other clients can tell the age) and a light orb
+	// (AssaAgingOrb). Keep these last: GetAgingOrbLevel counts from row 17.
+	{ 240,	240,	241,	0,	 5,	smTEXSTATE_FS_SCROLL10	},		// +21
+	{ 240,	240,	242,	0,	 5,	smTEXSTATE_FS_SCROLL10	},		// +22
+	{ 240,	240,	243,	0,	 5,	smTEXSTATE_FS_SCROLL10	},		// +23
+	{ 240,	240,	244,	0,	 5,	smTEXSTATE_FS_SCROLL10	},		// +24
+	{ 240,	240,	245,	0,	 5,	smTEXSTATE_FS_SCROLL10	},		// +25
 };
 
 static short	CraftBlinkColor[6][6] =
@@ -1291,6 +1298,20 @@ static short	CraftBlinkColor[6][6] =
 
 
 //색상으로 아이템의 상태를 판별한다
+// aging +21..+25 -> 1..5 (the light orb's level), 0 otherwise, from the tool's blink colours
+int GetAgingOrbLevel( smCHARTOOL *lpCharTool )
+{
+	if ( !lpCharTool || !lpCharTool->ColorBlink ) return 0;
+	for( int cnt=17; cnt<CONST_AGINGBCOLOR_MAX; cnt++ ) {
+		if ( AgingBlinkColor[cnt][0]==lpCharTool->sColors[SMC_R] &&
+			AgingBlinkColor[cnt][1]==lpCharTool->sColors[SMC_G] &&
+			AgingBlinkColor[cnt][2]==lpCharTool->sColors[SMC_B] &&
+			AgingBlinkColor[cnt][3]==lpCharTool->sColors[SMC_A] )
+			return cnt-16;
+	}
+	return 0;
+}
+
 int GetItemKindFromBliankColor( smCHARTOOL	*lpCharTool )
 {
 	int cnt;
@@ -1366,7 +1387,7 @@ InvenItem[sInven[2].ItemIndex-1] //갑옷
 				//에이징 아이템 색상 점멸 이펙트
 				if ( lpItemInfo->ItemKindCode==ITEM_KIND_AGING ) {
 					cnt = lpItemInfo->ItemAgingNum[0];
-					if ( cnt>=4 && cnt<= CONST_AGINGBCOLOR_MAX ) {
+					if ( cnt>=4 && cnt-4<CONST_AGINGBCOLOR_MAX ) {
 						cnt -= 4;
 						lpCurPlayer->HvLeftHand.ColorBlink = 9;
 						lpCurPlayer->HvLeftHand.sColors[SMC_R] = AgingBlinkColor[cnt][0];
@@ -1396,6 +1417,7 @@ InvenItem[sInven[2].ItemIndex-1] //갑옷
 
 				//색상으로 아이템의 상태를 판별한다
 				GetItemKindFromBliankColor( &lpCurPlayer->HvLeftHand );
+				AssaParticle_AgingOrb( lpCurPlayer );		// aging +21..+25
 				/////////////////////////////////////////////////////////////////
 
 				if ( lpCurPlayer->HvLeftHand.DispEffect ) AssaParticle_ClassUpWeapon(lpCurPlayer);
@@ -1421,7 +1443,7 @@ InvenItem[sInven[2].ItemIndex-1] //갑옷
 				//에이징 아이템 색상 점멸 이펙트
 				if ( lpItemInfo->ItemKindCode==ITEM_KIND_AGING ) {
 					cnt = lpItemInfo->ItemAgingNum[0];
-					if ( cnt>=4 && cnt<=CONST_AGINGBCOLOR_MAX ) {
+					if ( cnt>=4 && cnt-4<CONST_AGINGBCOLOR_MAX ) {
 						cnt -= 4;
 						lpCurPlayer->HvRightHand.ColorBlink = 9;
 						lpCurPlayer->HvRightHand.sColors[SMC_R] = AgingBlinkColor[cnt][0];
@@ -1462,6 +1484,7 @@ InvenItem[sInven[2].ItemIndex-1] //갑옷
 
 				//색상으로 아이템의 상태를 판별한다
 				GetItemKindFromBliankColor( &lpCurPlayer->HvRightHand );
+				AssaParticle_AgingOrb( lpCurPlayer );		// aging +21..+25
 
 				//////////////////////////////////////////////////////////////////
 				if ( lpCurPlayer->HvRightHand.DispEffect ) AssaParticle_ClassUpWeapon(lpCurPlayer);
@@ -1763,7 +1786,8 @@ INT64 ExpLevelTable[] = {
 //int LevelTableSum = 1793134039;
 //INT64 LevelTableSum = -2044845887;
 //INT64 LevelTableSum = 23422506775620;
-INT64 LevelTableSum = 1025409293731028;
+//INT64 LevelTableSum = 1025409293731028;	// levels 1..120
+INT64 LevelTableSum = 506871725618431790;	// levels 1..200 (LevelTable.h)
 
 
 //경험치 데이타를 반전

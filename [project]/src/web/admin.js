@@ -131,8 +131,8 @@
 		(testSite ?
 		'<h3>Test server cheats</h3>' +
 		'<p>This server runs with <code>*GM_CHEATS</code>, so these work at admin level 1. Log out and back in after a big change if anything looks off.</p>' + table([
-			['/MakeMeLevel', 'level', 'Go to that level with the right experience, stat and skill points (saves at once)'],
-			['/DeckMeOut!', '[aging]', 'Put on the best gear you can wear for your level and class, at its best stats and specialised for your class: weapon (and shield or orb), armour or robe, boots, gauntlets, armlet, amulet, sheltom and two rings. Add a number to age it, e.g. <code>/DeckMeOut! 10</code>. What you wore goes to your bag, or the ground when it is full'],
+			['/MakeMeLevel', 'level', 'Go to that level (up to 200) with the right experience, stat and skill points (saves at once)'],
+			['/DeckMeOut!', '[aging]', 'Put on the best gear you can wear for your level and class, at its best stats and specialised for your class: weapon (and shield or orb), armour or robe, boots, gauntlets, armlet, amulet, sheltom and two rings. Add a number to age it, up to 25, e.g. <code>/DeckMeOut! 10</code>. What you wore goes to your bag, or the ground when it is full'],
 			['/IDDQD', '', 'God mode on or off: your life, mana and stamina stay full'],
 			['/GiveMeMoney!', 'amount', 'Drop gold at your feet, up to 1,000,000 at a time'],
 			['/GiveMeExp!', 'level', 'Set your experience to the start of that level (server side only; <code>/ShowMeTheExp!</code> is the same)'],
@@ -244,7 +244,7 @@
 		'<p>Level 4:</p>' + table([
 			['/GiveMeMoney!', 'amount', 'Drop gold at your feet, up to 1,000,000 at a time'],
 			['/GiveMeExp!', 'level', 'Set your experience to the start of that level'],
-			['/MakeMeLevel', 'level', 'Go to that level with the right experience'],
+			['/MakeMeLevel', 'level', 'Go to that level (up to 200) with the right experience'],
 			['/init_premiumitem', 'n', 'Reset premium items'],
 			['/set_absorb', 'value', 'Set the selected monster\'s absorb (click it first)'],
 			['/set_pcbang', 'code', 'Set the PC-room bonus'],

@@ -210,6 +210,7 @@ void AssaParticle_MonsterPigonHand(smCHAR* pChar);
 //ClassUp 파티클
 void AssaParticle_ClassUpWeapon(smCHAR* pChar);
 void AssaParticle_StopClassUpWeapon(smCHAR* pChar);
+void AssaParticle_AgingOrb(smCHAR* pChar);		// aging +21..+25
 void AssaParticle_AgingBody(smCHAR* pChar, int num);
 
 //Iron Monster 스킬

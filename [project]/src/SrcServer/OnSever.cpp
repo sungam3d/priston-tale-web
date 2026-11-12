@@ -20330,7 +20330,7 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 		lpBuff = rsGetWord( szCmdBuff , lpBuff );
 		cnt = szCmdBuff[0] ? atoi(szCmdBuff) : 0;
 		if ( cnt<0 ) cnt = 0;
-		if ( cnt>20 ) cnt = 20;
+		if ( cnt>25 ) cnt = 25;		// aging goes to +25 (sinTrade.h MAX_AGING)
 		GmDeckOut( lpPlayInfo , cnt );
 		rsRecordAdminCommand( lpPlayInfo , szChatCommand , 1 );
 		return TRUE;

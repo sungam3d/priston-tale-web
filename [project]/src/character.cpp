@@ -11280,6 +11280,7 @@ int smCHAR::SetTransEffectItems(smEFFECT_ITEM *lpEffectItem)
 		//색상으로 아이템의 상태를 판별한다
 		GetItemKindFromBliankColor( &HvRightHand );
 		if ( HvRightHand.DispEffect ) AssaParticle_ClassUpWeapon(this);
+		AssaParticle_AgingOrb(this);		// aging +21..+25
 
 	}
 
@@ -11292,6 +11293,7 @@ int smCHAR::SetTransEffectItems(smEFFECT_ITEM *lpEffectItem)
 		//색상으로 아이템의 상태를 판별한다
 		GetItemKindFromBliankColor( &HvLeftHand );
 		if ( HvLeftHand.DispEffect ) AssaParticle_ClassUpWeapon(this);
+		AssaParticle_AgingOrb(this);		// aging +21..+25
 	}
 
 	return TRUE;

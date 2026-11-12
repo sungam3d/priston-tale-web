@@ -10120,3 +10120,166 @@ void AssaSkyMeteoParticle::Start(POINT3D *pCur, POINT3D *pDest, int delay, int n
 	if(GameMode != 1 )
   		esPlaySound( 20, 400-int(length/100.f));
 }
+
+
+/*----------------------------------------------------------------------------*
+*	Aging +21..+25: a bluish light orb circling the weapon, with a trail.
+*	The weapon itself stays +20's white. Level 1..5 (= +21..+25) sets the orb's size
+*	and the trail's length. Other players' clients know the level from the weapon's
+*	blink colours (playsub.cpp AgingBlinkColor rows 17..21, GetAgingOrbLevel).
+*-----------------------------------------------------------------------------*/
+int GetAgingOrbLevel( smCHARTOOL *lpCharTool );		// playsub.cpp
+
+AssaAgingOrb::AssaAgingOrb()
+{
+	MyCharacterFlag = FALSE;
+	EndFlag = FALSE;
+	MatNum = 0;
+	Level = 0;
+	OrbitAngle = 0;
+	SlidePhase = 0;
+	TrailCount = 0;
+	TrailHead = 0;
+	memset( Trail, 0, sizeof(Trail) );
+}
+
+AssaAgingOrb::~AssaAgingOrb()
+{
+}
+
+void AssaAgingOrb::Start(smCHAR *pCharacter)
+{
+	pChar = pCharacter;
+	EndFlag = TRUE;
+	if ( pChar==NULL ) return;
+	if ( lpCurPlayer==pChar ) MyCharacterFlag = TRUE;
+
+	int *matNum = (int *)AssaSearchRes("flare.tga", SMMAT_BLEND_LAMP);
+	if ( matNum==NULL ) return;
+	MatNum = *matNum;
+
+	memset( &Face, 0, sizeof(Face) );
+	Face.MatNum = MatNum;
+	Face.TexRect.right = 1;
+	Face.TexRect.bottom = 1;
+
+	EndFlag = FALSE;
+	Max_Time = 5000;
+	CODE = AGING_ORB_CODE;
+}
+
+void AssaAgingOrb::Main()
+{
+	if ( MyCharacterFlag && lpCurPlayer!=pChar ) pChar = lpCurPlayer;
+
+	if ( !EndFlag && pChar && pChar->Flag ) {
+		int lv = GetAgingOrbLevel( &pChar->HvRightHand );
+		int left = 0;
+		if ( !lv || !pChar->HvRightHand.dwItemCode ) {
+			lv = GetAgingOrbLevel( &pChar->HvLeftHand );
+			left = 1;
+		}
+		if ( lv<=0 || (left ? !pChar->HvLeftHand.dwItemCode : !pChar->HvRightHand.dwItemCode) ) EndFlag = TRUE;
+		Level = lv;
+		if ( !EndFlag ) {
+			smCHARTOOL *tool = left ? &pChar->HvLeftHand : &pChar->HvRightHand;
+			smMATRIX *mWorld = left ? &pChar->HvLeftHand_Matrix : &pChar->HvRightHand_Matrix;
+			DWORD kind = tool->dwItemCode & sinITEM_MASK2;
+			int size = tool->SizeMax;
+			POINT3D wp = { 0,0,0 };
+
+			// where on the weapon the orb circles (as AssaClassUpWeapon), sliding up and down the blade
+			SlidePhase = (SlidePhase+24)&ANGCLIP;
+			int slide = ((size/4) * (GetSin[SlidePhase]>>8))>>8;
+			if ( kind==sinWT1 )			wp.z = -size+(size*6)/10 + slide;
+			else if ( kind==sinWC1 )	wp.x = size*2;
+			else						wp.z = (size*55)/100 + slide;
+
+			if ( kind==sinWS1 ) {		// bows are held at 45 degrees
+				GetMoveLocation( wp.x, wp.y, wp.z, 0, ANGLE_45&ANGCLIP, 0 );
+				wp.x = GeoResult_X; wp.y = GeoResult_Y; wp.z = GeoResult_Z;
+			}
+			if ( pChar->dwActionItemTwoHand ) {		// two-handed weapons lean 5 degrees
+				int a = (-ANGLE_45/5)&ANGCLIP;
+				int s = GetSin[a]>>8, c = GetCos[a]>>8;
+				int z = wp.z;
+				wp.y = -( z*s )>>8;
+				wp.z =  ( z*c )>>8;
+			}
+
+			// the orbit: faster and wider with the age
+			OrbitAngle = (OrbitAngle+60+Level*10)&ANGCLIP;
+			int radius = 900 + Level*150;
+			if ( kind==sinWC1 || kind==sinWS1 || left )
+				GetMoveLocation( 0, radius, 0, OrbitAngle, 0, 0 );
+			else
+				GetMoveLocation( 0, radius, 0, 0, 0, OrbitAngle );
+			wp.x += GeoResult_X; wp.y += GeoResult_Y; wp.z += GeoResult_Z;
+
+			// local -> world (the hand matrix is relative to the character)
+			int rx = wp.x*mWorld->_11 + wp.y*mWorld->_21 + wp.z*mWorld->_31;
+			int ry = wp.x*mWorld->_12 + wp.y*mWorld->_22 + wp.z*mWorld->_32;
+			int rz = wp.x*mWorld->_13 + wp.y*mWorld->_23 + wp.z*mWorld->_33;
+			POINT3D world;
+			world.x = pChar->pX + (rx>>FLOATNS) + mWorld->_41;
+			world.z = pChar->pZ + (ry>>FLOATNS) + mWorld->_42;
+			world.y = pChar->pY + (rz>>FLOATNS) + mWorld->_43;
+
+			TrailHead = (TrailHead+1)%AGING_ORB_TRAIL_MAX;
+			Trail[TrailHead] = world;
+			if ( TrailCount<AGING_ORB_TRAIL_MAX ) TrailCount++;
+		}
+	}
+	else
+		EndFlag = TRUE;
+
+	if ( EndFlag ) {
+		Time = Max_Time;
+		CODE = 0;
+		return;
+	}
+	if ( Time>Max_Time-140 ) Time = Max_Time-150;		// lives as long as the weapon is held
+}
+
+void AssaAgingOrb::Draw(POINT3D *pPosi, POINT3D *pAngle)
+{
+	if ( EndFlag || !pChar || pChar->FlagShow==FALSE || Level<=0 || TrailCount<=0 ) return;
+
+	smMaterialGroup->smMaterial[MatNum].TwoSide = TRUE;
+
+	int trailLen = 6 + Level*6;					// +21: 12 .. +25: 36
+	if ( trailLen>TrailCount ) trailLen = TrailCount;
+	int orbSize = (10 + Level*5)*fONE;			// +21: 15 .. +25: 35
+
+	// the trail, oldest first, so the orb draws on top
+	for ( int i=trailLen-1; i>=0; i-- ) {
+		POINT3D *p = &Trail[ (TrailHead-i+AGING_ORB_TRAIL_MAX*2)%AGING_ORB_TRAIL_MAX ];
+		int k = trailLen-i;						// trailLen at the orb, 1 at the tail
+		smRender.Init();
+		smRender.SetMaterialGroup(smMaterialGroup);
+		Face.x = p->x; Face.y = p->y; Face.z = p->z;
+		Face.width = Face.height = (i==0) ? orbSize : (orbSize*k)/(trailLen+trailLen/2) + fONE*2;
+		Face.r = 70; Face.g = 150; Face.b = 255;
+		Face.Transparency = (i==0) ? 230 : (170*k)/trailLen;
+		if ( !AssaAddFace2D(&Face) ) continue;
+		smRender.SetClipStates(SMCLIP_LEFT | SMCLIP_RIGHT | SMCLIP_TOP | SMCLIP_BOTTOM);
+		smRender.ClipRendFace();
+		smRender.GeomVertex2D(FALSE);
+		smRender.RenderD3D();
+	}
+
+	// a white core in the orb
+	POINT3D *head = &Trail[TrailHead];
+	smRender.Init();
+	smRender.SetMaterialGroup(smMaterialGroup);
+	Face.x = head->x; Face.y = head->y; Face.z = head->z;
+	Face.width = Face.height = orbSize/2;
+	Face.r = 255; Face.g = 255; Face.b = 255;
+	Face.Transparency = 220;
+	if ( AssaAddFace2D(&Face) ) {
+		smRender.SetClipStates(SMCLIP_LEFT | SMCLIP_RIGHT | SMCLIP_TOP | SMCLIP_BOTTOM);
+		smRender.ClipRendFace();
+		smRender.GeomVertex2D(FALSE);
+		smRender.RenderD3D();
+	}
+}

@@ -1221,6 +1221,32 @@ private:
 
 };
 
+// aging +21..+25: a bluish light orb circling the weapon with a trail; the orb and the
+// trail grow with the age (level 1..5 = +21..+25). Started on equip (AssaParticle_AgingOrb).
+#define	AGING_ORB_CODE		1413
+#define	AGING_ORB_TRAIL_MAX	40
+class AssaAgingOrb : public cASSAEFFECT
+{
+public:
+	AssaAgingOrb();
+	~AssaAgingOrb();
+
+	void	Start(smCHAR *pCharacter);
+	void	Main();
+	void	Draw(POINT3D *pPosi, POINT3D *pAngle);
+
+private:
+	BOOL	MyCharacterFlag;
+	BOOL	EndFlag;
+	int		MatNum;
+	int		Level;
+	int		OrbitAngle;
+	int		SlidePhase;
+	int		TrailCount;
+	int		TrailHead;
+	POINT3D	Trail[AGING_ORB_TRAIL_MAX];
+};
+
 #define	MAX_WEAPON_POS	10
 class AssaShelltomUpWeapon2 : public cASSAEFFECT
 {

@@ -17,7 +17,7 @@
 #define T_CLOSE_POSI			5
 // 에이징에 관한 디파인 //성근추가
 #define MAX_SHELTOM				14	//에이징에 필요한 쉘텀의 최대치 // 박재원 - 에이징 설정 변경(19차, 20차 추가)
-#define MAX_AGING				20	//에이징의 마지막 차수 // 박재원 - 에이징 설정 변경(19차, 20차 추가)
+#define MAX_AGING				25	// was 20 (+21..+25 added 2026-11-12)	//에이징의 마지막 차수 // 박재원 - 에이징 설정 변경(19차, 20차 추가)
 #define MAX_RUNE				14	// pluto 제련, 제작 룬 // 장별 - 제련 추가 // 장별 - 대장장이의 혼
 #define MAX_RECIPE_KIND			11	// pluto 레시피 종류 // 장별 - 제작 // 장별 - 대장장이의 혼( 10 -> 11 )
 #define MAX_RECIPE_ITEM			60	// pluto 레시피 최대치
@@ -583,8 +583,8 @@ extern cAGING	cAging;		  //에이징
 extern sAGINGITEM sAgingItem;
 extern sAGINGITEM_INFO sAgingItem_Info[MAX_AGINGITEM_INFO];
 
-extern int AgingLevelAttack[21];
-extern int AgingLevelCritical[21];
+extern int AgingLevelAttack[MAX_AGING+1];
+extern int AgingLevelCritical[MAX_AGING+1];
 
 extern char szAgingItemBuff[128];
 extern POINT CraftItemMessageSize;
