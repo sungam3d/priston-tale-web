@@ -2008,6 +2008,10 @@ int cMESSAGEBOX::CheckOkMessageBox2(int Kind)
 			ReformCharForm(); //재인증 
 		break;
 		case MESSAGE_CHANGE_JOB4: //퀘스트 시작
+			if(sinChar->ChangeJob == 3){		// tier 5: the fifth rank-up quest starts
+				sinChangeJob5Start();
+				break;
+			}
 			sinQuest_ChangeJob4.CODE  = SIN_QUEST_CODE_CHANGEJOB4;
 			sinQuest_ChangeJob4.State = 1; 
 			StartQuest_Code(sinQuest_ChangeJob4.CODE); 
@@ -2015,8 +2019,12 @@ int cMESSAGEBOX::CheckOkMessageBox2(int Kind)
 			SaveGameData();
 		break;
 		case MESSAGE_CHANGE_JOB4_2: //퀘스트 완료
-			///////////////// 이곳에 퀘스트 수행 메세지가 나온다 
-			sinChar->ChangeJob++; //전업을 한다 
+			if(sinChar->ChangeJob == 3){		// tier 5: the fifth rank
+				sinChangeJob5Promote();
+				break;
+			}
+			///////////////// 이곳에 퀘스트 수행 메세지가 나온다
+			sinChar->ChangeJob++; //전업을 한다
 			cSkill.OpenFlag = 1;
 			cInterFace.CheckAllBox(SIN_SKILL); //창을 하나만 띄운다 
 			SkillMasterFlag = 1;  //스킬을 할당할수있게 해준다

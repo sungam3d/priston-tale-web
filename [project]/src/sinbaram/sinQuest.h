@@ -87,6 +87,7 @@
 #define SIN_QUEST_CODE_CHANGEJOB2_NPC_D	0x0003
 #define SIN_QUEST_CODE_CHANGEJOB3   	0x0004
 #define SIN_QUEST_CODE_CHANGEJOB4   	0x0010
+#define SIN_QUEST_CODE_CHANGEJOB5   	0x0030	// tier 5: the "4th Rank-Up Test", to the fifth rank (ChangeJob 4)
 
 //레벨 퀘스트
 #define SIN_QUEST_CODE_LEVEL30			0x0005
@@ -211,6 +212,21 @@ char *sinGetMonsterName(int CODE);
 //4차스킬을 임의Key로 셋팅한다
 int sinCompleteChangeJob4(int Index);
 
+// tier 5: the fifth rank-up quest (sinQuest_ChangeJob5, SIN_QUEST_CODE_CHANGEJOB5)
+//  States: 1/3/5 hunt 1..3 running, 2/4/6 hunt done (report to the class master for a Moon Stone),
+//  7 three stones: to Elder Hosean, 8 in the arena with Hestian, 9 Hestian beaten (back to Hosean),
+//  10 holding the Gem of Hestian: the class master promotes.
+int sinCheckChangeJob5Button();				// the class master's rank-up button (level 80, rank 4, all skills)
+int sinCheckChangeJobQuest5();				// the class master, while the quest runs
+int sinChangeJob5Hosean();					// Elder Hosean (NPC class 2100)
+int sinChangeJob5DialogClosed();			// OK on one of this quest's dialogs (TRUE if it was one)
+int sinChangeJob5Start();					// the start question answered yes
+int sinChangeJob5Promote();					// the rank-up question answered yes
+int sinChangeJob5Kill(DWORD Monster_CODE);	// a monster killed
+int sinChangeJob5TimerOut();				// the quest timer ran out
+int sinBattleNpcResult5(int WinFlag);		// the duel with Hestian ended
+int sinCompleteChangeJob5(int Index);		// GM: /Lee5thRankUp
+
 
 /*----------------------------------------------------------------------------*
 *						extern 
@@ -235,7 +251,9 @@ extern int CheckQuestButtonShow3;
 extern sQUEST_CHANGEJOB	sinQuest_ChangeJob; //템스크론 2차전업	
 extern sQUEST_CHANGEJOB	sinQuest_ChangeJob2;//모라이온 2차전업
 extern sQUEST_CHANGEJOB3   sinQuest_ChangeJob3;//템스크론 모라이온 3차 전직퀘스트 
-extern sQUEST_CHANGEJOB3   sinQuest_ChangeJob4;//템스크론 모라이온 4차 전직퀘스트 
+extern sQUEST_CHANGEJOB3   sinQuest_ChangeJob4;//템스크론 모라이온 4차 전직퀘스트
+extern sQUEST_CHANGEJOB3   sinQuest_ChangeJob5;	// tier 5: the fifth rank-up quest
+extern int sinChangeJobButtonShow5;				// tier 5: the fifth rank-up button
 
 extern char *WingQuestFilePath_a[];
 extern char *WingQuestFilePath_b[];

@@ -176,7 +176,10 @@ void CheckContinueSkill()
 				ContinueSkill[i].CheckTime--;
 			}
 			if((ContinueSkill[i].UseTime*70) < ContinueSkill[i].CheckTime){	
-				if(ContinueSkill[i].CODE == CHANGE_JOB3_QUEST){ //퀘스트를 한단계 내린다
+				if(ContinueSkill[i].CODE == CHANGE_JOB3_QUEST && sinQuest_ChangeJob5.CODE){	// tier 5: the fifth rank-up quest's timer
+					sinChangeJob5TimerOut();
+				}
+				else if(ContinueSkill[i].CODE == CHANGE_JOB3_QUEST){ //퀘스트를 한단계 내린다
 					if(sinQuest_ChangeJob4.Monster[1])
 						sinQuest_ChangeJob4.State--;
 					sinQuest_ChangeJob4.Monster[0] = 0; //몬스터수 초기화

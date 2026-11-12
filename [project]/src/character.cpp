@@ -1666,6 +1666,18 @@ DWORD	dwItemCodeFromVillage_Cross[] ={
 
 
 
+// tier 5: Hestian (the fifth rank-up quest's duel), told apart by her model file: her sound
+// family (HESTIAN) is not in the sound table and her name is the Korean *이름.
+int IsHestianModel( smCHAR_INFO *lpCharInfo )
+{
+	char szLow[sizeof(lpCharInfo->szModelName)+1];
+	int cnt;
+	for( cnt=0; cnt<(int)sizeof(lpCharInfo->szModelName) && lpCharInfo->szModelName[cnt]; cnt++ )
+		szLow[cnt] = (char)tolower( (unsigned char)lpCharInfo->szModelName[cnt] );
+	szLow[cnt] = 0;
+	return strstr( szLow , "hestian" )!=0;
+}
+
 // A weapon or shield model put in a hand needs its textures read. The original game read
 // every item's textures at start-up (LoadOftenItem); the web build skips that preload, so
 // without this the held item draws plain white. ReadTextures only reads ones not yet loaded.
@@ -5533,6 +5545,14 @@ Skip_5:
 		}
 
 		if ( dwLinkObjectCode ) {
+			// tier 5: Hestian, the fifth rank-up quest's duel - her potions spent and her life gone
+			if ( IsHestianModel( &smCharInfo ) && smCharInfo.Life[0]<=0 && !smMonsterInfo.PotionCount && smCharInfo.Life[1]>1 ) {
+				if ( lpLinkPlayInfo && lpLinkPlayInfo->dwObjectSerial==dwLinkObjectCode && lpLinkPlayInfo->lpsmSock ) {
+					rsProcessQuest( lpLinkPlayInfo , this , SIN_QUEST_CODE_CHANGEJOB5 , dwObjectSerial );
+					smCharInfo.Life[1] = 1;			// reported once
+				}
+			}
+
 			switch( smCharInfo.dwCharSoundCode ) {
 				case snCHAR_SOUND_NPC_SKILLMASTER:
 				case snCHAR_SOUND_NPC_MAGICMASTER:
@@ -9287,7 +9307,12 @@ int smCHAR::PlayAttack( int EventFlag )
 							//임시 처리
 							if ( sinGetLife()<=0 ) {
 
-								if ( sinQuest_ChangeJob4.CODE==SIN_QUEST_CODE_CHANGEJOB4 && 
+								// tier 5: dying in Hestian's duel loses it (and is an ordinary death)
+								if ( sinQuest_ChangeJob5.CODE==SIN_QUEST_CODE_CHANGEJOB5 && sinQuest_ChangeJob5.State==8 &&
+									lpCurPlayer->OnStageField>=0 && StageField[ lpCurPlayer->OnStageField ]->FieldCode==QUEST_ARENA_FIELD )
+									sinBattleNpcResult5( 0 );
+
+								if ( sinQuest_ChangeJob4.CODE==SIN_QUEST_CODE_CHANGEJOB4 &&
 									lpCurPlayer->OnStageField>=0 && StageField[ lpCurPlayer->OnStageField ]->FieldCode==QUEST_ARENA_FIELD ) {
 										//퀘스트 대전장
 						 				OpenEachPlayer( this );

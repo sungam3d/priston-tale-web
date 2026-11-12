@@ -2484,6 +2484,9 @@ int PlayPat3D()
 															sinCheckLevelQuest90_2(1);
 															chaQuest.showFuryQuest();
 															break;
+														case 2100:		// tier 5: Elder Hosean (the fifth rank-up quest)
+															sinChangeJob5Hosean();
+															break;
 													}
 
 													//Ha퀘스트 NPC 만났을때의 처리

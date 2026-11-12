@@ -14,7 +14,9 @@
 sQUEST_CHANGEJOB	sinQuest_ChangeJob;	//퀘스트의 전반적인 내용을 다룬다 (템스크론)
 sQUEST_CHANGEJOB	sinQuest_ChangeJob2;//퀘스트의 전반적인 내용을 다룬다 (모라이온)
 sQUEST_CHANGEJOB3   sinQuest_ChangeJob3;//템스크론 모라이온 3차 전직퀘스트 
-sQUEST_CHANGEJOB3   sinQuest_ChangeJob4;//템스크론 모라이온 3차 전직퀘스트 
+sQUEST_CHANGEJOB3   sinQuest_ChangeJob4;//템스크론 모라이온 3차 전직퀘스트
+sQUEST_CHANGEJOB3   sinQuest_ChangeJob5;	// tier 5: the fifth rank-up quest
+int sinChangeJobButtonShow5 = 0;			// tier 5: the fifth rank-up button
 
 //레벨퀘스트
 sQUEST_CHANGEJOB3   sinQuest_Level30;
@@ -263,12 +265,13 @@ int sinCheckChageJob()
 			case 2:	ChangeJobSkillPlus = 13; break;
 			case 3: ChangeJobSkillPlus = 17; break;
 			}
-			for(int i=1; i  < ChangeJobSkillPlus ; i++){	
+			for(int i=1; i  < ChangeJobSkillPlus ; i++){
 				if(!sinSkill.UseSkill[i].Point)
 					sinChangeJobButtonShow4 = 0;
 			}
 		}
 	}
+	sinCheckChangeJob5Button();		// tier 5: the fifth rank-up
 	return TRUE;
 }
 
@@ -323,6 +326,14 @@ int sinLoadQuest(int CODE ,void *Buff )	//퀘스트 데이타를 로드한다
 			}
 
 		}
+	}
+	// tier 5: the fifth rank-up quest
+	if(CODE == SIN_QUEST_CODE_CHANGEJOB5 ){
+		memcpy( &sinQuest_ChangeJob5 , Buff , sizeof(sQUEST_CHANGEJOB3) );
+		if(sinQuest_ChangeJob5.State==8)			// saved in the arena: that duel is lost
+			sinQuest_ChangeJob5.State = 7;
+		if(sinQuest_ChangeJob5.AgingCount && (sinQuest_ChangeJob5.State==1||sinQuest_ChangeJob5.State==3||sinQuest_ChangeJob5.State==5))
+			sinSetQuestTimer(&sinQuest_ChangeJob5,sinQuest_ChangeJob5.AgingCount,sinQuest_ChangeJob5.StartLevel);
 	}
 	//신규 튜토리얼 퀘스트
 	if(CODE == HAQUEST_CODE_ELEMENTARY_A){
@@ -416,6 +427,17 @@ int sinSaveQuest(void *Buff )	//퀘스트 데이타를 세이브한다
 
 	//4차전업    (우선권을 4차전업으로 한다 그래서 위로 올림)
 	int ContinueSkillIndex = 0;
+	// tier 5: the fifth rank-up quest (its hunt timer kept like the rank-4 quest's)
+	if(sinQuest_ChangeJob5.CODE == SIN_QUEST_CODE_CHANGEJOB5){
+		sinQuest_ChangeJob5.AgingCount = 0;
+		sinQuest_ChangeJob5.StartLevel = 0;
+		if(ContinueSkillIndex = cSkill.SearchContiueSkillIndex(CHANGE_JOB3_QUEST)){
+			sinQuest_ChangeJob5.AgingCount =  ContinueSkill[ContinueSkillIndex-1].UseTime;
+			sinQuest_ChangeJob5.StartLevel =  ContinueSkill[ContinueSkillIndex-1].CheckTime;
+		}
+		memcpy(  Buff , &sinQuest_ChangeJob5 , sizeof(sQUEST_CHANGEJOB3) );
+		return sinQuest_ChangeJob5.CODE;
+	}
 	if(sinQuest_ChangeJob4.CODE == SIN_QUEST_CODE_CHANGEJOB4){
 		if(ContinueSkillIndex = cSkill.SearchContiueSkillIndex(CHANGE_JOB3_QUEST)){
 			sinQuest_ChangeJob4.AgingCount =  ContinueSkill[ContinueSkillIndex-1].UseTime; //유지시간
@@ -974,6 +996,9 @@ int CheckChangeJob3QuestItem(DWORD Monster_CODE)
 		}
 	}
 	
+	// tier 5: the fifth rank-up quest's hunts
+	sinChangeJob5Kill( Monster_CODE );
+
 	//4차스킬 전업퀘스트
 	if(sinQuest_ChangeJob4.CODE){
 		if(sinQuest_ChangeJob4.Kind &&Monster_CODE == sinQuest_ChangeJob4.Kind && sinQuest_ChangeJob4.State <= 4){
@@ -1832,6 +1857,7 @@ void *pQuestCode[] = { //void형 포인터로 배열을 잡는다
   &sinQuest_Level80_2,
   &sinQuest_Level90_2,
   &sinQuest_ChangeJob4,
+  &sinQuest_ChangeJob5,		// tier 5
   0,
 };
 
@@ -2148,12 +2174,393 @@ int sinCompleteChangeJob4(int Index)
 			sinQuest_ChangeJob4.CODE  = SIN_QUEST_CODE_CHANGEJOB4;
 			StartQuest_Code(sinQuest_ChangeJob4.CODE);
 			
-			cSinHelp.sinShowHelp(SIN_HELP_KIND_QUEST,QuestMessageBoxPosi2.x,QuestMessageBoxPosi2.y,QuestMessageBoxSize2.x,QuestMessageBoxSize2.y, RGBA_MAKE(0,15,128,125),QuestFilePath4[7]);  
+			cSinHelp.sinShowHelp(SIN_HELP_KIND_QUEST,QuestMessageBoxPosi2.x,QuestMessageBoxPosi2.y,QuestMessageBoxSize2.x,QuestMessageBoxSize2.y, RGBA_MAKE(0,15,128,125),QuestFilePath4[7]);
 			sinQuest_ChangeJob4.State = 8;
 			SetQuestBoard();
 			SaveGameData();
 		break;
 	}
+	return TRUE;
+}
+
+
+/*----------------------------------------------------------------------------*
+*	tier 5: the fifth rank-up quest (the "4th Rank-Up Test", code 0x30)
+*
+*	At level 80 with every rank 4 skill learned, the class master's rank-up button
+*	starts it. Three hunts of 40 kills, 6300 seconds each, the prey drawn as each
+*	starts; each one reported to the master earns a Moon Stone (QT125, from the
+*	server). Elder Hosean (NPC class 2100, Railway of Chaos) sends a player with the
+*	three stones to the quest arena, where Hestian must die within 420 seconds; the
+*	server gives the Gem of Hestian (QT126) for the win. Hosean takes the stones,
+*	and the master takes the gem for the fifth rank (ChangeJob 4).
+*-----------------------------------------------------------------------------*/
+int SendQuestCommandToServer( DWORD dwQuestCode , int Param1, int Param2, int Param3 );
+int Start_QuestArena( DWORD dwQuestCode , int Param1, int Param2 );
+
+#define CJ5_KILLS			40
+#define CJ5_HUNT_TIME		6300		// seconds, each hunt
+#define CJ5_ARENA_TIME		420			// seconds, Hestian's duel
+#define CJ5_MOONSTONE		(sinQT1|sin25)
+#define CJ5_GEM				(sinQT1|sin26)
+
+// the prey, drawn when each hunt starts: monster class codes (GameServer\Monster *구별코드)
+static const struct { int Code; const char *Name; } sinChangeJob5Prey[3][3] = {
+	{ { 24, "Iron Guard" }, { 35, "Chain Golem" },   { 60, "Spidertrooper" } },
+	{ { 84, "Dead Zone" },  { 88, "Hyper Machine" }, { 85, "Goblin Shaman" } },
+	{ { 11, "Grotesque" },  { 36, "Dark Specter" },  { 10, "Ratoo" } },
+};
+
+static char *QuestFilePath5[] = {
+	"image\\Sinimage\\Quest\\ChangeJob5_Start.sin",			// 0 the master offers the test
+	"image\\Sinimage\\Quest\\ChangeJob5_Hunting.sin",		// 1 a hunt is running
+	"image\\Sinimage\\Quest\\ChangeJob5_Report.sin",		// 2 a hunt reported: a Moon Stone
+	"image\\Sinimage\\Quest\\ChangeJob5_ToHosean.sin",		// 3 the master sends the player to Hosean
+	"image\\Sinimage\\Quest\\ChangeJob5_HoseanArena.sin",	// 4 Hosean: face Hestian?
+	"image\\Sinimage\\Quest\\ChangeJob5_HoseanWin.sin",		// 5 Hosean after the win
+	"image\\Sinimage\\Quest\\ChangeJob5_End.sin",			// 6 the master: the fifth rank
+	"image\\Sinimage\\Quest\\ChangeJob5_HoseanWait.sin",	// 7 Hosean, nothing to do yet
+};
+
+static int sinChangeJob5Dialog = -1;		// which of this quest's dialogs is open (-1 none)
+
+static void cj5ShowDialog( int Index )
+{
+	sinChangeJob5Dialog = Index;
+	cSinHelp.sinShowHelp(SIN_HELP_KIND_QUEST,QuestMessageBoxPosi2.x,QuestMessageBoxPosi2.y,QuestMessageBoxSize2.x,QuestMessageBoxSize2.y, RGBA_MAKE(0,15,128,125),QuestFilePath5[Index]);
+}
+
+static const char *cj5PreyName( int Code )
+{
+	for( int h=0; h<3; h++ )
+		for( int r=0; r<3; r++ )
+			if( sinChangeJob5Prey[h][r].Code==Code ) return sinChangeJob5Prey[h][r].Name;
+	return "monsters";
+}
+
+static void cj5Message( const char *szMsg )
+{
+	char szBuff[256];
+	lstrcpyn( szBuff , szMsg , sizeof(szBuff) );
+	cMessageBox.ShowMessageEvent( szBuff );
+	AddChatBuff( szBuff , 9 );
+}
+
+static void cj5StopTimer()
+{
+	if( cSkill.SearchContiueSkill(CHANGE_JOB3_QUEST) )
+		cSkill.CancelContinueSkill(CHANGE_JOB3_QUEST);
+}
+
+// Hunt (0..2) starts: its prey drawn, the kill count reset, its timer running.
+static void cj5StartHunt( int Hunt )
+{
+	char szBuff[256];
+	int r = GetRandomPos( 0 , 2 );
+	if( r<0 || r>2 ) r = 0;
+
+	cj5StopTimer();
+	sinQuest_ChangeJob5.State = Hunt*2+1;
+	sinQuest_ChangeJob5.Kind  = sinChangeJob5Prey[Hunt][r].Code;
+	sinQuest_ChangeJob5.Monster[0] = 0;
+	sinQuest_ChangeJob5.Monster[1] = CJ5_KILLS;
+	sinSetQuestTimer( &sinQuest_ChangeJob5 , CJ5_HUNT_TIME );
+	SetQuestBoard();
+
+	wsprintf( szBuff , "Hunt %d of 3: kill %d %s within %d minutes." , Hunt+1 , CJ5_KILLS , sinChangeJob5Prey[Hunt][r].Name , CJ5_HUNT_TIME/60 );
+	cj5Message( szBuff );
+}
+
+// the rank-up button at the class master (called with the other rank-up buttons)
+int sinCheckChangeJob5Button()
+{
+	sinChangeJobButtonShow5 = 0;
+	if( sinChar->ChangeJob!=3 || sinChar->Level<80 || sinQuest_ChangeJob5.CODE ) return FALSE;
+	for( int i=1; i<17; i++ )					// every rank 1..4 skill learned
+		if( !sinSkill.UseSkill[i].Point ) return FALSE;
+	sinChangeJobButtonShow5 = 1;
+	return TRUE;
+}
+
+// the lit rank-up button clicked: the master offers the test
+int sinCheckChangeJobQuest5Offer()
+{
+	cj5ShowDialog( 0 );
+	return TRUE;
+}
+
+// the class master while the quest runs
+int sinCheckChangeJobQuest5()
+{
+	char szBuff[256];
+
+	if( sinQuest_ChangeJob5.CODE!=SIN_QUEST_CODE_CHANGEJOB5 ) return FALSE;
+
+	switch( sinQuest_ChangeJob5.State ) {
+		case 1: case 3: case 5:
+			wsprintf( szBuff , "%s: %d / %d" , cj5PreyName(sinQuest_ChangeJob5.Kind) , sinQuest_ChangeJob5.Monster[0] , sinQuest_ChangeJob5.Monster[1] );
+			AddChatBuff( szBuff , 9 );
+			cj5ShowDialog( 1 );
+			break;
+		case 2: case 4: case 6:
+			cj5ShowDialog( 2 );
+			break;
+		case 7: case 8: case 9:
+			cj5ShowDialog( 3 );
+			break;
+		case 10:
+			cj5ShowDialog( 6 );
+			break;
+	}
+	return TRUE;
+}
+
+// Elder Hosean
+int sinChangeJob5Hosean()
+{
+	if( sinQuest_ChangeJob5.CODE!=SIN_QUEST_CODE_CHANGEJOB5 ) {
+		cj5ShowDialog( 7 );
+		return TRUE;
+	}
+	switch( sinQuest_ChangeJob5.State ) {
+		case 7:
+			if( cInvenTory.SearchItemCode(CJ5_MOONSTONE)>=3 ) cj5ShowDialog( 4 );
+			else {
+				cj5Message( "Elder Hosean: bring me the three Moon Stones first." );
+				cj5ShowDialog( 7 );
+			}
+			break;
+		case 9:
+			cj5ShowDialog( 5 );
+			break;
+		default:
+			cj5ShowDialog( 7 );
+			break;
+	}
+	return TRUE;
+}
+
+// OK on one of this quest's dialogs
+int sinChangeJob5DialogClosed()
+{
+	sITEM TempItem;
+	int Dialog = sinChangeJob5Dialog;
+	int Hunt;
+
+	if( Dialog<0 ) return FALSE;
+	sinChangeJob5Dialog = -1;
+
+	switch( Dialog ) {
+		case 0:			// the offer: ask to start
+			cMessageBox.ShowMessage3(MESSAGE_CHANGE_JOB4,"");
+			break;
+
+		case 2:			// a hunt reported: its Moon Stone, then the next hunt
+			Hunt = sinQuest_ChangeJob5.State/2;			// 1..3
+			if( sinQuest_ChangeJob5.State!=2 && sinQuest_ChangeJob5.State!=4 && sinQuest_ChangeJob5.State!=6 ) break;
+			if( cInvenTory.SearchItemCode(CJ5_MOONSTONE)<Hunt ) {
+				memset( &TempItem , 0 , sizeof(sITEM) );
+				TempItem.CODE = CJ5_MOONSTONE;
+				if( !cInvenTory.CheckInvenEmpty(&TempItem) ) {
+					cMessageBox.ShowMessage(MESSAGE_OVER_SPACE);	// the hunt stays reported until there is room
+					break;
+				}
+				SendQuestCommandToServer( SIN_QUEST_CODE_CHANGEJOB5 , 1 , Hunt , 0 );	// a Moon Stone
+			}
+			if( Hunt<3 ) cj5StartHunt( Hunt );
+			else {
+				sinQuest_ChangeJob5.State = 7;
+				sinQuest_ChangeJob5.Kind = 0;
+				SetQuestBoard();
+				cj5Message( "Take the three Moon Stones to Elder Hosean in the Railway of Chaos." );
+			}
+			SaveGameData();
+			break;
+
+		case 4:			// Hosean: to the arena
+			if( sinQuest_ChangeJob5.State!=7 ) break;
+			if( MouseItem.Flag ) break;
+			sinQuest_ChangeJob5.State = 8;
+			sinSetQuestTimer( &sinQuest_ChangeJob5 , CJ5_ARENA_TIME );
+			SetQuestBoard();
+			cj5Message( "Kill Hestian within 7 minutes." );
+			Start_QuestArena( SIN_QUEST_CODE_CHANGEJOB5 , 0 , 0 );
+			break;
+
+		case 5:			// Hosean after the win: he keeps the stones
+			if( sinQuest_ChangeJob5.State!=9 ) break;
+			DeleteQuestItem( CJ5_MOONSTONE );
+			cInvenTory.ReFormInvenItem();
+			cInvenTory.CheckWeight();
+			sinQuest_ChangeJob5.State = 10;
+			SetQuestBoard();
+			cj5Message( "Take the Gem of Hestian to your class master." );
+			SaveGameData();
+			break;
+
+		case 6:			// the master: ask to rank up
+			if( sinQuest_ChangeJob5.State!=10 ) break;
+			if( !cInvenTory.SearchItemCode(CJ5_GEM) ) {
+				cj5Message( "You need the Gem of Hestian." );
+				break;
+			}
+			{
+				static char szNone[1] = "";
+				sinJobList = GetJobDataCode( sinChar->JOB_CODE , 4 );
+				cMessageBox.ShowMessage3( MESSAGE_CHANGE_JOB4_2 , sinJobList ? sinJobList->szName2 : szNone );
+			}
+			break;
+	}
+	return TRUE;
+}
+
+// the start question answered yes (MESSAGE_CHANGE_JOB4 at rank 4)
+int sinChangeJob5Start()
+{
+	if( sinChar->ChangeJob!=3 || sinQuest_ChangeJob5.CODE ) return FALSE;
+	if( !CheckNowQuestState(SIN_QUEST_CODE_CHANGEJOB5) ) return FALSE;
+	memset( &sinQuest_ChangeJob5 , 0 , sizeof(sQUEST_CHANGEJOB3) );
+	sinQuest_ChangeJob5.CODE = SIN_QUEST_CODE_CHANGEJOB5;
+	StartQuest_Code( sinQuest_ChangeJob5.CODE );
+	cj5StartHunt( 0 );
+	SaveGameData();
+	return TRUE;
+}
+
+// the rank-up question answered yes (MESSAGE_CHANGE_JOB4_2 at rank 4): the fifth rank
+int sinChangeJob5Promote()
+{
+	char szBuff[128];
+
+	if( sinChar->ChangeJob!=3 || sinQuest_ChangeJob5.State!=10 ) return FALSE;
+	if( !cInvenTory.SearchItemCode(CJ5_GEM) ) return FALSE;
+
+	DeleteQuestItem( CJ5_GEM );
+	sinChar->ChangeJob = 4;
+	sinJobList = GetJobDataCode( sinChar->JOB_CODE , sinChar->ChangeJob );
+	if( sinJobList ) lstrcpy( cInvenTory.JobName , sinJobList->szName2 );
+
+	sinQuest_ChangeJob5.BackUpCode = sinQuest_ChangeJob5.CODE;
+	sinQuest_ChangeJob5.CODE  = 0;
+	sinQuest_ChangeJob5.State = 0;
+	EndQuest_Code( sinQuest_ChangeJob5.BackUpCode );
+	sinChar->wVersion[1] = 0;
+	SetQuestBoard();
+
+	cSkill.SearchUseSkill();
+	cInvenTory.ReFormInvenItem();
+	cInvenTory.SetItemToChar();
+	ChangeJobFace();
+	cSkill.OpenFlag = 1;
+	cInterFace.CheckAllBox(SIN_SKILL);
+	SkillMasterFlag = 1;
+	sinPlaySound(SIN_SOUND_EAT_POTION2);
+	SaveGameData();
+
+	wsprintf( szBuff , "You are now %s! The skill window's second page holds your new skills." , sinJobList ? (const char *)sinJobList->szName2 : "rank 5" );
+	cj5Message( szBuff );
+	return TRUE;
+}
+
+// a monster killed (the class code the server gives it)
+int sinChangeJob5Kill( DWORD Monster_CODE )
+{
+	char szBuff[256];
+
+	if( sinQuest_ChangeJob5.CODE!=SIN_QUEST_CODE_CHANGEJOB5 ) return FALSE;
+	if( sinQuest_ChangeJob5.State!=1 && sinQuest_ChangeJob5.State!=3 && sinQuest_ChangeJob5.State!=5 ) return FALSE;
+	if( !sinQuest_ChangeJob5.Kind || (int)Monster_CODE!=sinQuest_ChangeJob5.Kind ) return FALSE;
+
+	sinQuest_ChangeJob5.Monster[0]++;
+	wsprintf( szBuff , "%s: %d / %d" , cj5PreyName(sinQuest_ChangeJob5.Kind) , sinQuest_ChangeJob5.Monster[0] , sinQuest_ChangeJob5.Monster[1] );
+	AddChatBuff( szBuff , 9 );
+
+	if( sinQuest_ChangeJob5.Monster[0]>=sinQuest_ChangeJob5.Monster[1] ) {
+		sinQuest_ChangeJob5.State++;				// 2, 4 or 6: report to the master
+		sinQuest_ChangeJob5.Kind = 0;
+		cj5StopTimer();
+		SetQuestBoard();
+		cj5Message( "The hunt is done: report to your class master." );
+		SaveGameData();
+	}
+	return TRUE;
+}
+
+// the quest timer ran out
+int sinChangeJob5TimerOut()
+{
+	if( sinQuest_ChangeJob5.CODE!=SIN_QUEST_CODE_CHANGEJOB5 ) return FALSE;
+
+	switch( sinQuest_ChangeJob5.State ) {
+		case 1:					// the first hunt: back to the master's question
+			memset( &sinQuest_ChangeJob5 , 0 , sizeof(sQUEST_CHANGEJOB3) );
+			EndQuest_Code( SIN_QUEST_CODE_CHANGEJOB5 );
+			cj5Message( "Time is up: ask your class master for the test again." );
+			break;
+		case 3: case 5:			// a later hunt: back to reporting the one before
+			sinQuest_ChangeJob5.State--;
+			sinQuest_ChangeJob5.Kind = 0;
+			sinQuest_ChangeJob5.Monster[0] = 0;
+			cj5Message( "Time is up: report to your class master to hunt again." );
+			break;
+		case 8:					// Hestian's duel
+			sinBattleNpcResult5( 0 );
+			return TRUE;
+		default:
+			return TRUE;
+	}
+	SetQuestBoard();
+	sinPlaySound(SIN_SOUND_FAILD_MIXITEM);
+	SaveGameData();
+	return TRUE;
+}
+
+// the duel with Hestian ended (win: the server's quest message; loss: death in the arena or the time)
+int sinBattleNpcResult5( int WinFlag )
+{
+	if( sinQuest_ChangeJob5.CODE!=SIN_QUEST_CODE_CHANGEJOB5 || sinQuest_ChangeJob5.State!=8 ) return FALSE;
+	cj5StopTimer();
+	if( WinFlag ) {
+		sinQuest_ChangeJob5.State = 9;
+		cj5Message( "Hestian is defeated! Return to Elder Hosean." );
+	}
+	else {
+		sinQuest_ChangeJob5.State = 7;
+		cj5Message( "Hestian has beaten you. Return to Elder Hosean to try again." );
+	}
+	SetQuestBoard();
+	SaveGameData();
+	return TRUE;
+}
+
+// GM: /Lee5thRankUp <n> - 0 drops the quest, 1..10 sets its step (3 Moon Stones / the gem with /@get qt125 / qt126)
+int sinCompleteChangeJob5( int Index )
+{
+	char szBuff[128];
+
+	cj5StopTimer();
+	if( Index<=0 ) {
+		if( sinQuest_ChangeJob5.CODE ) EndQuest_Code( SIN_QUEST_CODE_CHANGEJOB5 );
+		memset( &sinQuest_ChangeJob5 , 0 , sizeof(sQUEST_CHANGEJOB3) );
+		SaveGameData();
+		SendChatMessageToServer( "GM: the fifth rank-up quest is cleared." );
+		return TRUE;
+	}
+	if( Index>10 ) Index = 10;
+	if( !sinQuest_ChangeJob5.CODE ) {
+		sinQuest_ChangeJob5.CODE = SIN_QUEST_CODE_CHANGEJOB5;
+		StartQuest_Code( sinQuest_ChangeJob5.CODE );
+	}
+	if( Index==1 || Index==3 || Index==5 ) cj5StartHunt( Index/2 );
+	else {
+		sinQuest_ChangeJob5.State = Index;
+		sinQuest_ChangeJob5.Kind = 0;
+		sinQuest_ChangeJob5.Monster[0] = sinQuest_ChangeJob5.Monster[1] = 0;
+	}
+	SetQuestBoard();
+	SaveGameData();
+	wsprintf( szBuff , "GM: fifth rank-up quest at step %d" , sinQuest_ChangeJob5.State );
+	SendChatMessageToServer( szBuff );
 	return TRUE;
 }
 

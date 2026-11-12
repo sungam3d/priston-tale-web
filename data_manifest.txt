@@ -26587,3 +26587,11 @@ fonts/NotoSansJP-Regular.otf	4533028	b95c34e20f74b908
 fonts/NotoSansSC-Regular.otf	8331336	f40715ac5a24acc6
 fonts/NotoSansTC-Regular.otf	5683368	225287a966f2b98d
 fonts/LICENSE-NotoSansCJK.txt	4301	c8fc5f7ca19428c1
+image/Sinimage/Quest/ChangeJob5_End.sin	278	1fcad0fe37cbad09
+image/Sinimage/Quest/ChangeJob5_HoseanArena.sin	341	623c3f6438a56336
+image/Sinimage/Quest/ChangeJob5_HoseanWait.sin	229	894faaf7ae32186d
+image/Sinimage/Quest/ChangeJob5_HoseanWin.sin	279	b08ec55d01f17aae
+image/Sinimage/Quest/ChangeJob5_Hunting.sin	257	cfe5c4d34e837ddb
+image/Sinimage/Quest/ChangeJob5_Report.sin	243	a2c805c382cb4748
+image/Sinimage/Quest/ChangeJob5_Start.sin	552	9033ee2a345cd2e0
+image/Sinimage/Quest/ChangeJob5_ToHosean.sin	306	c5d379592153a935

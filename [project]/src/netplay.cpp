@@ -3712,7 +3712,11 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 			}
 			else if ( lpTransCommand->WParam==HAQUEST_CODE_FURYOFPHANTOM ) {
 				//퓨리 배틀 승리
-				chaQuest.RecvBattleNpcResult(1);	
+				chaQuest.RecvBattleNpcResult(1);
+			}
+			else if ( lpTransCommand->WParam==SIN_QUEST_CODE_CHANGEJOB5 ) {
+				// tier 5: Hestian beaten in the quest arena
+				sinBattleNpcResult5( 1 );
 			}
 			else
 				sinMorayionNpcChangeJob_Two();

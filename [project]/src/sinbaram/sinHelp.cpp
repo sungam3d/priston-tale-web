@@ -938,7 +938,13 @@ InitGuideHelp();
 				if(sSinHelp[i].KindFlag == SIN_HELP_KIND_QUEST){ //전업은 문제가 생겨서 이렇게 땜빵했따!
 					if(ChangeJobButonCheck2){
 						ChangeJobButonCheck2 = 0;
-						break; //버튼이벤트 문제때문에 막아준다 
+						break; //버튼이벤트 문제때문에 막아준다
+					}
+					// tier 5: one of the fifth rank-up quest's dialogs
+					if(sinChangeJob5DialogClosed()){
+						HelpBoxKindIndex = 0;
+						memset(&sSinHelp[i],0,sizeof(sSINHELP));
+						break;
 					}
 					//요건 템스크론
 					if(sinChar->ChangeJob == 0){ //1차전업

@@ -3717,6 +3717,8 @@ smCHAR *OpenMonsterFromSkill( DWORD SkillCode , int x, int y, int z , rsPLAYINFO
 	return NULL;
 }
 
+int IsHestianModel( smCHAR_INFO *lpCharInfo );		// character.cpp (tier 5)
+
 //퀘스트 대전 몬스터 출현 시킴
 smCHAR *OpenMonster_QuestArena( rsPLAYINFO *lpPlayInfo , DWORD dwQuestCode , int Param=0 )
 {
@@ -3724,11 +3726,17 @@ smCHAR *OpenMonster_QuestArena( rsPLAYINFO *lpPlayInfo , DWORD dwQuestCode , int
 	STG_CHAR_INFO StgCharInfo;
 	int	len,cnt,pow;
 	smCHAR	*lpChar;
-	DWORD	dwSndCode;
+	DWORD	dwSndCode = 0;
 	int		OpenLevel = 0;
+	int		bHestian = 0;		// tier 5: the fifth rank-up quest's Hestian (found by model, level 100)
 
 
 	switch( dwQuestCode ) {
+		case SIN_QUEST_CODE_CHANGEJOB5:
+			bHestian = 1;
+			OpenLevel = 100;
+			break;
+
 		case SIN_QUEST_CODE_CHANGEJOB4:
 			if ( lpPlayInfo->smCharInfo.JOB_CODE<=4 )
 				dwSndCode = snCHAR_SOUND_NPC_SKILLMASTER;
@@ -3773,7 +3781,8 @@ smCHAR *OpenMonster_QuestArena( rsPLAYINFO *lpPlayInfo , DWORD dwQuestCode , int
 
 		//특정 몬스터 호출
 		for(cnt=0;cnt<chrMonsterCnt;cnt++) {
-			if ( chrMonsterList[cnt].dwCharSoundCode==dwSndCode && (OpenLevel==0 || OpenLevel==chrMonsterList[cnt].Level) ) {
+			if ( ( bHestian ? IsHestianModel( &chrMonsterList[cnt] ) : chrMonsterList[cnt].dwCharSoundCode==dwSndCode ) &&
+				(OpenLevel==0 || OpenLevel==chrMonsterList[cnt].Level) ) {
 				memcpy(	&StgCharInfo.smCharInfo , &chrMonsterList[cnt] , sizeof( smCHAR_INFO ) ); 
 				len++;
 				break;
@@ -3791,6 +3800,8 @@ smCHAR *OpenMonster_QuestArena( rsPLAYINFO *lpPlayInfo , DWORD dwQuestCode , int
 				lpChar->lpLinkPlayInfo=lpPlayInfo;
 				lpChar->dwLinkObjectCode=lpPlayInfo->dwObjectSerial;
 				lpChar->dwUpdateCharInfoTime = dwPlayServTime+30*60*1000;						//30분후 제거
+				if ( bHestian )
+					lpChar->dwUpdateCharInfoTime = dwPlayServTime+8*60*1000;		// tier 5: her duel is 7 minutes
 
 				//상대 레벨에 따라 더욱 강화
 				pow = lpPlayInfo->smCharInfo.Level-60;
@@ -13119,6 +13130,12 @@ int rsProcessQuest( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , int QuestCode , in
 			smTransCommand.WParam = QuestCode;
 			smTransCommand.LParam = QuestParam;
 			break;
+
+		case SIN_QUEST_CODE_CHANGEJOB5:		// tier 5: Hestian beaten - the Gem of Hestian, from the server
+			smTransCommand.WParam = QuestCode;
+			smTransCommand.LParam = QuestParam;
+			rsPutItem( lpPlayInfo , sinQT1|sin26 );
+			break;
 	}
 
 	lpPlayInfo->lpsmSock->Send2( (char *)&smTransCommand , smTransCommand.size , TRUE );
@@ -13145,10 +13162,19 @@ int rsGetQuestCommand( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand 
 				rsPutItem( lpPlayInfo , sinQT1|sin07 );
 			break;
 
-		case SIN_QUEST_CODE_CHANGEJOB4:		
+		case SIN_QUEST_CODE_CHANGEJOB4:
 			if ( lpPlayInfo->smCharInfo.Level>=49 && lpTransCommand->LParam==QUEST_ARENA_FIELD ) {
 				//퀘스트용 마스터 대전방 호출
 				OpenMonster_QuestArena( lpPlayInfo , SIN_QUEST_CODE_CHANGEJOB4 );
+			}
+			break;
+
+		case SIN_QUEST_CODE_CHANGEJOB5:		// tier 5: the fifth rank-up quest
+			if ( lpPlayInfo->smCharInfo.Level>=80 ) {
+				if ( lpTransCommand->LParam==QUEST_ARENA_FIELD )
+					OpenMonster_QuestArena( lpPlayInfo , SIN_QUEST_CODE_CHANGEJOB5 );		// Hestian
+				else if ( lpTransCommand->LParam==1 )
+					rsPutItem( lpPlayInfo , sinQT1|sin25 );									// a hunt's Moon Stone
 			}
 			break;
 

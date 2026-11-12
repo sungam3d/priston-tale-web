@@ -1056,6 +1056,12 @@ int	ChangeModelSkin( smCHAR *lpChar , int ComicArmor , int ComicHeadNum , char *
 
 
 	SelCount = ComicHeadNum;
+	int bRank5Head = 0;
+	if ( SelCount==JOB_FACE_RANK5 ) {		// tier 5: the fourth rank's row, then its tier 5 file
+		SelCount = 3;
+		bRank5Head = 1;
+	}
+	if ( SelCount<0 || SelCount>=FACE_MODEL_MAX ) SelCount = 0;
 
 	FindArmor = 0;
 	FindHead = 0;
@@ -1122,6 +1128,14 @@ int	ChangeModelSkin( smCHAR *lpChar , int ComicArmor , int ComicHeadNum , char *
 		case 8:		//프리스티스
 			lstrcpy( szHeadName , szModel_PristessFaceName[SelCount][HairCode] );
 			break;
+	}
+
+	// tier 5: the fifth rank's head is the fourth rank's "...c.inf" as "...t.inf" (hair styles
+	// 01..03 have one in every class; the others keep the fourth rank's head)
+	if ( bRank5Head && HairCode<3 ) {
+		len = lstrlen( szHeadName );
+		if ( len>5 && lstrcmpi( szHeadName+len-5 , "c.inf" )==0 )
+			szHeadName[len-5] = 't';
 	}
 
 

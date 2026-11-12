@@ -1038,9 +1038,9 @@ void cINTERFACE::Draw()
 	}
 
 	//전업 버튼
-	if(SkillMasterFlag && !ShowSkillUpInfo && (CheckQuestButtonShow1 ||CheckQuestButtonShow2 ||CheckQuestButtonShow3) )    //스킬정보를 보여주는 옵션이 아닐경우에만 전업 버튼을 띄운다 
+	if(SkillMasterFlag && !ShowSkillUpInfo && (CheckQuestButtonShow1 ||CheckQuestButtonShow2 ||CheckQuestButtonShow3 || sinChangeJobButtonShow5) )    //스킬정보를 보여주는 옵션이 아닐경우에만 전업 버튼을 띄운다
 	{
-		if(sinChangeJobButtonShow || sinChangeJobButtonShow2 || sinChangeJobButtonShow3 || sinChangeJobButtonShow4 )
+		if(sinChangeJobButtonShow || sinChangeJobButtonShow2 || sinChangeJobButtonShow3 || sinChangeJobButtonShow4 || sinChangeJobButtonShow5 )
 		{
 			DrawSprite(240,380,lpSelectChangeJob[1],0,0,44,44); 
 			nCheckSkillDraw = 1;
@@ -2148,6 +2148,17 @@ void cINTERFACE::KeyDown()
 						memset(sinBuff,0,sizeof(sinBuff));
 						#endif
 					}
+				}
+
+				// tier 5: /Lee5thRankUp <step> - the fifth rank-up quest at a step (0 clears it)
+				if ( lstrcmpi( sinTestBuff5 , "/Lee5thRankUp" )==0 )
+				{
+					#ifdef	_WINMODE_DEBUG
+					sinCompleteChangeJob5( atoi(sinTestBuff6) );
+					memset(sinTestBuff5,0,sizeof(sinTestBuff5));
+					memset(sinTestBuff6,0,sizeof(sinTestBuff6));
+					memset(sinBuff,0,sizeof(sinBuff));
+					#endif
 				}
 
 				if ( lstrcmp( sinTestBuff5 , "/\300\314\271\346\271\3743\302\367\304\371\275\272\306\256" )==0  || lstrcmp( sinTestBuff5 , "/Lee3thRankUp" )==0)

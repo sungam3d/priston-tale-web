@@ -1886,9 +1886,22 @@ int StopCharMotion(int x ,int y)
 		if(x > 240 && x < 240+44 && y > 380 && y < 380+44){				
 			if(CheckNowQuestState(SIN_QUEST_CODE_CHANGEJOB4)){
 				sinChangeJobButtonShow4 = 0;
-				SkillMasterFlag =0; //메세지 박스를 없애준다 
-				cSinHelp.sinShowHelp(SIN_HELP_KIND_QUEST,QuestMessageBoxPosi2.x,QuestMessageBoxPosi2.y,QuestMessageBoxSize2.x,QuestMessageBoxSize2.y, RGBA_MAKE(0,15,128,125),QuestFilePath4[0]);  
+				SkillMasterFlag =0; //메세지 박스를 없애준다
+				cSinHelp.sinShowHelp(SIN_HELP_KIND_QUEST,QuestMessageBoxPosi2.x,QuestMessageBoxPosi2.y,QuestMessageBoxSize2.x,QuestMessageBoxSize2.y, RGBA_MAKE(0,15,128,125),QuestFilePath4[0]);
 				ChangeJobButonCheck2 = 1; //버튼머시기때문에 이렇게 해준다 이유는 묻지마라!
+			}
+		}
+	}
+
+	/* tier 5: the fifth rank-up (the "4th Rank-Up Test") */
+	if(SkillMasterFlag && sinChangeJobButtonShow5){
+		if(x > 240 && x < 240+44 && y > 380 && y < 380+44){
+			if(CheckNowQuestState(SIN_QUEST_CODE_CHANGEJOB5)){
+				sinChangeJobButtonShow5 = 0;
+				SkillMasterFlag = 0;
+				extern int sinCheckChangeJobQuest5Offer();
+				sinCheckChangeJobQuest5Offer();
+				ChangeJobButonCheck2 = 1;			// the click that opened the dialog must not also close it
 			}
 		}
 	}
@@ -2415,6 +2428,10 @@ int sinSkillMaster(int ChangeJob)
 			sinQuest_ChangeJob2.State = 0;
 			SkillNpcFlag = 0;
 		}
+		else if( sinQuest_ChangeJob5.CODE){		// tier 5: the fifth rank-up quest
+			SkillNpcFlag = 0;
+			sinCheckChangeJobQuest5();
+		}
 		else if( sinQuest_ChangeJob4.CODE){
 			SkillNpcFlag = 0;
 			sinCheckChangeJobQuest4();
@@ -2448,6 +2465,9 @@ int sinSkillMaster(int ChangeJob)
 	}
 	if(sinQuest_ChangeJob4.State){//여기서두 초기화해준다
 		sinChangeJobButtonShow4 = 0;
+	}
+	if(sinQuest_ChangeJob5.CODE){		// tier 5
+		sinChangeJobButtonShow5 = 0;
 	}
 
 
