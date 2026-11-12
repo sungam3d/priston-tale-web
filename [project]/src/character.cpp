@@ -702,8 +702,16 @@ smDPAT *smPATTERN::LoadCharactor( char *szFileName )
 
 	if ( Num<0 ) {
 
-		if ( smModelDecode( szFileName , &modelInfo )==NULL ) 
+		if ( smModelDecode( szFileName , &modelInfo )==NULL ) {
+#ifndef PT_SERVER_EXE
+			// say which model is missing (admin mode: in the chat; always in the browser console)
+			char	szErrorMsg[160];
+			wsprintf( szErrorMsg , "Loading Error , model info ( %s )" , szFileName );
+			if ( smConfig.DebugMode ) AddChatBuff( szErrorMsg );
+			printf( "[model] %s\n" , szErrorMsg );
+#endif
 			return NULL;
+		}
 
 		//AddChatBuff( szFileName );
 
@@ -746,6 +754,9 @@ smDPAT *smPATTERN::LoadCharactor( char *szFileName )
 				wsprintf( szErrorMsg , "Loading Error , ( %s )" , modelInfo.szModelFile );
 				AddChatBuff( szErrorMsg );
 			}
+#ifndef PT_SERVER_EXE
+			printf( "[model] Loading Error , mesh ( %s ) for ( %s )\n" , modelInfo.szModelFile , szFileName );
+#endif
 			return NULL;
 		}
 
@@ -2371,71 +2382,35 @@ int smCHAR::FindMotionCountFromCode( DWORD MotionCode )
 // 20-number block there, tier 5 being its last 4: Fighter 37..40)
 int Tier5MotionSkillNum( int PlaySkillCode )
 {
-	switch( PlaySkillCode ) {
-	case SKILL_PLAY_DOWN_HIT:			return 37;
-	case SKILL_PLAY_POWER_DASH:			return 38;
-	case SKILL_PLAY_MORTAL_BLOW:		return 39;
-	case SKILL_PLAY_BLOODY_BERSERKER:	return 40;
-	}
+	// none any more: the class motion tables are read from their text (M?Bip.in), whose
+	// skill names SkillDataCode lists, so tier 5 clips match by name like the others
 	return 0;
 }
 
-// Motion clips name their weapons by the v3215 client's item table index (smMOTIONINFO
-// ItemCodeList, 16-bit). We match held items to them by key (MotionItemIndex.h).
-#include "MotionItemIndex.h"
-
-#define MOTION_ITEM_NONE	0xFFFE		// an item no clip names (0xFFFF is bare hands)
-
-static WORD *lpSlotMotionIndex = 0;		// per sItem entry
-
-static void BuildSlotMotionIndex()
-{
-	if ( lpSlotMotionIndex ) return;
-	lpSlotMotionIndex = new WORD[MAX_ITEM];
-	for ( int cnt=0; cnt<MAX_ITEM; cnt++ ) {
-		WORD wIndex = MOTION_ITEM_NONE;
-		const char *szKey = sItem[cnt].LastCategory;
-		if ( sItem[cnt].CODE && szKey[0] ) {
-			for ( int i=0; MotionItemIndexTable[i].szKey; i++ ) {
-				if ( lstrcmpi( MotionItemIndexTable[i].szKey, szKey )==0 ) { wIndex = MotionItemIndexTable[i].wIndex; break; }
-			}
-			if ( wIndex==MOTION_ITEM_NONE && lstrlen(szKey)==5 ) {
-				// newer than the motion files: its family's first item (e.g. WA101 for WA131)
-				char szFirst[8];
-				wsprintf( szFirst, "%c%c%c01", szKey[0], szKey[1], szKey[2] );
-				for ( int i=0; MotionItemIndexTable[i].szKey; i++ ) {
-					if ( lstrcmpi( MotionItemIndexTable[i].szKey, szFirst )==0 ) { wIndex = MotionItemIndexTable[i].wIndex; break; }
-				}
-			}
-		}
-		lpSlotMotionIndex[cnt] = wIndex;
-	}
-}
-
+// Motion clips name their weapons by our item table's index (sItem; 0xFFFF = bare hands):
+// the class motion tables are read from text (fileread.cpp AddModelDecode), so their item
+// keys resolve against our table.
 WORD GetMotionItemIndexOfSlot( int ItemSlot )
 {
-	if ( ItemSlot<0 || ItemSlot>=MAX_ITEM ) return MOTION_ITEM_NONE;
-	BuildSlotMotionIndex();
-	return lpSlotMotionIndex[ItemSlot];
+	return ( ItemSlot>=0 && ItemSlot<MAX_ITEM ) ? (WORD)ItemSlot : 0xFFFE;
 }
 
-// an item code as a motion item index (0xFFFF for none held)
+// a held item's index in our item table (0xFFFF for none held, 0xFFFE unknown)
 WORD GetMotionItemIndexOfCode( DWORD dwItemCode )
 {
 	static DWORD dwLastCode = 0;
-	static WORD wLastIndex = MOTION_ITEM_NONE;
+	static WORD wLastIndex = 0xFFFE;
 
 	if ( !dwItemCode ) return 0xFFFF;
 	if ( dwItemCode==dwLastCode ) return wLastIndex;
-	BuildSlotMotionIndex();
 	for ( int cnt=0; cnt<MAX_ITEM; cnt++ ) {
 		if ( sItem[cnt].CODE==dwItemCode ) {
 			dwLastCode = dwItemCode;
-			wLastIndex = lpSlotMotionIndex[cnt];
+			wLastIndex = (WORD)cnt;
 			return wLastIndex;
 		}
 	}
-	return MOTION_ITEM_NONE;
+	return 0xFFFE;
 }
 
 //모션 분류 코드로 모션을 바꾼다

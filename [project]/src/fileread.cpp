@@ -645,11 +645,11 @@ char *szFallStandSmallWord = "작은착지";
 								Info->MotionInfo[MotionLastPos].ItemCodeCount++] = 0xFFFF;		// bare hands
 					}
 					else {
-						//코드검색 하여 설정 (as the .inx files have it: the v3215 motion item index)
+						//코드검색 하여 설정 (our item table's index; keys we don't have are skipped)
 						for(cnt=0;cnt<MAX_ITEM;cnt++) {
-							if ( lstrcmp( strBuff , sItem[cnt].LastCategory )==0 ) {
+							if ( lstrcmpi( strBuff , sItem[cnt].LastCategory )==0 ) {
 								Info->MotionInfo[MotionLastPos].ItemCodeList[
-									Info->MotionInfo[MotionLastPos].ItemCodeCount++] = GetMotionItemIndexOfSlot( cnt );
+									Info->MotionInfo[MotionLastPos].ItemCodeCount++] = cnt;
 								break;
 							}
 						}
@@ -918,11 +918,18 @@ char *szFallStandSmallWord = "작은착지";
 			if ( pat3d ) delete pat3d;
 		}
 
-		for(cnt=MotionFileListCnt-1;cnt>=0;cnt--) 
+		for(cnt=MotionFileListCnt-1;cnt>=0;cnt--)
 			delete szMotionFileList[cnt];
 	}
 	//######################################################################################
 
+#ifdef PT_WEB
+	// The web build reads the class motion tables (char\tmABCD\M?Bip.in) as text: their
+	// weapon keys and skill names resolve against our own item and skill tables, which the
+	// v3215 .inx files' numbers do not (they index that client's tables). No compiled copy is
+	// written: the page keeps files the game writes, so it would go stale with the data.
+	return TRUE;
+#endif
 
 #ifndef _W_SERVER
 		if ( !smConfig.DebugMode ) {
@@ -992,7 +999,7 @@ static void MotionInfoFromOld( BYTE *lpOld, smMOTIONINFO *lpNew, int Count )
 		if ( n<0 || n>MOTION_TOOL_MAX/2 ) n = 0;
 		lpNew[cnt].ItemCodeCount = n;
 		for ( int i=0; i<MOTION_TOOL_MAX/2; i++ )
-			lpNew[cnt].ItemCodeList[i] = i<n ? ( lpList[i]==0xFF ? 0xFFFF : GetMotionItemIndexOfSlot( lpList[i] ) ) : 0;
+			lpNew[cnt].ItemCodeList[i] = i<n ? ( lpList[i]==0xFF ? 0xFFFF : lpList[i] ) : 0;
 
 		lpOld += MOTIONINFO_OLD_SIZE;
 	}
@@ -6489,6 +6496,12 @@ SKILL_DATA_CODE	SkillDataCode[] = {
 	{	"FLAMEWAVE"				,	SKILL_PLAY_FLAME_WAVE			},
 	{	"DISTORTION"			,	SKILL_PLAY_DISTORTION			},
 	{	"METEO"					,	SKILL_PLAY_METEO				},
+
+	// tier 5, as the class motion tables (M?Bip.in) name them
+	{	"DownHit"				,	SKILL_PLAY_DOWN_HIT				},
+	{	"PowerDash"				,	SKILL_PLAY_POWER_DASH			},
+	{	"MotalBlow"				,	SKILL_PLAY_MORTAL_BLOW			},
+	{	"BloodyBerserker"		,	SKILL_PLAY_BLOODY_BERSERKER		},
 
 	{	"",0 }
 };
