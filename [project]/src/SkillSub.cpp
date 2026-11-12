@@ -61,7 +61,7 @@ static int NC_OpenPlaySkill( sSKILL *lpSkill )
 {
 	sNCSKILL *nc = NC_FindCode( lpSkill->Skill_Info.CODE );
 	if ( !nc || !nc->Play || !lpSkill->Point ) return 0;
-	if ( nc->Kind!=NCK_BUFF && nc->Kind!=NCK_DEBUFF_SELF && nc->Kind!=NCK_POISON_SELF && nc->Kind!=NCK_MAGIC_AREA_SELF ) return 0;
+	if ( nc->Kind!=NCK_BUFF && nc->Kind!=NCK_DEBUFF_SELF && nc->Kind!=NCK_POISON_SELF && nc->Kind!=NCK_MAGIC_AREA_SELF && nc->Kind!=NCK_SUMMON ) return 0;
 	if ( lpCurPlayer->MotionInfo->State>=0x100 ) return 0;
 	if ( lpSkill->Skill_Info.FuncPointer()!=TRUE ) return 0;
 
@@ -71,7 +71,9 @@ static int NC_OpenPlaySkill( sSKILL *lpSkill )
 	lpCurPlayer->MotionLoopSpeed = 70;
 	lpCurPlayer->MotionLoop = 1;
 
-	if ( nc->Kind!=NCK_BUFF ) {
+	if ( nc->Kind==NCK_SUMMON )
+		SendProcessSKillToServer( nc->Play , lpSkill->Point , 0, 0 );		// the server opens the monster
+	else if ( nc->Kind!=NCK_BUFF ) {
 		dm_SelectRange( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ, NC_AreaOf(nc,lpSkill->Point) , TRUE , NC_HitsOf(nc,lpSkill->Point) );
 		dm_SendRangeDamage( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ, 0 ,
 			cInvenTory.InvenItem[ sInven[0].ItemIndex-1 ].sItemInfo.Damage[0],
@@ -87,7 +89,7 @@ static int NC_PlaySkillAttack( sSKILL *lpSkill , smCHAR *lpChar , short *wpDamag
 	if ( !nc ) return -1;
 	if ( !nc->Play || !lpSkill->Point ) return TRUE;
 	switch( nc->Kind ) {
-	case NCK_BUFF: case NCK_DEBUFF_SELF: case NCK_POISON_SELF: case NCK_MAGIC_AREA_SELF: case NCK_PASSIVE: case NCK_PENDING:
+	case NCK_BUFF: case NCK_DEBUFF_SELF: case NCK_POISON_SELF: case NCK_MAGIC_AREA_SELF: case NCK_PASSIVE: case NCK_PENDING: case NCK_SUMMON:
 		return TRUE;		// not a target cast
 	}
 	if ( lpSkill->Skill_Info.FuncPointer()!=TRUE ) return TRUE;

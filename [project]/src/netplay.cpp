@@ -3704,6 +3704,9 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 				case SKILL_PLAY_SUMMON_ARCUDA:		// tier 5
 					cnt = SKILL_SUMMON_ARCUDA;
 					break;
+				case SKILL_PLAY_NC_RECALL_BLOODYKNIGHT:	// Shaman
+					cnt = SKILL_NC_RECALL_BLOODYKNIGHT;
+					break;
 			}
 			cSkill.CancelContinueSkill( cnt );
 			break;

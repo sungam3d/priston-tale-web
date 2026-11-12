@@ -334,14 +334,15 @@ srCRISTAL_MONSTER srMarvelCristalMonsterBoss[MARVELCRISTAL_MAX] = {
 	{ " \300\314\271\314\306\274\270\243 \260\241\265\345 "		, 0 , 3		}
 };
 
-#define	srSKILL_MONSTER_MAX		4
+#define	srSKILL_MONSTER_MAX		5
 
 //스킬소환 몬스터
 srCRISTAL_MONSTER	srSkillMonster[srSKILL_MONSTER_MAX] = {
 	{ "\270\336\305\273 \260\355\267\275"		, 0 , 0	},
 	{ "\277\357\271\366\270\260"			, 0 , 0	},
 	{ "\306\304\300\314\276\356 \277\244\267\271\270\340\305\273"	, 0 , 0	},
-	{ "\276\306\270\243\304\355\264\331"	, 0 , 0	}		// tier 5 Atalanta: Arcuda (GameServer\Monster\100_s_Arcuda.inf)
+	{ "\276\306\270\243\304\355\264\331"	, 0 , 0	},		// tier 5 Atalanta: Arcuda (GameServer\Monster\100_s_Arcuda.inf)
+	{ "\272\355\267\257\265\360 \263\252\300\314\306\256"	, 0 , 0	}		// Shaman: Recall Bloody Knight (GameServer\Monster\106_Bloodyknight.inf)
 };
 
 // 장별 - 소울스톤
@@ -3614,6 +3615,10 @@ smCHAR *OpenMonsterFromSkill( DWORD SkillCode , int x, int y, int z , rsPLAYINFO
 			break;
 		case SKILL_PLAY_SUMMON_ARCUDA:		// tier 5
 			lpCristalMonster = &srSkillMonster[3];
+			SkillMonsterAttackFlag = TRUE;
+			break;
+		case SKILL_PLAY_NC_RECALL_BLOODYKNIGHT:		// Shaman
+			lpCristalMonster = &srSkillMonster[4];
 			SkillMonsterAttackFlag = TRUE;
 			break;
 	}
@@ -31512,11 +31517,13 @@ int rsUpdateSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand )
 		case SKILL_PLAY_RECALL_WOLVERIN:
 		case SKILL_PLAY_FIRE_ELEMENTAL:
 		case SKILL_PLAY_SUMMON_ARCUDA:
+		case SKILL_PLAY_NC_RECALL_BLOODYKNIGHT:
 
 		case SKILL_METAL_GOLEM:
 		case SKILL_RECALL_WOLVERIN:
 		case SKILL_FIRE_ELEMENTAL:
 		case SKILL_SUMMON_ARCUDA:
+		case SKILL_NC_RECALL_BLOODYKNIGHT:
 
 			if ( lpPlayInfo->lpLinkChar && lpPlayInfo->lpLinkChar->dwObjectSerial==lpPlayInfo->dwLinkCharCode && lpPlayInfo->lpLinkChar->HoSkillCode ) {
 				//소환몹 모드 변경
@@ -32124,6 +32131,27 @@ int rsRecvProcessSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand
 					lpChar->smCharInfo.Life[1] = Summon_Arcuda_Life[point];
 					lpChar->sMoveStepCount[0] = 1;
 					lpChar->sMoveStepCount[1] = 2;
+				}
+			}
+			break;
+
+		case SKILL_PLAY_NC_RECALL_BLOODYKNIGHT:		// Shaman: the Bloody Knight, stats from the 3215 table
+			{
+				sNCSKILL *nc = NC_FindPlay( SKILL_PLAY_NC_RECALL_BLOODYKNIGHT );
+				if ( nc && nc->Flat && nc->Val && lpPlayInfo->smCharInfo.JOB_CODE==nc->Job ) {
+					lpChar = OpenMonsterFromSkill( dwSkillCode , lpPlayInfo->Position.x,lpPlayInfo->Position.y,lpPlayInfo->Position.z, lpPlayInfo ,0);
+					if ( lpChar ) {
+						int t = nc->ConstTime ? nc->ConstTime : 360;
+						lpChar->dwUpdateCharInfoTime = dwPlayServTime+(t-5)*1000;
+						lpChar->smCharInfo.Attack_Damage[0] = nc->Flat[point*2];
+						lpChar->smCharInfo.Attack_Damage[1] = nc->Flat[point*2+1];
+						if ( nc->Val2 ) lpChar->smCharInfo.Attack_Rating = nc->Val2[point];
+						if ( nc->Val3 ) lpChar->smCharInfo.Defence = nc->Val3[point]+lpPlayInfo->smCharInfo.Dexterity*2;
+						lpChar->smCharInfo.Life[0] = nc->Val[point];
+						lpChar->smCharInfo.Life[1] = nc->Val[point];
+						lpChar->sMoveStepCount[0] = 1;
+						lpChar->sMoveStepCount[1] = 2;
+					}
 				}
 			}
 			break;

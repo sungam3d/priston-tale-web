@@ -1891,7 +1891,7 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 							lpChar->PlaySlowCount = (16*Circle_Trap_SlowTime10[SkillPoint])/10;
 							lpChar->PlaySlowSpeed = 256-(256*Circle_Trap_Slow[SkillPoint])/100;
 						}
-						NC_ServerRangeHit( SkillCode , SkillPoint+1 , lpChar );		// the new classes: stun, weaken, slow, poison
+						NC_ServerRangeHit( SkillCode , SkillPoint+1 , lpChar , lpPlayInfo );		// the new classes: stun, weaken, slow, poison
 
 						Dmg3 = pow;
 
@@ -3036,7 +3036,7 @@ static int NC_ServerRangeAttack( sNCSKILL *nc , rsPLAYINFO *lpPlayInfo , TRANS_A
 }
 
 // each monster an area skill reached: stun, weaken, slow, poison
-void NC_ServerRangeHit( int play , int pt , smCHAR *lpChar )
+void NC_ServerRangeHit( int play , int pt , smCHAR *lpChar , rsPLAYINFO *lpPlayInfo )
 {
 	sNCSKILL *nc = NC_FindPlay( play );
 	if ( !nc || !lpChar ) return;
@@ -3057,6 +3057,14 @@ void NC_ServerRangeHit( int play , int pt , smCHAR *lpChar )
 		if ( !boss ) {
 			lpChar->PlaySlowCount = 16*t;
 			lpChar->PlaySlowSpeed = 256-(256*(v<90 ? v : 90))/100;
+		}
+		break;
+	case NCS_TAUNT:		// Chasing Hunt: the monsters chase the caster for the duration (as Compulsion does)
+		if ( !boss && lpPlayInfo ) {
+			lpChar->lpTargetPlayInfo = 0;
+			lpChar->lpTargetChar = 0;
+			lpChar->lpCompulsionPlayInfo = lpPlayInfo;
+			lpChar->dwCompulsionTime = dwPlayServTime+t*1000;
 		}
 		break;
 	}
@@ -6417,7 +6425,7 @@ int	rsBillingItemSkill( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , int HitMonster
 
 	if ( SkillCode==SKILL_PLAY_ROAR || SkillCode==SKILL_PLAY_METAL_GOLEM || SkillCode==SKILL_PLAY_COMPULSION || SkillCode==SKILL_PLAY_EXTINCTION ||
 		SkillCode==SKILL_PLAY_RECALL_WOLVERIN || SkillCode==SKILL_PLAY_FIRE_ELEMENTAL || SkillCode==SKILL_PLAY_DISTORTION ||
-		SkillCode==SKILL_PLAY_SUMMON_ARCUDA || SkillCode==SKILL_PLAY_SUMMON_RAMIEL ||
+		SkillCode==SKILL_PLAY_SUMMON_ARCUDA || SkillCode==SKILL_PLAY_SUMMON_RAMIEL || SkillCode==SKILL_PLAY_NC_RECALL_BLOODYKNIGHT ||
 		SkillCode==SKILL_PLAY_PET_ATTACK || SkillCode==SKILL_PLAY_PET_ATTACK2 || lpPlayInfo->Position.Area==rsCASTLE_FIELD )
 	{
 		return FALSE;

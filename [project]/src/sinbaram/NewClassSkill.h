@@ -10,11 +10,11 @@
 
 // what a new-class skill does (sNCSKILL.Kind)
 enum { NCK_PENDING, NCK_PASSIVE, NCK_HIT, NCK_AREA_TGT, NCK_AREA_SELF, NCK_BUFF, NCK_DEBUFF_SELF, NCK_DEBUFF_TGT,
-       NCK_POISON_SELF, NCK_MAGIC, NCK_MAGIC_AREA, NCK_MAGIC_AREA_SELF };
+       NCK_POISON_SELF, NCK_MAGIC, NCK_MAGIC_AREA, NCK_MAGIC_AREA_SELF, NCK_SUMMON };
 // what a buff, passive or debuff changes (sNCSKILL.Stat/Stat2/Stat3)
 enum { NCS_NONE, NCS_DMG_PCT, NCS_ACC_PCT, NCS_ACC_FLAT, NCS_EVADE, NCS_CRIT, NCS_ASPD, NCS_DEF_PCT, NCS_ABSORB,
        NCS_MANA_PCT, NCS_STAM_PCT, NCS_LIFE_PCT, NCS_VIT, NCS_STR_PCT, NCS_AGI_PCT, NCS_SPI_PCT,
-       NCS_STUN, NCS_WEAKEN, NCS_SLOW };
+       NCS_STUN, NCS_WEAKEN, NCS_SLOW, NCS_TAUNT };
 
 #define NC_TIP_MAX	6
 struct sNCTIP { const char *Label; int *Arr; int Pair; const char *Suffix; };
@@ -42,7 +42,8 @@ int NC_Rank( int *arr, int point );			// arr[point-1], 0 when absent or out of r
 int F_NC_Skill();							// every new-class skill's FuncPointer (Tempskron.cpp)
 int NC_GetEvasion();						// the client's extra evasion from them (SkillSub.cpp)
 class smCHAR;
-void NC_ServerRangeHit( int play , int pt , smCHAR *lpChar );	// the server: each monster an area skill reached (Svr_Damge.cpp)
+struct rsPLAYINFO;
+void NC_ServerRangeHit( int play , int pt , smCHAR *lpChar , rsPLAYINFO *lpPlayInfo );	// the server: each monster an area skill reached (Svr_Damge.cpp)
 
 #define SKILL_NC_STINGER                  0x10010001	// Stinger
 #define SKILL_NC_RUNNING_HIT              0x10010002	// Running Hit

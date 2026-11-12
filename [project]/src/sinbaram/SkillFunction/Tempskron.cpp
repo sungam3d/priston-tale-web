@@ -2034,6 +2034,11 @@ int F_NC_Skill()
 		pUseSkill->UseTime = t ? t : (nc->ConstTime ? nc->ConstTime : 60);
 		sinContinueSkillSet(pUseSkill);
 	}
+	if ( nc->Kind==NCK_SUMMON ) {		// Recall Bloody Knight: the server summons it (like Summon Arcuda)
+		pUseSkill->UseTime = nc->ConstTime ? nc->ConstTime : 360;
+		sinContinueSkillSet(pUseSkill);
+		SummonSkillCodeIndex[4] = 0;	// sinSubMain.cpp SummonSkillCode: its attack mode
+	}
 	sinUseManaStamina(pUseSkill);
 	if ( nc->Kind==NCK_BUFF ) cInvenTory.SetItemToChar();
 	return TRUE;
