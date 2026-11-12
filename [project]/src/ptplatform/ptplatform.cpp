@@ -315,10 +315,74 @@ static void WheelEvent( const SDL_MouseWheelEvent &w )
 	SendToGame( WM_MOUSEWHEEL, MAKEWPARAM( MouseKeys(), (short)( dy*WHEEL_DELTA ) ), MAKELPARAM( pt.x, pt.y ) );
 }
 
+#ifdef PT_WEB
+// Pasting into the chat (Ctrl+V). The browser hands us the clipboard text; it goes to the
+// game as typed characters, but only while a text box (the chat) has the focus.
+extern HWND hFocusWnd;			// Winmain.cpp: the game's focused text box
+static unsigned short s_Paste[512];
+static int s_PasteLen = 0;
+
+extern "C" EMSCRIPTEN_KEEPALIVE void PtWeb_PasteChar( int ch )
+{
+	if ( s_PasteLen<(int)( sizeof(s_Paste)/sizeof(s_Paste[0]) ) ) s_Paste[s_PasteLen++] = (unsigned short)ch;
+}
+
+static void PasteHook()
+{
+	static BOOL bHooked = FALSE;
+	if ( bHooked ) return;
+	bHooked = TRUE;
+	EM_ASM( {
+		var send = function( t ) {
+			if ( !t ) return;
+			t = String( t );
+			for ( var i = 0; i < t.length && i < 200; i++ ) {
+				var c = t.charCodeAt( i );
+				Module['_PtWeb_PasteChar']( c < 32 ? 32 : c );		/* line breaks and tabs: spaces */
+			}
+		};
+		var mine = function( e ) { var n = e.target && e.target.tagName; return n != 'INPUT' && n != 'TEXTAREA'; };
+		var got = 0;
+		document.addEventListener( 'paste', function( e ) {
+			if ( !mine( e ) ) return;
+			var t = e.clipboardData && e.clipboardData.getData( 'text' );
+			if ( t ) { got = Date.now(); send( t ); e.preventDefault(); }
+		}, true );
+		// SDL may swallow the key, so no paste event comes: read the clipboard ourselves
+		document.addEventListener( 'keydown', function( e ) {
+			if ( !( e.ctrlKey || e.metaKey ) || ( e.key != 'v' && e.key != 'V' ) || !mine( e ) ) return;
+			var t0 = Date.now();
+			setTimeout( function() {
+				if ( got >= t0 || !navigator.clipboard || !navigator.clipboard.readText ) return;
+				navigator.clipboard.readText().then( function( t ) { if ( got < t0 ) { got = Date.now(); send( t ); } } ).catch( function() {} );
+			}, 80 );
+		}, true );
+	} );
+}
+
+static void PasteFlush()
+{
+	int n = s_PasteLen;
+	s_PasteLen = 0;
+	if ( !n || !hFocusWnd ) return;		// no chat box open: drop it
+	for ( int i=0; i<n; i++ ) {
+		WCHAR w = (WCHAR)s_Paste[i];
+		if ( w<32 ) continue;
+		char mb[8];
+		int nb = WideCharToMultiByte( CP_ACP, 0, &w, 1, mb, sizeof(mb), NULL, NULL );
+		for ( int k=0; k<nb; k++ ) SendToGame( WM_CHAR, (BYTE)mb[k], 1 );
+	}
+}
+#endif
+
 // SDL input -> window procedures (no yielding; also called from PeekMessage on the web)
 void PtPlat_PumpInput()
 {
 	if ( !s_pWindow ) return;
+#ifdef PT_WEB
+	PasteHook();
+	PasteFlush();
+#endif
 	SDL_Event e;
 	while ( SDL_PollEvent( &e ) ) {		// also dispatches the Win32 message queue
 #ifdef PT_WEB

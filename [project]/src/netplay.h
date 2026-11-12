@@ -79,6 +79,9 @@ int NetWorkPlay();
 int AddChatBuff( char *szMsg , DWORD dwIP );
 //채팅창에 문자 삽입
 int AddChatBuff( char *szMsg );
+void ChatBar_Draw();				// the chat's scroll bar (netplay.cpp)
+int ChatBar_LButtonDown();
+int ChatBar_Wheel( int zDelta );
 //코드 암호 첵크섬 만들기
 DWORD EncodeParam( DWORD Param );
 

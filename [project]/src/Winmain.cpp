@@ -2020,7 +2020,7 @@ LONG APIENTRY WndProc(HWND hWnd,UINT messg,WPARAM wParam,LPARAM lParam)
 						//ImmSimulateHotKey(hwnd,IME_CHOTKEY_IME_NONIME_TOGGLE);
 						//ImmSimulateHotKey(hTextWnd,IME_CHOTKEY_IME_NONIME_TOGGLE);
 						SetIME_Mode( 0 );		//IME 모드 전환
-						ChatScrollPoint = 0;
+						//ChatScrollPoint = 0;		// kept: the chat stays where it was scrolled (its scroll bar shows it)
 						//ImmSetConversionStatus( hImc , IME_CMODE_ALPHANUMERIC,IME_CMODE_ALPHANUMERIC );
 						//ImmSetConversionStatus( hImcEdit , IME_CMODE_ALPHANUMERIC,IME_CMODE_ALPHANUMERIC );
 					}
@@ -2285,6 +2285,7 @@ LONG APIENTRY WndProc(HWND hWnd,UINT messg,WPARAM wParam,LPARAM lParam)
 			break;
 
 		case WM_LBUTTONDOWN:
+			if ( ChatBar_LButtonDown() ) { MouseButton[0] = TRUE; break; }		// the chat's scroll bar
 			//######################################################################################
 			//작 성 자 : 오 영 석
 			if( g_IsDxProjectZoomIn <= 0 || g_iFzmCursorFocusGame )
@@ -2392,6 +2393,7 @@ LONG APIENTRY WndProc(HWND hWnd,UINT messg,WPARAM wParam,LPARAM lParam)
 			{
 				zDelta = (short) HIWORD(wParam);    // wheel rotation
 
+				if ( ChatBar_Wheel( zDelta ) ) break;		// over the chat: scroll it
 				if ( cSinHelp.sinGetScrollMove(-zDelta/16)==TRUE ) break;
 				if ( TJBscrollWheel( zDelta )==TRUE ) break;
 

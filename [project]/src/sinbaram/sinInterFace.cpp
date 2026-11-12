@@ -495,11 +495,15 @@ void cINTERFACE::Release()
 int sinWinSizeX[] = {1024,1280,1600};
 int sinWinSizeXindex[] = {2,6,11};
 int nCheckSkillDraw = 0;		//해외
+void ChatBar_Draw();		// netplay.cpp: the chat's scroll bar
+
 void cINTERFACE::Draw()
 {
 
-	int i = 0; 
+	int i = 0;
 	int j = 0;
+
+	ChatBar_Draw();
 	//dsDrawTexImage( MatMain , 0,  0, 256, 128 , 255 );  //인터페이스 메인 
 
 	dsDrawTexImage( cInterFace.MatMenu[0] , 800-256-256, 600-128, 256, 128 , 255 );  //인터페이스 메인      

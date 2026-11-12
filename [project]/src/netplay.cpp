@@ -207,8 +207,8 @@ int	rsRecvServer = TRUE;
 int	rsRecvUserServer = TRUE;
 int	rsRecvExtendServer = TRUE;
 
-#define CHATBUFF_MAX		64
-#define CHATBUFF_MASK		63
+#define CHATBUFF_MAX		256
+#define CHATBUFF_MASK		255			// (was 64: the chat keeps 256 lines to scroll back through)
 
 DWORD dwMyIP;
 
@@ -5501,6 +5501,80 @@ int ChatBuffSort()
 	return TRUE;
 }
 //채팅 정보 화면에 표시 ( 보조 )
+/*----------------------------------------------------------------------------*
+*	The chat's scroll bar: DisplayChatMessage2 says where the main chat is,
+*	cINTERFACE::Draw draws it (ChatBar_Draw), Winmain feeds it the mouse wheel and
+*	clicks (ChatBar_Wheel / ChatBar_LButtonDown). ChatScrollPoint counts messages back.
+*-----------------------------------------------------------------------------*/
+extern POINT pCursorPos;
+extern int MouseButton[3];
+int dsDrawColorBox( DWORD Color ,int x, int y, int sizeX, int sizeY );
+static int ChatBarX = 0, ChatBarTop = 0, ChatBarBottom = 0, ChatBarTotal = 0, ChatBarVisible = 0, ChatBarDrag = 0;
+static DWORD ChatBarTime = 0;
+
+static void ChatBarSet( int x , int top , int bottom , int total , int visible )
+{
+	ChatBarX = x < 2 ? 2 : x;
+	ChatBarTop = top;
+	ChatBarBottom = bottom;
+	ChatBarTotal = total;
+	ChatBarVisible = visible;
+	ChatBarTime = dwPlayTime;
+}
+static int ChatBar_MaxScroll()
+{
+	int m = ChatBarTotal - ChatBarVisible;
+	return m>0 ? m : 0;
+}
+static int ChatBar_Shown()
+{
+	return ( dwPlayTime-ChatBarTime )<1000 && ChatBarBottom>ChatBarTop+20 && ChatBar_MaxScroll()>0;
+}
+static void ChatBar_SetFromY( int y )
+{
+	int h = ChatBarBottom-ChatBarTop;
+	int ms = ChatBar_MaxScroll();
+	int p = h>0 ? ( ms*( ChatBarBottom-y ) )/h : 0;
+	ChatScrollPoint = p<0 ? 0 : ( p>ms ? ms : p );
+}
+void ChatBar_Draw()
+{
+	if ( ChatBarDrag ) {
+		if ( !MouseButton[0] ) ChatBarDrag = 0;
+		else ChatBar_SetFromY( pCursorPos.y );
+	}
+	if ( !ChatBar_Shown() ) return;
+	int h = ChatBarBottom-ChatBarTop;
+	int ms = ChatBar_MaxScroll();
+	int th = ( h*ChatBarVisible )/( ChatBarTotal>0 ? ChatBarTotal : 1 );
+	if ( th<14 ) th = 14;
+	if ( th>h ) th = h;
+	int sp = ChatScrollPoint<0 ? 0 : ( ChatScrollPoint>ms ? ms : ChatScrollPoint );
+	int pos = ms ? ( ( h-th )*sp )/ms : 0;		// from the bottom (the newest)
+	dsDrawColorBox( RGBA_MAKE( 0,0,0,110 ) , ChatBarX , ChatBarTop , 6 , h );
+	dsDrawColorBox( RGBA_MAKE( 222,190,120,215 ) , ChatBarX+1 , ChatBarBottom-pos-th , 4 , th );
+}
+int ChatBar_LButtonDown()
+{
+	if ( !ChatBar_Shown() ) return FALSE;
+	int x = pCursorPos.x, y = pCursorPos.y;
+	if ( x<ChatBarX-5 || x>ChatBarX+11 || y<ChatBarTop || y>ChatBarBottom ) return FALSE;
+	ChatBarDrag = 1;
+	ChatBar_SetFromY( y );
+	return TRUE;
+}
+int ChatBar_Wheel( int zDelta )
+{
+	if ( !ChatBar_Shown() ) return FALSE;
+	int x = pCursorPos.x, y = pCursorPos.y;
+	if ( x<0 || x>ChatBarX+300 || y<ChatBarTop-6 || y>ChatBarBottom+6 ) return FALSE;
+	int ms = ChatBar_MaxScroll();
+	ChatScrollPoint += zDelta>0 ? 3 : -3;
+	if ( ChatScrollPoint>ms ) ChatScrollPoint = ms;
+	if ( ChatScrollPoint<0 ) ChatScrollPoint = 0;
+	return TRUE;
+}
+
 int DisplayChatMessage3( HDC hdc , int x, int y , int StrMax , int LineMax , int Mode )
 {
 	int result;
@@ -5545,6 +5619,13 @@ int DisplayChatMessage2( HDC hdc , int x, int y , int StrMax , int LineMax )
 
 	fl_Count = DispChatMode;
 	if ( fl_Count<0 ) fl_Count = 0;
+	{	// as far back as the buffer goes (it was a fixed 32)
+		int total = ChatBuffCnt2[fl_Count]<CHATBUFF_MAX ? ChatBuffCnt2[fl_Count] : CHATBUFF_MAX;
+		int ms = total-LineMax;
+		if ( ms<0 ) ms = 0;
+		if ( ChatScrollPoint>ms ) ChatScrollPoint = ms;
+	}
+	int yBottom = y;
 
 	start = ChatBuffCnt2[fl_Count]-1-ChatScrollPoint;
 	end = ChatBuffCnt2[fl_Count]-32-ChatScrollPoint;
@@ -5727,6 +5808,11 @@ int DisplayChatMessage2( HDC hdc , int x, int y , int StrMax , int LineMax )
 				}
 			//}
 		}
+	}
+
+	if ( LineMax>=8 ) {		// the main chat: where its scroll bar goes (ChatBar_Draw)
+		int total = ChatBuffCnt2[fl_Count]<CHATBUFF_MAX ? ChatBuffCnt2[fl_Count] : CHATBUFF_MAX;
+		ChatBarSet( x-11 , yBottom-(LineMax-1)*12-2 , yBottom+12 , total , DispChatMsgHeight );
 	}
 
 	return TRUE;
