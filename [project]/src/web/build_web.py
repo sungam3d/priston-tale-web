@@ -48,6 +48,9 @@ def main():
     env = emsdk_env()
     emxx = os.path.join(EMSDK, 'upstream', 'emscripten', 'em++.exe')
     flags = open(os.path.join(HERE, 'emflags.txt')).read().split()
+    # extra defines for a test build, e.g. PT_DEFINES=PT_SERVER_PORT=10008 (a server beside the live one);
+    # a changed define is not a changed file: delete web\obj to rebuild with it
+    flags += ['-D' + d for d in os.environ.get('PT_DEFINES', '').split()]
     opt = ['-O2'] if release else ['-O1', '-g2']
     incs = ['-I' + os.path.join(PTWIN, 'include'), '-I' + SRC] + ['-I' + os.path.join(SRC, d) for d in
             ['smLib3d', 'sinbaram', 'HoBaram', r'HoBaram\NewEffect\HoEffect\Script']] + ['-idirafter', MINGW]
@@ -114,6 +117,8 @@ def main():
         '-sSTACK_SIZE=4MB', '--pre-js', os.path.join(HERE, 'pre.js'), '--shell-file', os.path.join(HERE, 'shell.html'),
         '-sEXPORTED_RUNTIME_METHODS=addRunDependency,removeRunDependency,FS', '-sEXPORTED_FUNCTIONS=_main,_malloc,_free,_PtNet_Receive', '-sFORCE_FILESYSTEM', '-sERROR_ON_UNDEFINED_SYMBOLS=1', '-Wl,--error-limit=0',
         '-o', os.path.join(outdir, 'game.html')] + ([] if release else ['-sASSERTIONS=1'])
+    # extra link flags for a test build, e.g. PT_LINK_FLAGS=--profiling-funcs (function names in crash stacks)
+    link += os.environ.get('PT_LINK_FLAGS', '').split()
     rsp = os.path.join(objdir, 'link.rsp')
     open(rsp, 'w').write('\n'.join('"%s"' % a.replace('\\', '/') if ' ' in a else a.replace('\\', '/') for a in link[1:]))
     r = subprocess.run([emxx, '@' + rsp], capture_output=True, text=True, errors='replace', env=env, cwd=SRC)

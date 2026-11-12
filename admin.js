@@ -41,7 +41,7 @@
 		'#bar .pt-admin-on{border-color:#9a7430;color:#e8cf8e}' +
 		'.pt-help{position:fixed;inset:0;background:rgba(5,5,8,.72);display:flex;align-items:flex-start;justify-content:center;z-index:50;overflow:auto;padding:24px 16px}' +
 		'.pt-help[hidden]{display:none}' +
-		'.pt-help-box{background:#15151c;border:1px solid #3a3426;border-radius:8px;color:#d8d4c8;max-width:680px;width:100%;padding:20px 22px;font:13.5px/1.55 system-ui,sans-serif;box-sizing:border-box}' +
+		'.pt-help-box{background:#15151c;border:1px solid #3a3426;border-radius:8px;color:#d8d4c8;max-width:760px;width:100%;padding:20px 22px;font:13.5px/1.55 system-ui,sans-serif;box-sizing:border-box}' +
 		'.pt-help-box h2{font:600 19px/1.3 Georgia,"Times New Roman",serif;color:#e8cf8e;margin:0 0 4px}' +
 		'.pt-help-box h3{font:600 14px/1.3 system-ui,sans-serif;color:#e8cf8e;margin:18px 0 6px}' +
 		'.pt-help-box p{margin:6px 0;color:#a8a294}' +
@@ -82,6 +82,16 @@
 	bar.insertBefore(btnAdmin, anchor);
 	bar.insertBefore(btnHelp, anchor);
 
+	// the test site's server has *GM_CHEATS on (server.ini): its section shows only there
+	var testSite = true;	// live runs *GM_CHEATS too now
+
+	// one table: rows of [command, arguments, explanation]
+	function table(rows) {
+		return '<table>' + rows.map(function (r) {
+			return '<tr><td><code>' + r[0] + '</code>' + (r[1] ? ' <i>' + r[1] + '</i>' : '') + '</td><td>' + r[2] + '</td></tr>';
+		}).join('') + '</table>';
+	}
+
 	var panel = document.createElement('div');
 	panel.className = 'pt-help';
 	panel.hidden = true;
@@ -89,11 +99,27 @@
 	panel.setAttribute('aria-label', 'Admin hotkeys and commands');
 	panel.innerHTML =
 		'<div class="pt-help-box">' +
-		'<div class="pt-help-head"><div><h2>Admin mode</h2>' +
+		'<div class="pt-help-head"><div><h2>Commands</h2>' +
 		'<p>' + (on ? 'Admin mode is <b>on</b> in this browser.' : 'Admin mode is <b>off</b>. Click <b>Admin mode</b> under the game to turn it on; the game restarts.') +
-		' It applies from your next login.</p></div><button type="button" id="btnHelpClose">Close</button></div>' +
+		' It applies from your next login. Type commands in the chat box and press <kbd>Enter</kbd>. ' +
+		'<i>Italic</i> words are what you fill in; [brackets] mean optional. Names with spaces go in quotes.</p></div>' +
+		'<button type="button" id="btnHelpClose">Close</button></div>' +
 
-		'<h3>Hotkeys</h3><table>' +
+		'<h3>Everyone (no admin mode needed)</h3>' + table([
+			['/:', 'name message', 'Whisper to a player (<code>/;</code> works too)'],
+			['//party', 'name', 'Ask a player to join your party'],
+			['/TRADE&gt;', 'message', 'Trade chat, seen by everyone on the server'],
+			['/CLAN&gt;', 'message', 'Clan chat'],
+			['/couple', 'name', 'Warp to your partner (needs the couple ring)'],
+			['/disable_whisper', '', 'Block whispers'],
+			['/enable_whisper', '', 'Allow whispers again'],
+			['/time', '', 'Show your play time'],
+			['/latency', 'ms', 'Network smoothing, 0&ndash;500 ms (default 30; under 10 turns it off)'],
+			['/camera_wave_off', '', 'Stop the camera swaying'],
+			['/camera_wave_on', '', 'Let the camera sway again']
+		]) +
+
+		'<h3>Hotkeys (admin mode)</h3><table>' +
 		'<tr><td><kbd>Shift</kbd> while moving</td><td>Run very fast</td></tr>' +
 		'<tr><td><kbd>N</kbd> while moving</td><td>Move freely through walls and objects</td></tr>' +
 		'<tr><td><kbd>B</kbd> + click a stat <b>+</b></td><td>Add 10 stat points at once (when you have 10 or more)</td></tr>' +
@@ -102,26 +128,128 @@
 		'<tr><td><kbd>Shift</kbd>+<kbd>F3</kbd> / <kbd>F4</kbd></td><td>Cycle through NPC / character models</td></tr>' +
 		'</table>' +
 
-		'<h3>Chat commands (level 1: everyone in admin mode)</h3><table>' +
-		'<tr><td><code>/userid</code> <i>account</i></td><td>Show a player\'s details by account ID</td></tr>' +
-		'<tr><td><code>/username</code> <i>character</i></td><td>Show a player\'s details by character name</td></tr>' +
-		'</table>' +
+		(testSite ?
+		'<h3>Test server cheats</h3>' +
+		'<p>This server runs with <code>*GM_CHEATS</code>, so these work at admin level 1. Log out and back in after a big change if anything looks off.</p>' + table([
+			['/MakeMeLevel', 'level', 'Go to that level with the right experience, stat and skill points (saves at once)'],
+			['/DeckMeOut!', '[aging]', 'Put on the best gear you can wear for your level and class, at its best stats and specialised for your class: weapon (and shield or orb), armour or robe, boots, gauntlets, armlet, amulet, sheltom and two rings. Add a number to age it, e.g. <code>/DeckMeOut! 10</code>. What you wore goes to your bag, or the ground when it is full'],
+			['/IDDQD', '', 'God mode on or off: your life, mana and stamina stay full'],
+			['/GiveMeMoney!', 'amount', 'Drop gold at your feet, up to 1,000,000 at a time'],
+			['/GiveMeExp!', 'level', 'Set your experience to the start of that level (server side only; <code>/ShowMeTheExp!</code> is the same)'],
+			['/@get', 'item code', 'Drop an item at your feet, e.g. <code>/@get ws220</code> (Avenger Sword)'],
+			['/@put', 'name item code', 'Give an item to a player'],
+			['/PassRankUp', '', 'Rank up one step without the quest, up to rank 5'],
+			['/LeeResetRankUp', '1&ndash;5', 'Set your rank back to that rank'],
+			['/Lee5thRankUp', 'step', 'Jump to a step of the 5th rank-up quest (1&ndash;10)']
+		]) : '') +
+
+		'<h3>Admin level 1 (admin mode on)</h3>' +
+		'<p>Server commands:</p>' + table([
+			['/user', '', 'Count the players and active monsters on the server'],
+			['/area_users', '', 'Count the players in your area'],
+			['/userid', 'account', 'Show a player\'s account, character, IP and time online, by account ID'],
+			['/username', 'character', 'The same, by character name'],
+			['/usercode', 'number', 'The same, by the player\'s connection number'],
+			['/hide', '', 'Turn invisible to players'],
+			['/show', '', 'Turn visible again'],
+			['/monster', 'name [count]', 'Spawn monsters (up to 20) by their exact name in the monster files, e.g. <code>/monster "Lord Hopy"</code>. Most names are Korean. They drop nothing below level 4'],
+			['/mymonster', 'name [count]', 'Spawn monsters that fight for you for 4 minutes'],
+			['/event_monster', 'name minutes chance', 'Make a monster appear from kills for some minutes (chance out of 1000)'],
+			['/area_monster', '', 'Show the spawn points and monster counts of the field you are in'],
+			['/arena_monster', '', 'Spawn the arena monster (Fury)'],
+			['/specific', 'class code', 'For 1 minute, items you make are specialised to that class'],
+			['/itemdaysrevision', 'days', 'For 1 minute, shift new items\' dates by up to &plusmn;30 days'],
+			['/get_forceorb', '', 'Show your active force orb: time left and damage'],
+			['/get_primitem', '', 'Show the time left on your premium items'],
+			['/get_currency', '', 'Show the gold players have spent: crafting, aging, shops, potions, force orbs, warps, skills'],
+			['/get_potion', '', 'Show potion use (needs the potion monitor)'],
+			['/get_expgametime', '', 'Show your play-time experience bonus'],
+			['/get_event_level', '', 'Show your star ticket event level'],
+			['/get_bosstime', '', 'Show the minute of the hour bosses spawn'],
+			['/localtime', '', 'Show the server\'s clock'],
+			['/get_guid', '', 'Show your login IDs'],
+			['/dm_info', '', 'Show your damage limits (the server\'s damage check)'],
+			['/netlog', '', 'Send yourself the server\'s network log'],
+			['/comic_player', 'name [minutes]', 'Give a player a big head'],
+			['/player_sight', '[far]', 'How far players see each other during the siege: nothing = near, anything = far'],
+			['/sod_view', '', 'Show the Bellatra (SoD) scores'],
+			['/sod_enter', 'n', 'Enter a Bellatra (SoD) round'],
+			['/show_blackuser', '', 'List blocked players'],
+			['/reset_blackuser', '', 'Clear the block list'],
+			['/free_blackuser', 'name', 'Unblock one player']
+		]) +
+		'<p>Bless Castle:</p>' + table([
+			['/start_castle', '[minutes]', 'Start the castle siege'],
+			['/end_castle', '', 'End the siege'],
+			['/set_castle_time', 'minutes', 'Set the minutes left in the siege'],
+			['/set_castle_master', '[clan]', 'Give the castle to a clan (none to clear)'],
+			['/get_castle_info', '', 'Show the castle owner clan, tax and your clan'],
+			['/get_fountain_info', '', 'Show the Soul Fountain\'s potions and timers'],
+			['/reset_fountain_time', '', 'Reset the Soul Fountain timers'],
+			['/set_castle_tax', '', 'Apply the owner\'s chosen next tax and clan skill now']
+		]) +
+		'<p>Commands the game runs itself (in your browser):</p>' + table([
+			['/field', 'number', 'Warp to a field (map) by its number'],
+			['/player_location', 'x y z', 'Move to exact coordinates'],
+			['/save', '', 'Save your character now'],
+			['/expup', 'amount', 'Add experience on your side only (the server does not move with it; use with care)'],
+			['/dark', 'n', 'Lighting, -255 (bright) to 255 (dark); 0 = normal'],
+			['/color', 'r g b', 'Tint the world, each -109 to 109'],
+			['/time_offset', 'n', 'Shift the game clock (day and night)'],
+			['/talk', 'text', 'Make the selected monster say something (click it first)'],
+			['/PassRankUp', '', 'Rank up one step without the quest'],
+			['/LeeResetRankUp', 'rank', 'Set your rank back to that rank'],
+			['/body', 'file', 'Change your body model'],
+			['/mymodel', 'file', 'Change your whole model (levels 1&ndash;3 only)'],
+			['/myhairmodel', 'n', 'Change your head'],
+			['/face_path', 'file', 'Change your head by its file path'],
+			['/ren', 'name', 'Rename a character loaded with /load'],
+			['/LeeWhereIs', 'level', 'Change your level on your side only; prefer /MakeMeLevel'],
+			['/LeeHelpMeSkill', '', 'Reset your skills and get the points back'],
+			['/LeeHelpMeStat', '', 'Reset your stats and get the points back'],
+			['/LeeResetQuest', 'level', 'Reset a level quest: 30, 55, 70, 80, 85, 90, 802 or 902'],
+			['/Lee3thRankUp', '', 'Pass the 3rd rank-up quest'],
+			['/Lee4thRankUp', 'step', 'Jump to a step of the 4th rank-up quest'],
+			['/LeeForce', '', 'Refill your force orb\'s time'],
+			['/LeeShotKeyReset', '', 'Clear your skill hotkeys'],
+			['/PassMature', '', 'Unlock the old developer cheat keys. They change things on your side only, so saves can be refused: avoid'],
+			['/FuckingInven!', '', 'Delete <b>everything</b> in your inventory and all your gold. No undo'],
+			['/MrIm\'s100', '1 or 2', 'Level 100 quest: 1 = cancel it, 2 = jump to its last step'],
+			['/MrIm\'sbeginner', 'any', 'Cancel the beginner quests in progress']
+		]) +
 
 		'<h3>Higher levels (server owner)</h3>' +
 		'<p>Levels 2&ndash;4 need a password set in <code>server.ini</code> on the server (restart server.exe after editing):</p>' +
 		'<pre>*ADMIN_NAME      GameMaster\n*ADMIN_COMMAND   password-for-level-2\n*ADMIN_COMMAND   password-for-level-3\n*ADMIN_COMMAND   password-for-level-4</pre>' +
 		'<p>In game, with admin mode on, whisper the name and a password: <code>/:GameMaster password-for-level-4</code>. The reply says <i>Command Level (3)</i> for level 4 (the game counts from level 2 as 1).</p>' +
-		'<table>' +
-		'<tr><td><code>/where</code> <i>name</i></td><td>Level 2: find where a player is</td></tr>' +
-		'<tr><td><code>/near</code> <i>name</i></td><td>Level 2: go to a player</td></tr>' +
-		'<tr><td><code>/call</code> <i>name</i></td><td>Level 2: bring a player to you</td></tr>' +
-		'<tr><td><code>/kick</code> <i>name</i></td><td>Level 2: disconnect a player</td></tr>' +
-		'<tr><td><code>/kill</code> <i>name</i></td><td>Level 2: kill a player\'s character</td></tr>' +
-		'<tr><td><code>/open_warehouse</code></td><td>Level 2: open your warehouse anywhere</td></tr>' +
-		'<tr><td><code>/@get</code> <i>item code</i></td><td>Level 4: create an item, by its code from the item files</td></tr>' +
-		'<tr><td><code>/GiveMeExp!</code> <i>level</i></td><td>Level 4: set your experience to the start of that level</td></tr>' +
-		'<tr><td><code>/GiveMeMoney!</code> <i>amount</i></td><td>Level 4: get gold (up to 1,000,000 at a time)</td></tr>' +
-		'</table>' +
+		'<p>Level 2:</p>' + table([
+			['/where', 'name', 'Find where a player is'],
+			['/near', 'name', 'Go to a player'],
+			['/call', 'name', 'Bring a player to you'],
+			['/kick', 'name', 'Disconnect a player'],
+			['/kill', 'name', 'Kill a player\'s character'],
+			['/open_warehouse', '[account [n]]', 'Open your warehouse anywhere, or another account\'s'],
+			['/insert', 'account character', 'Add a character to an account'],
+			['/shutdown', '', 'Shut the server down (players are saved)']
+		]) +
+		'<p>Level 3:</p>' + table([
+			['/@get', 'item code', 'Drop an item at your feet, by its code in the item files'],
+			['/@put', 'name item code', 'Give an item to a player'],
+			['/AgingSetting', 'item code grade class code', 'Make an aged item'],
+			['/get_money', '', 'Show the gold the server has on record for you'],
+			['/load', 'name', 'Load a player\'s saved character into your game to look at (saving is off until you log in again)'],
+			['/deload', 'name', 'Load a deleted character the same way'],
+			['/baload', 'name', 'Load a character\'s backup the same way']
+		]) +
+		'<p>Level 4:</p>' + table([
+			['/GiveMeMoney!', 'amount', 'Drop gold at your feet, up to 1,000,000 at a time'],
+			['/GiveMeExp!', 'level', 'Set your experience to the start of that level'],
+			['/MakeMeLevel', 'level', 'Go to that level with the right experience'],
+			['/init_premiumitem', 'n', 'Reset premium items'],
+			['/set_absorb', 'value', 'Set the selected monster\'s absorb (click it first)'],
+			['/set_pcbang', 'code', 'Set the PC-room bonus'],
+			['/easy_castle', '', 'Make the castle siege easy (testing)']
+		]) +
 		'</div>';
 	document.body.appendChild(panel);
 

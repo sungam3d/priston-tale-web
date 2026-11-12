@@ -1478,9 +1478,20 @@ int cSHOP::SendBuyItemToServer(sITEM *pItem , int ItemCount )
 //아이템 사기 
 int cSHOP::RecvBuyItemToServer(sITEM *pItem ,int ItemCount )
 {
+	if ( smConfig.DebugMode ) {
+		// test: the bought item's serial as it arrives, and the struct layout (compare with the
+		// server's LogDebug\InvenTrace.log "layout" line)
+		char szDbg[160];
+		extern int AddChatBuff( char *szMsg );
+		wsprintf( szDbg , "BUY in: code %d serial %d / %d | sITEM %d, info at %d, header at %d" ,
+			(int)pItem->sItemInfo.CODE , (int)pItem->sItemInfo.ItemHeader.Head , (int)pItem->sItemInfo.ItemHeader.dwChkSum ,
+			(int)sizeof(sITEM) , (int)((char *)&pItem->sItemInfo - (char *)pItem) ,
+			(int)((char *)&pItem->sItemInfo.ItemHeader - (char *)&pItem->sItemInfo) );
+		AddChatBuff( szDbg );
+	}
 
 	BuyItemServerFlag = 0;
-	CheckCharForm();//인증 
+	CheckCharForm();//인증
 
 	//현재 포션은 잠시 내버려둔다 
     //--------------------------------------------------------------------------//
@@ -1508,8 +1519,14 @@ int cSHOP::RecvBuyItemToServer(sITEM *pItem ,int ItemCount )
 				return FALSE;
 			}
 			
-			if(cInvenTory.AutoSetInvenItem(pItem)){ //인벤토리에 셋팅 상점에서 셋팅시에는 플랙을 준다 
-				cInvenTory.SetItemToChar(); //파라메터 셋팅 
+			if(cInvenTory.AutoSetInvenItem(pItem)){ //인벤토리에 셋팅 상점에서 셋팅시에는 플랙을 준다
+				cInvenTory.SetItemToChar(); //파라메터 셋팅
+				if ( smConfig.DebugMode ) {
+					char szDbg[128];
+					extern int AddChatBuff( char *szMsg );
+					wsprintf( szDbg , "BUY kept: serial %d / %d" , (int)pItem->sItemInfo.ItemHeader.Head , (int)pItem->sItemInfo.ItemHeader.dwChkSum );
+					AddChatBuff( szDbg );
+				}
 				if(ShowShopItemIndex){
 					ShowShopItem[ShowShopItemIndex-1].Flag = 0; //아이템을 없애준다 
 				}
@@ -1599,6 +1616,7 @@ int cSHOP::SellItemToShop(sITEM *pItem,int ItemCount)
 
 			break;
 			case 3:
+			case 4:		// tier 5: the fifth rank
 				if( ( sinChar->Money + pItem->SellPrice*ItemCount) >=100000000 ){
 					cMessageBox.ShowMessage(MESSAGE_OVER_MONEY);
 					cInvenTory.ReFormInvenItem();
@@ -2666,6 +2684,7 @@ int cMYSHOP::GetLimitMoney(int Money)
 				return ((50000000) - (Money + sinChar->Money));
 			break;
 			case 3:
+			case 4:		// tier 5: the fifth rank (it got no room at all)
 				return ((100000000) - (Money + sinChar->Money));
 			break;
 

@@ -1038,9 +1038,9 @@ void cINTERFACE::Draw()
 	}
 
 	//전업 버튼
-	if(SkillMasterFlag && !ShowSkillUpInfo && (CheckQuestButtonShow1 ||CheckQuestButtonShow2 ||CheckQuestButtonShow3) )    //스킬정보를 보여주는 옵션이 아닐경우에만 전업 버튼을 띄운다 
+	if(SkillMasterFlag && !ShowSkillUpInfo && (CheckQuestButtonShow1 ||CheckQuestButtonShow2 ||CheckQuestButtonShow3 || sinChangeJobButtonShow5) )    //스킬정보를 보여주는 옵션이 아닐경우에만 전업 버튼을 띄운다
 	{
-		if(sinChangeJobButtonShow || sinChangeJobButtonShow2 || sinChangeJobButtonShow3 || sinChangeJobButtonShow4 )
+		if(sinChangeJobButtonShow || sinChangeJobButtonShow2 || sinChangeJobButtonShow3 || sinChangeJobButtonShow4 || sinChangeJobButtonShow5 )
 		{
 			DrawSprite(240,380,lpSelectChangeJob[1],0,0,44,44); 
 			nCheckSkillDraw = 1;
@@ -1909,6 +1909,106 @@ void cINTERFACE::RButtonUp(int x , int y)
 /*----------------------------------------------------------------------------*
 *							    KeyDown
 *-----------------------------------------------------------------------------*/	
+/*----------------------------------------------------------------------------*
+*	GM /MakeMeLevel <level>. The chat line goes to the server, which moves its
+*	own copy of the level and the start exp first and then sends
+*	smTRANSCODE_GM_SETLEVEL back here. Doing it in that order lets the next save
+*	pass the server's level-jump and exp-gain checks.
+*-----------------------------------------------------------------------------*/
+int GetSkillPoint_LevelQuest( int Level , DWORD dwLevelQuestLog );
+int GetStatePoint_LevelQuest( int Level , DWORD dwLevelQuestLog );
+int SendPlayUpdateInfo();
+int AddChatBuff( char *szMsg );
+int SetSaveSoon( int ms );
+
+// SaveNow: FALSE when typed here (the chat line may not have reached the server yet,
+// so the save waits a few seconds); TRUE when the server's smTRANSCODE_GM_SETLEVEL arrives.
+int sinGM_ApplyLevel( int Level , int SaveNow )
+{
+	int cnt, Point, EPoint, Total, NewState, Up;
+
+	if ( !lpCurPlayer || Level<1 || Level>CHAR_LEVEL_MAX ) return FALSE;
+
+	if ( SaveNow && sinChar->Level==Level ) {
+		// already applied when it was typed: just save, now that the server has it too
+		SaveGameData();
+		return TRUE;
+	}
+
+	Up = ( Level>sinChar->Level );
+
+	CheckCharForm();
+	sinChar->Level = Level;
+	SetExp64( sinChar , ExpLevelTable[Level-1] );		// the exact start of the level
+	CodeXorCharInfo_Exp();
+	sinChar->Next_Exp = (int)ExpLevelTable[Level];
+
+	// Stat points: the same total the server's ReformCharStatePoint checks on save.
+	NewState = 99+((Level-1)*5) + GetStatePoint_LevelQuest( Level , sinQuest_levelLog );
+	Total = sinChar->Strength+sinChar->Spirit+sinChar->Talent+sinChar->Dexterity+sinChar->Health;
+	if ( Total>NewState ) {
+		// Going down: the spent stats no longer fit, so hand them back first.
+		ReformCharForm();
+		cCharStatus.InitCharStatus(1);
+		CheckCharForm();
+		Total = sinChar->Strength+sinChar->Spirit+sinChar->Talent+sinChar->Dexterity+sinChar->Health;
+	}
+	sinChar->StatePoint = NewState-Total;
+	if ( sinChar->StatePoint<0 ) sinChar->StatePoint = 0;
+
+	// Stop CheckLevel() from adding the stat points a second time.
+	OldLevel = Level;
+	OldLevelTemp = OldLevel+176;
+	ReformCharForm();
+
+	// Skill points, worked out the way RestoreSkill() does at login.
+	Point = 0; EPoint = 0;
+	for(cnt=1;cnt<13;cnt++) Point += sinSkill.UseSkill[cnt].Point;
+	for(cnt=13;cnt<SIN_MAX_USE_SKILL;cnt++) EPoint += sinSkill.UseSkill[cnt].Point;
+
+	if ( ( Level>=10 ? ((Level-8)/2)+GetSkillPoint_LevelQuest(Level,sinQuest_levelLog) : 0 )<Point ||
+		 ( Level>=60 ? ((Level-58)/2) : 0 )<EPoint ) {
+		// Going down: more skill points learned than the level allows, so reset them.
+		cSkill.InitSkillPoint(1);
+		Point = 0; EPoint = 0;
+	}
+
+	sinSkill.SkillPoint = 0;
+	if ( Level>=10 ) sinSkill.SkillPoint = ((Level-8)/2)-Point+GetSkillPoint_LevelQuest( Level , sinQuest_levelLog );
+	sinSkill.SkillPoint4 = 0;
+	if ( Level>=60 ) sinSkill.SkillPoint4 = ((Level-58)/2)-EPoint;
+	if ( sinSkill.SkillPoint<0 ) sinSkill.SkillPoint = 0;
+	if ( sinSkill.SkillPoint4<0 ) sinSkill.SkillPoint4 = 0;
+	cSkill.InitReformSkillPointForm();
+
+	cInvenTory.SetItemToChar();
+	sinSetLife( sinChar->Life[1] );
+	sinSetMana( sinChar->Mana[1] );
+	sinSetStamina( sinChar->Stamina[1] );
+	ResetEnergyGraph(4);		// the bars just jumped to the new maximum: not a hacked bar (7110 ban)
+	ReformCharForm();
+
+	if ( Up ) {
+		StartEffect( lpCurPlayer->pX,lpCurPlayer->pY+32*fONE,lpCurPlayer->pZ , EFFECT_LEVELUP1 );
+		esPlaySound( 7, 400 );
+	}
+
+	SendPlayUpdateInfo();
+	{
+		char szGmMsg[80];
+		if ( !SaveNow ) {
+			SetSaveSoon( 3000 );
+			wsprintf( szGmMsg , "GM: level %d, saving in 3 seconds" , sinChar->Level );
+		}
+		else if ( SaveGameData() )
+			wsprintf( szGmMsg , "GM: level %d, saving" , sinChar->Level );
+		else
+			wsprintf( szGmMsg , "GM: level %d, type /save" , sinChar->Level );
+		AddChatBuff( szGmMsg );
+	}
+	return TRUE;
+}
+
 char InputSecretCode[256];
 char sinBuff[256];
 int  ResetQuset3Flag = 0;
@@ -1987,7 +2087,7 @@ void cINTERFACE::KeyDown()
 
 				sscanf( sinBuff, "%s %s", sinTestBuff5, sinTestBuff6 );			
 			
-				if ( !lstrcmp( sinTestBuff5 , "/\300\323\261\272100\304\371\275\272\306\256" ) || !lstrcmpi(sinBuff ,"/MrIm's100"))
+				if ( !lstrcmp( sinTestBuff5 , "/\300\323\261\272100\304\371\275\272\306\256" ) || !lstrcmpi(sinTestBuff5 ,"/MrIm's100"))	// the English name, compared like the Korean one (it was matched against the whole line, so it never saw its 1/2)
 				{
 					if(sinTestBuff6[0]){
 						#ifdef	_WINMODE_DEBUG
@@ -2048,6 +2148,17 @@ void cINTERFACE::KeyDown()
 						memset(sinBuff,0,sizeof(sinBuff));
 						#endif
 					}
+				}
+
+				// tier 5: /Lee5thRankUp <step> - the fifth rank-up quest at a step (0 clears it)
+				if ( lstrcmpi( sinTestBuff5 , "/Lee5thRankUp" )==0 )
+				{
+					#ifdef	_WINMODE_DEBUG
+					sinCompleteChangeJob5( atoi(sinTestBuff6) );
+					memset(sinTestBuff5,0,sizeof(sinTestBuff5));
+					memset(sinTestBuff6,0,sizeof(sinTestBuff6));
+					memset(sinBuff,0,sizeof(sinBuff));
+					#endif
 				}
 
 				if ( lstrcmp( sinTestBuff5 , "/\300\314\271\346\271\3743\302\367\304\371\275\272\306\256" )==0  || lstrcmp( sinTestBuff5 , "/Lee3thRankUp" )==0)
@@ -2222,9 +2333,14 @@ void cINTERFACE::KeyDown()
 				{
 					#ifdef	_WINMODE_DEBUG
 					SendChatMessageToServer("MeLee: it's good /(-_-)/ ");
-					sinChar->ChangeJob++; //전업을 한다 
-					if(sinChar->ChangeJob > 3)sinChar->ChangeJob = 3;
+					sinChar->ChangeJob++; //전업을 한다
+					if(sinChar->ChangeJob > 4)sinChar->ChangeJob = 4;		// 4: the fifth rank (tier 5 skills)
+					// finish it like a rank-up quest: title, face, skill window, saved
+					sinJobList = GetJobDataCode(sinChar->JOB_CODE , sinChar->ChangeJob);
+					if(sinJobList) lstrcpy(cInvenTory.JobName,sinJobList->szName2);
 					cSkill.SearchUseSkill();
+					SaveGameData();
+					ChangeJobFace();
 					memset(sinTestBuff5,0,sizeof(sinTestBuff5));
 					memset(sinTestBuff6,0,sizeof(sinTestBuff6));
 					memset(sinBuff,0,sizeof(sinBuff));
@@ -2259,6 +2375,16 @@ void cINTERFACE::KeyDown()
 							memset(&sinQuest_ChangeJob4,0,sizeof(sQUEST_CHANGEJOB3));
 							SaveGameData();
 							SendChatMessageToServer("MrLee:Reconnect again!! ");
+						}
+						if(ResetQuset3Flag == 5){		// the fifth rank back to the fourth (to test the rank-up again)
+							if(sinChar->ChangeJob>=4){
+								sinChar->ChangeJob=3;
+								sinJobList = GetJobDataCode(sinChar->JOB_CODE , sinChar->ChangeJob);
+								if(sinJobList) lstrcpy(cInvenTory.JobName,sinJobList->szName2);
+								ChangeJobFace();
+							}
+							SaveGameData();
+							SendChatMessageToServer("GM: rank 5 reset. Reconnect to refund the tier 5 skill points.");
 						}
 
 						memset(sinTestBuff5,0,sizeof(sinTestBuff5));

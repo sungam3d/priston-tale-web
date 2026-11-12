@@ -320,6 +320,46 @@ struct smCHARTOOL
 #define SKILL_PLAY_PET_ATTACK2		0xC1
 
 #define SKILL_PLAY_SOD_ITEM			0xD0
+
+// tier 5 (the fifth rank): 0xD1.. (the other classes' come next, 4 each)
+#define SKILL_PLAY_DOWN_HIT			0xD1
+#define SKILL_PLAY_POWER_DASH		0xD2
+#define SKILL_PLAY_MORTAL_BLOW		0xD3
+#define SKILL_PLAY_BLOODY_BERSERKER	0xD4
+#define SKILL_PLAY_LAND_MINING		0xD5		// Mechanician
+#define SKILL_PLAY_HYPER_SONIC		0xD6
+#define SKILL_PLAY_ROLLING_SMASH	0xD7
+#define SKILL_PLAY_POWER_ENHANCEMENT	0xD8
+#define SKILL_PLAY_DANCING_REAPER	0xD9		// Pikeman
+#define SKILL_PLAY_FINAL_SPEAR		0xDA
+#define SKILL_PLAY_AMPLIFIED		0xDB
+#define SKILL_PLAY_SIDE_SPIN_ATTACK	0xDC
+#define SKILL_PLAY_EVADE_SHOT		0xDD		// Archer
+#define SKILL_PLAY_THUNDER_ROPE		0xDE
+#define SKILL_PLAY_NATURE_SPLASH	0xDF
+#define SKILL_PLAY_CIRCLE_TRAP		0xE0
+#define SKILL_PLAY_SOUL_BREAKER		0xE1		// Knight
+#define SKILL_PLAY_CRESCENT_MOON	0xE2
+#define SKILL_PLAY_SAINT_BLADE		0xE3
+#define SKILL_PLAY_HOLY_BENEDIC		0xE4
+#define SKILL_PLAY_TALARIA			0xE5		// Atalanta
+#define SKILL_PLAY_GALAXY_COUP		0xE6
+#define SKILL_PLAY_SUMMON_ARCUDA	0xE7
+#define SKILL_PLAY_SNIPPY_FEAR		0xE8
+#define SKILL_PLAY_SPIRIT_IMPACT	0xE9		// Priestess
+#define SKILL_PLAY_PIERCING_ICE		0xEA
+#define SKILL_PLAY_SUMMON_RAMIEL	0xEB
+#define SKILL_PLAY_BLESSING_KRISHNA	0xEC
+#define SKILL_PLAY_SILRAPHIM		0xED		// Magician
+#define SKILL_PLAY_VIS_TENUS		0xEE
+#define SKILL_PLAY_PRIMA_IGNIS		0xEF
+#define SKILL_PLAY_THIRD_ANIMA		0xF2
+
+// A tier 5 skill's clip number in the class motion tables (char\tmABCD\M?Bip.inx):
+// those tables were built with a newer skill list (20 per class), so its clips are
+// matched by that number, not through SkillDataCode. 0 = not a tier 5 skill.
+int Tier5MotionSkillNum( int PlaySkillCode );
+
 //#define SKILL_PLAY_METEO			0xE0
 #define SKILL_PLAY_SPEACIAL			0xF0
 #define	SKILL_PLAY_LOVELY_LIFE		0xF1

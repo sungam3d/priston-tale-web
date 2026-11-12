@@ -34,12 +34,25 @@ static int UserCharacterPos[5][2] =
 	{ 70 ,-60 }
 };
 
-static int JobCharacterPos[5][2] = {
+// where the job screen's classes stand: a shallow arc, set for the race's class count by
+// SetJobCharacterLayout() (four classes give the original -75/-25/25/75 and -320/-330)
+static int JobCharacterPos[CHARACTER_JOB_MAX][2] = {
 	{ -75, -320},
 	{ -25, -330},
 	{  25, -330},
 	{  75, -320}
 };
+
+static void SetJobCharacterLayout( int count )
+{
+	int step = count<=4 ? 25 : 21;			// half the spacing
+	for( int cnt=0; cnt<CHARACTER_JOB_MAX; cnt++ ) {
+		int d = 2*cnt-(count-1);				// -(count-1) .. count-1, in half spaces
+		if ( d<0 ) d = -d;
+		JobCharacterPos[cnt][0] = (2*cnt-(count-1))*step;
+		JobCharacterPos[cnt][1] = -330 + (d*d-1)*10/8;
+	}
+}
 
 static int CharacterInfoPosi[5] = {362, 243, 488, 154, 588 };
 static char *szFileSpark[] = {
@@ -320,13 +333,32 @@ char *szMorArcherFaceName[2][3] = {
 
 
 
-int MorNewCharacterInit[4][6] = 
+int MorNewCharacterInit[NEW_CHAR_JOB_MAX][6] =
 {
 	//JobCode, Strentch, Sprit, Talent, Defence, Health
 	{6,        26,       13,     17,     19,      24}, //Knight
 	{5,        23,       15,     19,     19,      23}, //Atalanta
 	{8,        15,       28,     21,     15,      20}, //프리티스
-	{7,        16,      29,     19,     14,      21}  //매지션
+	{7,        16,      29,     19,     14,      21}, //매지션
+	{10,       15,       27,     20,     15,      22}, //Shaman
+	{0,         0,        0,      0,      0,       0}  //(none: Morion has five classes)
+};
+
+// the Shaman (Morion male E): body me001-me030, heads Mmh-E01..13 (a/b/c/d/t for 01..03)
+static char *szMorShamanBodyName[] = {
+	"char\\tmABCD\\me001.ini"
+};
+char *szMorShamanFaceName[2][3] = {
+	{
+		"char\\tmABCD\\Mmh-E01.inf",
+		"char\\tmABCD\\Mmh-E02.inf",
+		"char\\tmABCD\\Mmh-E03.inf"
+	},
+	{
+		"char\\tmABCD\\Mmh-E01a.inf",
+		"char\\tmABCD\\Mmh-E02a.inf",
+		"char\\tmABCD\\Mmh-E03a.inf"
+	}
 };
 
 //ktj : 새로만듦. end 
@@ -343,25 +375,93 @@ int MorNewCharacterInit[4][6] =
 
 
 
-static int TempFaceCount[4] = 
-{ 3, 3, 3, 3 };
+static int TempFaceCount[CHARACTER_JOB_MAX] =
+{ 3, 3, 3, 3, 3, 3 };
 
-static int	TempFacePos[4][4] = 
+static int	TempFacePos[CHARACTER_JOB_MAX][4] =
 {
 	{400-64-128,    400-64,   400-64+128,           -1},
 	{400-64-128,	400-64,   400-64+128,           -1},
 	{400-64-128,    400-64,   400-64+128,			-1},
+	{400-64-128,    400-64,   400-64+128,			-1},
+	{400-64-128,    400-64,   400-64+128,			-1},
 	{400-64-128,    400-64,   400-64+128,			-1}
 };
 
-int TempNewCharacterInit[4][6] = 
+int TempNewCharacterInit[NEW_CHAR_JOB_MAX][6] =
 {
 	//JobCode, Strentch, Sprit, Talent, Defence, Health
 	{2,        24,       8,     25,     18,      24}, //Mech
 	{1,        28,       6,     21,     17,      27}, //Fighter
 	{4,        26,       9,     20,     19,      25}, //PikeMan
-	{3,        17,      11,     21,     27,      23}  //Archer
+	{3,        17,      11,     21,     27,      23}, //Archer
+	{9,        25,      10,     22,     20,      22}, //Assassin
+	{11,       26,       9,     20,     20,      24}  //Martial Artist
 };
+
+// the Assassin (Tempskron female E): body e001-e030, heads Tfh-E01..13 (a/b/c/d/t for 01..03)
+static char *szTempAssassinBodyName[] = {
+	"char\\tmABCD\\e001.ini"
+};
+char *szTempAssassinFaceName[2][3] = {
+	{
+		"char\\tmABCD\\Tfh-E01.inf",
+		"char\\tmABCD\\Tfh-E02.inf",
+		"char\\tmABCD\\Tfh-E03.inf"
+	},
+	{
+		"char\\tmABCD\\Tfh-E01a.inf",
+		"char\\tmABCD\\Tfh-E02a.inf",
+		"char\\tmABCD\\Tfh-E03a.inf"
+	}
+};
+
+// the Martial Artist (Tempskron female F): body f001-f031, heads tfh-f01..13 (a/b/c/d/t for 01..03)
+static char *szTempMartialBodyName[] = {
+	"char\\tmABCD\\f001.ini"
+};
+char *szTempMartialFaceName[2][3] = {
+	{
+		"char\\tmABCD\\tfh-f01.inf",
+		"char\\tmABCD\\tfh-f02.inf",
+		"char\\tmABCD\\tfh-f03.inf"
+	},
+	{
+		"char\\tmABCD\\tfh-f01a.inf",
+		"char\\tmABCD\\tfh-f02a.inf",
+		"char\\tmABCD\\tfh-f03a.inf"
+	}
+};
+
+// The job screen's classes, in the order they stand, per race: their body, heads and new
+// character stats (rows of TempNewCharacterInit / MorNewCharacterInit, in the same order).
+static int LoginJobCount( int tribe )
+{
+	return tribe==TRIBE_Moryon ? 5 : 6;
+}
+
+static char *LoginBodyName( int tribe, int job )
+{
+	static char **temp[6] = { szTempMechBodyName, szTempFighterBodyName, szTempPikeBodyName, szTempArcherBodyName, szTempAssassinBodyName, szTempMartialBodyName };
+	static char **mor[5]  = { szMorMechBodyName, szMorFighterBodyName, szMorPikeBodyName, szMorArcherBodyName, szMorShamanBodyName };
+	if ( job<0 || job>=LoginJobCount(tribe) ) job = 0;
+	return tribe==TRIBE_Moryon ? mor[job][0] : temp[job][0];
+}
+
+static char *LoginFaceName( int tribe, int job, int face )
+{
+	static char *(*temp[6])[3] = { szTempMechFaceName, szTempFighterFaceName, szTempPikeFaceName, szTempArcherFaceName, szTempAssassinFaceName, szTempMartialFaceName };
+	static char *(*mor[5])[3]  = { szMorMechFaceName, szMorFighterFaceName, szMorPikeFaceName, szMorArcherFaceName, szMorShamanFaceName };
+	if ( job<0 || job>=LoginJobCount(tribe) ) job = 0;
+	if ( face<0 || face>=3 ) face = 0;
+	return tribe==TRIBE_Moryon ? mor[job][0][face] : temp[job][0][face];
+}
+
+static int *LoginNewCharInit( int tribe, int job )
+{
+	if ( job<0 || job>=LoginJobCount(tribe) ) job = 0;
+	return tribe==TRIBE_Moryon ? MorNewCharacterInit[job] : TempNewCharacterInit[job];
+}
 
 HoNewCharInfo	NewCharInfo;
 //마우스가 캐릭터가 위에 있는지 확인 
@@ -981,6 +1081,22 @@ int HoLogin::Load()
 	TempFaceImage[3][2][0]	= CreateTextureMaterial( "StartImage\\Login\\TfD03-01.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	TempFaceImage[3][2][1]	= CreateTextureMaterial( "StartImage\\Login\\TfD03-02.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 
+	//Assassin (its pictures are named -a/-b like Morion's)
+	TempFaceImage[4][0][0]	= CreateTextureMaterial( "StartImage\\Login\\TfE01-a.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempFaceImage[4][0][1]	= CreateTextureMaterial( "StartImage\\Login\\TfE01-b.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempFaceImage[4][1][0]	= CreateTextureMaterial( "StartImage\\Login\\TfE02-a.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempFaceImage[4][1][1]	= CreateTextureMaterial( "StartImage\\Login\\TfE02-b.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempFaceImage[4][2][0]	= CreateTextureMaterial( "StartImage\\Login\\TfE03-a.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempFaceImage[4][2][1]	= CreateTextureMaterial( "StartImage\\Login\\TfE03-b.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+
+	//Martial Artist
+	TempFaceImage[5][0][0]	= CreateTextureMaterial( "StartImage\\Login\\TfF01-a.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempFaceImage[5][0][1]	= CreateTextureMaterial( "StartImage\\Login\\TfF01-b.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempFaceImage[5][1][0]	= CreateTextureMaterial( "StartImage\\Login\\TfF02-a.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempFaceImage[5][1][1]	= CreateTextureMaterial( "StartImage\\Login\\TfF02-b.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempFaceImage[5][2][0]	= CreateTextureMaterial( "StartImage\\Login\\TfF03-a.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempFaceImage[5][2][1]	= CreateTextureMaterial( "StartImage\\Login\\TfF03-b.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+
 
 
 
@@ -1025,6 +1141,14 @@ int HoLogin::Load()
 	MorFaceImage[3][1][1]	= CreateTextureMaterial( "StartImage\\Login\\Moryon\\Mmd02-b.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	MorFaceImage[3][2][0]	= CreateTextureMaterial( "StartImage\\Login\\Moryon\\Mmd03-a.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	MorFaceImage[3][2][1]	= CreateTextureMaterial( "StartImage\\Login\\Moryon\\Mmd03-b.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+
+	//Shaman
+	MorFaceImage[4][0][0]	= CreateTextureMaterial( "StartImage\\Login\\Moryon\\MmE01-a.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	MorFaceImage[4][0][1]	= CreateTextureMaterial( "StartImage\\Login\\Moryon\\MmE01-b.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	MorFaceImage[4][1][0]	= CreateTextureMaterial( "StartImage\\Login\\Moryon\\MmE02-a.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	MorFaceImage[4][1][1]	= CreateTextureMaterial( "StartImage\\Login\\Moryon\\MmE02-b.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	MorFaceImage[4][2][0]	= CreateTextureMaterial( "StartImage\\Login\\Moryon\\MmE03-a.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	MorFaceImage[4][2][1]	= CreateTextureMaterial( "StartImage\\Login\\Moryon\\MmE03-b.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 
 	}
 
@@ -1101,6 +1225,11 @@ int HoLogin::Load()
 	TempscronJobImage[2][1] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_cls-pkm.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	TempscronJobImage[3][1] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_cls-ac.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 
+	TempscronJobImage[4][0] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_cls-assa_.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempscronJobImage[4][1] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_cls-assa.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempscronJobImage[5][0] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_cls-ma_.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempscronJobImage[5][1] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_cls-ma.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+
     MoryonJobImage[0][0] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T-cls-knt_.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
     MoryonJobImage[1][0] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_cls-atlt_.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	MoryonJobImage[2][0] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_cls-prts_.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
@@ -1110,16 +1239,24 @@ int HoLogin::Load()
     MoryonJobImage[1][1] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_cls-atlt.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	MoryonJobImage[2][1] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_cls-prts.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	MoryonJobImage[3][1] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_cls-mgc.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+
+	MoryonJobImage[4][0] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_cls-sha_.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	MoryonJobImage[4][1] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_cls-sha.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	MoryonJobImage[5][0] = MoryonJobImage[5][1] = -1;		// Morion has five classes
 	
 	TempscronJobTextImage[0] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_chr-meca.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	TempscronJobTextImage[1] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_chr-ft.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	TempscronJobTextImage[2] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_chr-pkm.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	TempscronJobTextImage[3] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_chr-ac.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempscronJobTextImage[4] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_chr-assa.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	TempscronJobTextImage[5] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_chr-ma.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 
 	MoryonJobTextImage[0] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_chr-knt.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	MoryonJobTextImage[1] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_chr-atlt.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	MoryonJobTextImage[2] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_chr-prts.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	MoryonJobTextImage[3] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_chr-mgc.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	MoryonJobTextImage[4] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\T_chr-sha.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
+	MoryonJobTextImage[5] = -1;
 
 	FaceBoxBigImage[0] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\face_bigbox1.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
 	FaceBoxBigImage[1] = CreateTextureMaterial( "StartImage\\Login\\CharSelect\\face_bigbox2.tga" , 0, 0, 0,0, SMMAT_BLEND_ALPHA);
@@ -1253,8 +1390,9 @@ int HoLogin::AddJobCharacter(char *chrFile1, char *chrFile2, int index)
 		JobCharacter[JobCharacterCount-1].lpDinaPattern->Pat->smMaterialGroup->CheckMatreialTextureSwap();
 		JobCharacter[JobCharacterCount-1].lpDinaPattern2->Pat->smMaterialGroup->CheckMatreialTextureSwap();
 
-		JobCharacter[JobCharacterCount].smCharInfo.Stamina[0] = 100;
-		JobCharacter[JobCharacterCount].smCharInfo.Stamina[1] = 100;
+		// the one just added (this wrote one past it: past the array for the last class)
+		JobCharacter[JobCharacterCount-1].smCharInfo.Stamina[0] = 100;
+		JobCharacter[JobCharacterCount-1].smCharInfo.Stamina[1] = 100;
 
 	}
 	else
@@ -1286,8 +1424,30 @@ int HoLogin::AddJobCharacter(char *chrFile1, char *chrFile2, int index)
 			return FALSE;
 	}
 
-	
+
 	return TRUE;
+}
+
+// The race's classes on the job screen, from the LoginBodyName/LoginFaceName/LoginNewCharInit
+// tables (Tempskron: Mechanician, Fighter, Pikeman, Archer, Assassin, Martial Artist;
+// Morion: Knight, Atalanta, Priestess, Magician, Shaman).
+void HoLogin::SetupJobCharacters( int tribe )
+{
+	int cnt, count;
+
+	tribeNum = tribe;
+	for( cnt=0; cnt<CHARACTER_JOB_MAX; cnt++ )
+		JobCharacter[cnt].Close();
+
+	count = LoginJobCount( tribe );
+	SetJobCharacterLayout( count );
+
+	JobCharacterCount = 0;
+	for( cnt=0; cnt<count; cnt++ ) {
+		JobCharacter[JobCharacterCount].smCharInfo.JOB_CODE = LoginNewCharInit( tribe, cnt )[0];
+		AddJobCharacter( LoginBodyName( tribe, cnt ), LoginFaceName( tribe, cnt, 0 ) );
+	}
+	ReadTextures();
 }
 
 //선택된 캐릭터를 찾는다.
@@ -1583,69 +1743,17 @@ int HoLogin::Main()
 
 #ifndef NOTUSE_MOR	//=============================================================
 			//ktj : 종족추가에 따라 새로 넣음. (각캐릭터의 이름이 써진 2d 그림임)
-			switch(tribeNum){
-			case TRIBE_Tempscron:
-
-				if(JobBodySelectNum == 0)//Mech
-				{
-					memcpy(CharacterName1, szTempMechBodyName[0], sizeof(CharacterName1));
-					memcpy(CharacterName2, szTempMechFaceName[0][JobFaceSelectNum], sizeof(CharacterName2));
-				}
-				else if(JobBodySelectNum == 1)//Fighter
-				{
-					memcpy(CharacterName1, szTempFighterBodyName[0], sizeof(CharacterName1));
-					memcpy(CharacterName2, szTempFighterFaceName[0][JobFaceSelectNum], sizeof(CharacterName2));
-				}
-				else if(JobBodySelectNum == 2)//Pike
-				{
-					memcpy(CharacterName1, szTempPikeBodyName[0], sizeof(CharacterName1));
-					memcpy(CharacterName2, szTempPikeFaceName[0][JobFaceSelectNum], sizeof(CharacterName2));
-				}
-				else if(JobBodySelectNum == 3)//Archer
-				{
-					memcpy(CharacterName1, szTempArcherBodyName[0], sizeof(CharacterName1));
-					memcpy(CharacterName2, szTempArcherFaceName[0][JobFaceSelectNum], sizeof(CharacterName2));
-				}
-				NewCharInfo.JobCode   = TempNewCharacterInit[JobBodySelectNum][0];
-				NewCharInfo.Strength  = TempNewCharacterInit[JobBodySelectNum][1];			//힘 
-				NewCharInfo.Spirit    = TempNewCharacterInit[JobBodySelectNum][2];			//정신력 
-				NewCharInfo.Talent    = TempNewCharacterInit[JobBodySelectNum][3];			//재능 
-				NewCharInfo.Dexterity = TempNewCharacterInit[JobBodySelectNum][4];		    //민첩성
-				NewCharInfo.Health    = TempNewCharacterInit[JobBodySelectNum][5];			//건강.
-
-				break;
-
-			case TRIBE_Moryon:		//이건 모라이언관련된것으로 나중에 고칠것.
-
-
-				if(JobBodySelectNum == 0)//Mech
-				{
-					memcpy(CharacterName1, szMorMechBodyName[0], sizeof(CharacterName1));
-					memcpy(CharacterName2, szMorMechFaceName[0][JobFaceSelectNum], sizeof(CharacterName2));
-				}
-				else if(JobBodySelectNum == 1)//Fighter
-				{
-					memcpy(CharacterName1, szMorFighterBodyName[0], sizeof(CharacterName1));
-					memcpy(CharacterName2, szMorFighterFaceName[0][JobFaceSelectNum], sizeof(CharacterName2));
-				}
-				else if(JobBodySelectNum == 2)//Pike
-				{
-					memcpy(CharacterName1, szMorPikeBodyName[0], sizeof(CharacterName1));
-					memcpy(CharacterName2, szMorPikeFaceName[0][JobFaceSelectNum], sizeof(CharacterName2));
-				}
-				else if(JobBodySelectNum == 3)//Archer
-				{
-					memcpy(CharacterName1, szMorArcherBodyName[0], sizeof(CharacterName1));
-					memcpy(CharacterName2, szMorArcherFaceName[0][JobFaceSelectNum], sizeof(CharacterName2));
-				}
-				NewCharInfo.JobCode   = MorNewCharacterInit[JobBodySelectNum][0];
-				NewCharInfo.Strength  = MorNewCharacterInit[JobBodySelectNum][1];			//힘 
-				NewCharInfo.Spirit    = MorNewCharacterInit[JobBodySelectNum][2];			//정신력 
-				NewCharInfo.Talent    = MorNewCharacterInit[JobBodySelectNum][3];			//재능 
-				NewCharInfo.Dexterity = MorNewCharacterInit[JobBodySelectNum][4];		    //민첩성
-				NewCharInfo.Health    = MorNewCharacterInit[JobBodySelectNum][5];			//건강.
-
-				break;
+			{
+				// the chosen class's body and head, and its starting stats (either race)
+				int *lpInit = LoginNewCharInit( tribeNum, JobBodySelectNum );
+				lstrcpyn( CharacterName1, LoginBodyName( tribeNum, JobBodySelectNum ), sizeof(CharacterName1) );
+				lstrcpyn( CharacterName2, LoginFaceName( tribeNum, JobBodySelectNum, JobFaceSelectNum ), sizeof(CharacterName2) );
+				NewCharInfo.JobCode   = lpInit[0];
+				NewCharInfo.Strength  = lpInit[1];			//힘
+				NewCharInfo.Spirit    = lpInit[2];			//정신력
+				NewCharInfo.Talent    = lpInit[3];			//재능
+				NewCharInfo.Dexterity = lpInit[4];		    //민첩성
+				NewCharInfo.Health    = lpInit[5];			//건강.
 			}
 
 
@@ -2329,15 +2437,18 @@ int HoLogin::DrawCharacterInfo()
 	int jobCode = DownUserCharacterInfo[MouseMoveCharacterNum].Job;
 	jobCode = jobCode & 0xFFFF;
 	memset(buffer, 0, sizeof(buffer));
-	if( jobCode <= 4) {
+	if( JOB_IS_TEMPSKRON(jobCode) ) {
 		wsprintf(buffer, "%s", HoTextTempskron );			//"템스크론"
 	}
-	else if(jobCode <= 8) {
+	else if(jobCode <= JOBCODE_MAX) {
 		wsprintf(buffer, "%s", HoTextMoryon );			//"템스크론"
 	}
 	dsTextLineOut(hdc, textX, textY+60, buffer, strlen(buffer));
-	
-	szJobName = ((JOB_DATA_CODE *)GetJobDataCode( DownUserCharacterInfo[MouseMoveCharacterNum].Job , 0 ))->szName2;
+
+	{
+		JOB_DATA_CODE *lpJobData = GetJobDataCode( DownUserCharacterInfo[MouseMoveCharacterNum].Job , 0 );
+		szJobName = lpJobData ? lpJobData->szName2 : (char *)"";
+	}
 	memset(buffer, 0, sizeof(buffer));
 	wsprintf(buffer, "%s", szJobName );//"파이터");
 	dsTextLineOut(hdc, textX, textY+80, buffer, strlen(buffer));
@@ -3155,34 +3266,10 @@ int HoLogin::Draw()
 					dsDrawTexImage( TempscronMarkImage, smScreenWidth/2,     smScreenHeight/4, 128, 128, 255);
 					if(MouseButton[0])
 					{
-						//ktj : 새로너음.
-						tribeNum = TRIBE_Tempscron;			//종족번호
-
-						//ktj : 새로너음.
-						JobCharacter[0].Close();
-						JobCharacter[1].Close();
-						JobCharacter[2].Close();
-						JobCharacter[3].Close();
-						
 						PlayWav2(5-1);
 						SelectNextState = JOB_SELECT_STATE;
 						RaceMarkScaleSize = 128;
-						
-						//현재는 Tempscron종족일거라구 가정하고.. (RaceSelect가 있어야 함)....
-						JobCharacterCount = 0;
-						
-						JobCharacter[JobCharacterCount].smCharInfo.JOB_CODE = 2;
-						AddJobCharacter( szTempMechBodyName[0]		, szTempMechFaceName[0][0]);
-
-						JobCharacter[JobCharacterCount].smCharInfo.JOB_CODE = 1;
-						AddJobCharacter( szTempFighterBodyName[0]	, szTempFighterFaceName[0][0]);
-						
-						JobCharacter[JobCharacterCount].smCharInfo.JOB_CODE = 4;
-						AddJobCharacter( szTempPikeBodyName[0]		, szTempPikeFaceName[0][0]);
-						
-						JobCharacter[JobCharacterCount].smCharInfo.JOB_CODE = 3;
-						AddJobCharacter( szTempArcherBodyName[0]	, szTempArcherFaceName[0][0]);
-						ReadTextures();
+						SetupJobCharacters( TRIBE_Tempscron );
 					}
 				}
 				else
@@ -3211,37 +3298,10 @@ int HoLogin::Draw()
 
  					if(MouseButton[0])
 					{
-						//ktj : 새로너음.
-						tribeNum = TRIBE_Tempscron;			//종족번호
-
-						//ktj : 새로너음.
-						JobCharacter[0].Close();
-						JobCharacter[1].Close();
-						JobCharacter[2].Close();
-						JobCharacter[3].Close();
-
-
-
 						PlayWav2(5-1);
 						SelectNextState = JOB_SELECT_STATE;
 						RaceMarkScaleSize = 128;
-						
-						//현재는 Tempscron종족일거라구 가정하고.. (RaceSelect가 있어야 함)....
-						JobCharacterCount = 0;
-						
-						JobCharacter[JobCharacterCount].smCharInfo.JOB_CODE = 2;
-						AddJobCharacter( szTempMechBodyName[0]		, szTempMechFaceName[0][0]);
-
-						JobCharacter[JobCharacterCount].smCharInfo.JOB_CODE = 1;
-						AddJobCharacter( szTempFighterBodyName[0]	, szTempFighterFaceName[0][0]);
-						
-						JobCharacter[JobCharacterCount].smCharInfo.JOB_CODE = 4;
-						AddJobCharacter( szTempPikeBodyName[0]		, szTempPikeFaceName[0][0]);
-						
-						JobCharacter[JobCharacterCount].smCharInfo.JOB_CODE = 3;
-						AddJobCharacter( szTempArcherBodyName[0]	, szTempArcherFaceName[0][0]);
-						ReadTextures();
-						
+						SetupJobCharacters( TRIBE_Tempscron );		// with the Assassin and the Martial Artist
 					}
 				}
 				else
@@ -3264,36 +3324,10 @@ int HoLogin::Draw()
 				
 					if(MouseButton[0])
 					{
-						//ktj : 넣음.
-						tribeNum = TRIBE_Moryon;			//종족번호
-
-						//ktj : 새로너음.
-						JobCharacter[0].Close();
-						JobCharacter[1].Close();
-						JobCharacter[2].Close();
-						JobCharacter[3].Close();
-
-
 						PlayWav2(5-1);
 						SelectNextState = JOB_SELECT_STATE;
 						RaceMarkScaleSize = 128;
-						
-						//현재는 Tempscron종족일거라구 가정하고.. (RaceSelect가 있어야 함)....
-						JobCharacterCount = 0;
-
-
-						JobCharacter[JobCharacterCount].smCharInfo.JOB_CODE = 6;
-						AddJobCharacter( szMorMechBodyName[0]		, szMorMechFaceName[0][0]);
-
-						JobCharacter[JobCharacterCount].smCharInfo.JOB_CODE = 5;
-						AddJobCharacter( szMorFighterBodyName[0]	, szMorFighterFaceName[0][0]);
-					
-						JobCharacter[JobCharacterCount].smCharInfo.JOB_CODE = 8;
-						AddJobCharacter( szMorPikeBodyName[0]		, szMorPikeFaceName[0][0]);
-						
-						JobCharacter[JobCharacterCount].smCharInfo.JOB_CODE = 7;
-						AddJobCharacter( szMorArcherBodyName[0]	, szMorArcherFaceName[0][0]);
-						ReadTextures();
+						SetupJobCharacters( TRIBE_Moryon );		// with the Shaman
 					}
 				}
 				else
@@ -3427,33 +3461,7 @@ int HoLogin::Draw()
  			if(FaceSelectFirstFlag == FALSE && JobFaceSelectNum != -1)
 			{
 				FaceSelectFirstFlag = TRUE;
-				switch(tribeNum)
-				{
- 					case TRIBE_Tempscron:	
-						if(JobBodySelectNum == 0) //Mech
-							SetChangeJobFace(szTempMechBodyName[0], szTempMechFaceName[0][JobFaceSelectNum], JobBodySelectNum);
-						else if(JobBodySelectNum == 1) // Fighter
-							SetChangeJobFace(szTempFighterBodyName[0], szTempFighterFaceName[0][JobFaceSelectNum], JobBodySelectNum);
-						else if(JobBodySelectNum == 2) // Pike
-							SetChangeJobFace(szTempPikeBodyName[0], szTempPikeFaceName[0][JobFaceSelectNum], JobBodySelectNum);
-						else if(JobBodySelectNum == 3) // Archer
-							SetChangeJobFace(szTempArcherBodyName[0], szTempArcherFaceName[0][JobFaceSelectNum], JobBodySelectNum);
-
-						break;
-
-					case TRIBE_Moryon:
-
-						if(JobBodySelectNum == 0) //Mech
-							SetChangeJobFace(szMorMechBodyName[0], szMorMechFaceName[0][JobFaceSelectNum], JobBodySelectNum);
-						else if(JobBodySelectNum == 1) // Fighter
-							SetChangeJobFace(szMorFighterBodyName[0], szMorFighterFaceName[0][JobFaceSelectNum], JobBodySelectNum);
-						else if(JobBodySelectNum == 2) // Pike
-							SetChangeJobFace(szMorPikeBodyName[0], szMorPikeFaceName[0][JobFaceSelectNum], JobBodySelectNum);
-						else if(JobBodySelectNum == 3) // Archer
-							SetChangeJobFace(szMorArcherBodyName[0], szMorArcherFaceName[0][JobFaceSelectNum], JobBodySelectNum);
-
-						break;
-				}
+				SetChangeJobFace( LoginBodyName( tribeNum, JobBodySelectNum ), LoginFaceName( tribeNum, JobBodySelectNum, JobFaceSelectNum ), JobBodySelectNum );
 				JobCharacter[JobBodySelectNum].Flag = 1;
 				OpenEachPlayer(&JobCharacter[JobBodySelectNum]);
 			}
@@ -3527,32 +3535,7 @@ int HoLogin::Draw()
 
 								
 							//ktj : 종족추가에 따라 새로 넣음. (각캐릭터의 이름이 써진 그림임)
-							switch(tribeNum){
-							case TRIBE_Tempscron:	
-								if(JobBodySelectNum == 0) //Mech
-									SetChangeJobFace(szTempMechBodyName[0], szTempMechFaceName[0][index], JobBodySelectNum);
-								else if(JobBodySelectNum == 1) // Fighter
-									SetChangeJobFace(szTempFighterBodyName[0], szTempFighterFaceName[0][index], JobBodySelectNum);
-								else if(JobBodySelectNum == 2) // Pike
-									SetChangeJobFace(szTempPikeBodyName[0], szTempPikeFaceName[0][index], JobBodySelectNum);
-								else if(JobBodySelectNum == 3) // Archer
-									SetChangeJobFace(szTempArcherBodyName[0], szTempArcherFaceName[0][index], JobBodySelectNum);
-
-								break;
-
-							case TRIBE_Moryon:
-			
-								if(JobBodySelectNum == 0) //Mech
-									SetChangeJobFace(szMorMechBodyName[0], szMorMechFaceName[0][index], JobBodySelectNum);
-								else if(JobBodySelectNum == 1) // Fighter
-									SetChangeJobFace(szMorFighterBodyName[0], szMorFighterFaceName[0][index], JobBodySelectNum);
-								else if(JobBodySelectNum == 2) // Pike
-									SetChangeJobFace(szMorPikeBodyName[0], szMorPikeFaceName[0][index], JobBodySelectNum);
-								else if(JobBodySelectNum == 3) // Archer
-									SetChangeJobFace(szMorArcherBodyName[0], szMorArcherFaceName[0][index], JobBodySelectNum);
-
-								break;
-							}
+							SetChangeJobFace( LoginBodyName( tribeNum, JobBodySelectNum ), LoginFaceName( tribeNum, JobBodySelectNum, index ), JobBodySelectNum );
 							
 #endif
 

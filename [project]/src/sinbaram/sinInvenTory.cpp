@@ -4730,7 +4730,8 @@ int cINVENTORY::CharOnlySetItem(sITEM *pItem)
 {
 	//파티복 코스튬 착용제
 	//여자
-	if(sinChar->JOB_CODE == JOBCODE_PRIESTESS || sinChar->JOB_CODE == JOBCODE_ATALANTA || sinChar->JOB_CODE == JOBCODE_ARCHER){	
+	if(sinChar->JOB_CODE == JOBCODE_PRIESTESS || sinChar->JOB_CODE == JOBCODE_ATALANTA || sinChar->JOB_CODE == JOBCODE_ARCHER ||
+		sinChar->JOB_CODE == JOBCODE_ASSASSIN || sinChar->JOB_CODE == JOBCODE_MARTIALARTIST){
 		if((pItem->sItemInfo.CODE & sinITEM_MASK2) == sinDA1 || (pItem->sItemInfo.CODE & sinITEM_MASK2) == sinDA2 ){
 			if( (pItem->sItemInfo.CODE & sinITEM_MASK3) == sin31 || (pItem->sItemInfo.CODE & sinITEM_MASK3) == sin32 ||
 				(pItem->sItemInfo.CODE & sinITEM_MASK3) == sin35 || (pItem->sItemInfo.CODE & sinITEM_MASK3) == sin36 ||
@@ -4759,20 +4760,23 @@ int cINVENTORY::CharOnlySetItem(sITEM *pItem)
 		}
 	}
 
-	///////////// 법사
-	if(sinChar->JOB_CODE == 7 || sinChar->JOB_CODE == 8){
+	///////////// 법사 (and the Shaman)
+	if(sinChar->JOB_CODE == 7 || sinChar->JOB_CODE == 8 || sinChar->JOB_CODE == JOBCODE_SHAMAN){
 		if((pItem->sItemInfo.CODE & sinITEM_MASK2) == sinDA1){
 			pItem->sItemInfo.NotUseFlag = 1; //일반 갑옷은 법사가 착용할수엄따
 
 		}
 	}
-	else{ //전사 
+	else{ //전사
 		if((pItem->sItemInfo.CODE & sinITEM_MASK2) == sinDA2 ||
 			(pItem->sItemInfo.CODE & sinITEM_MASK2) == sinOM1 ){
 				pItem->sItemInfo.NotUseFlag = 1; //로브 와 오브는 는 전사가 착용할수엄따
 
 			}
-	}	
+	}
+
+	if ( !CanClassUseWeapon( sinChar->JOB_CODE, pItem->sItemInfo.CODE ) )
+		pItem->sItemInfo.NotUseFlag = 1;
 
 	return TRUE;
 }
@@ -5464,6 +5468,32 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 				sinTempDamage2[0]  += Berserker_AddAttack[ContinueSkill[i].Point-1];
 				sinTempDamage2[1]  += Berserker_AddAttack[ContinueSkill[i].Point-1];
 				sinTempAbsorb += Berserker_SubAbsorb[ContinueSkill[i].Point-1];
+				SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_RED;
+			break;
+			case SKILL_BLOODY_BERSERKER:		// tier 5
+				sinTempDamage2[0]  += Bloody_Berserker_AddAttack[ContinueSkill[i].Point-1];
+				sinTempDamage2[1]  += Bloody_Berserker_AddAttack[ContinueSkill[i].Point-1];
+				sinTempAbsorb += Bloody_Berserker_SubAbsorb[ContinueSkill[i].Point-1];
+				SkillTextColor[SIN2_DAMAGE] = SIN_TEXT_COLOR_GOLD;
+				SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_RED;
+			break;
+			case SKILL_HYPER_SONIC:			// tier 5 Mechanician: any weapon
+				sinSkillWeaponSpeed += (int)((Hyper_Sonic_Speed[ContinueSkill[i].Point-1]*TempWeaponSpeed)/100);
+			break;
+			case SKILL_POWER_ENHANCEMENT:	// tier 5 Mechanician: attack power +% (the server applies it)
+				sinTempDamage2[0] += (int)((Power_Enhancement_Damage[ContinueSkill[i].Point-1]*TempDamage[0])/100);
+				sinTempDamage2[1] += (int)((Power_Enhancement_Damage[ContinueSkill[i].Point-1]*TempDamage[1])/100);
+				SkillTextColor[SIN2_DAMAGE] = SIN_TEXT_COLOR_GOLD;
+			break;
+			case SKILL_BLESSING_KRISHNA:	// tier 5 Priestess: absorption +
+				sinTempAbsorb += Blessing_Krishna_Absorb[ContinueSkill[i].Point-1];
+				SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_BLUE;
+			break;
+			case SKILL_AMPLIFIED:			// tier 5 Pikeman: attack power +% (the server applies it), less absorption
+				sinTempDamage2[0] += (int)((Amplified_Damage[ContinueSkill[i].Point-1]*TempDamage[0])/100);
+				sinTempDamage2[1] += (int)((Amplified_Damage[ContinueSkill[i].Point-1]*TempDamage[1])/100);
+				sinTempAbsorb += Amplified_SubAbsorb[ContinueSkill[i].Point-1];
+				SkillTextColor[SIN2_DAMAGE] = SIN_TEXT_COLOR_GOLD;
 				SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_RED;
 			break;
 			case SKILL_ASSASSIN_EYE:
@@ -6289,7 +6319,23 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 				case SKILL_DRASTIC_SPIRIT:
 					TempSkillData = ((float)Drastic_Spirit_Defense[ContinueSkill[i].Point-1]/100.0f);
 					sinChar->Defence += (int)((float)sinChar->Defence * TempSkillData);
-					SkillTextColor[SIN2_DEFENSE] = SIN_TEXT_COLOR_BLUE; 
+					SkillTextColor[SIN2_DEFENSE] = SIN_TEXT_COLOR_BLUE;
+				break;
+				case SKILL_BLESSING_KRISHNA:	// tier 5 Priestess: defense +%
+					sinChar->Defence += (sinChar->Defence*Blessing_Krishna_Defense[ContinueSkill[i].Point-1])/100;
+					SkillTextColor[SIN2_DEFENSE] = SIN_TEXT_COLOR_BLUE;
+				break;
+				case SKILL_THIRD_ANIMA:		// tier 5 Magician: max mana -%
+					sinChar->Mana[1] -= (sinChar->Mana[1]*Third_Anima_ManaDown[ContinueSkill[i].Point-1])/100;
+					if ( sinChar->Mana[0]>sinChar->Mana[1] ) sinChar->Mana[0] = sinChar->Mana[1];
+				break;
+				case SKILL_TALARIA:			// tier 5 Atalanta: move speed +
+					sinChar->Move_Speed += Talaria_Speed[ContinueSkill[i].Point-1];
+				break;
+				case SKILL_AMPLIFIED:		// tier 5 Pikeman: attack rating +%
+					sinChar->Attack_Rating += (sinChar->Attack_Rating*Amplified_AddHit[ContinueSkill[i].Point-1])/100;
+					SkillTextColor[SIN2_ATTACK_RATE] = SIN_TEXT_COLOR_ORANGE;
+					SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_RED;
 				break;
 				case SKILL_SPARK_SHIELD: //계산은 위에서하고 글자 색만 보정해준다
 				case SKILL_METAL_ARMOR: 
@@ -6355,6 +6401,7 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 
 				break;
 				case SKILL_BERSERKER:
+				case SKILL_BLOODY_BERSERKER:
 					SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_RED;
 				break;
 				case SCROLL_INVULNERABILITY:  //무적 스크롤 공격력 1/2
@@ -7243,12 +7290,14 @@ int cINVENTORY::CheckMoneyLimit(int Money)
 			break;
 			//4차 전업(임시)
 			case 3:
+			case 4:		// tier 5: the fifth rank (without this, a rank 5 character could pick up no gold at all)
+			default:
 				if( ( sinChar->Money + Money) <= 100000000 )return TRUE;
 			break;
 
 		}
 	}
-	
+
 	cMessageBox.ShowMessage(MESSAGE_OVER_MONEY);
 	return FALSE;
 

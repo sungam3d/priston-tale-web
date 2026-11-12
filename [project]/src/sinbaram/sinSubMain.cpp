@@ -481,6 +481,55 @@ int sinSetQuestItem(sITEMINFO *sItemInfo )
 *-----------------------------------------------------------------------------*/
 //물약 복사 방지 플랙
 int CheckPotionDelayFlag = 0;
+/*----------------------------------------------------------------------------*
+*	GM /DeckMeOut! (server: OnSever.cpp). The server first sends the equipment
+*	slots it will fill (smTRANSCODE_GM_DECKOUT); we move what is worn there into
+*	the bag (or onto the ground when the bag is full). Its items then arrive the
+*	usual way (smTRANSCODE_PUTITEM) and, the slots being empty, go straight on.
+*-----------------------------------------------------------------------------*/
+int sinGM_DeckOutCount = 0;		// items still to come: set them straight into the empty slots
+
+int sinGM_DeckOutClearSlots( DWORD dwPositionMask , int ItemCount )
+{
+	int i, k;
+	sITEM TempItem;
+
+	if ( MouseItem.Flag ) {				// something on the cursor: back into the bag first
+		if ( !cInvenTory.AutoSetInvenItem( &MouseItem ) )
+			sinThrowItemToFeild( &MouseItem );
+		MouseItem.Flag = 0;
+	}
+
+	for ( i=0; i<INVENTORY_MAX_POS; i++ ) {
+		if ( !(sInven[i].Position & dwPositionMask) || !sInven[i].ItemIndex ) continue;
+		k = sInven[i].ItemIndex-1;
+		if ( !cInvenTory.InvenItem[k].Flag ) { sInven[i].ItemIndex = 0; continue; }
+
+		if ( cInvenTory.InvenItem[k].Class==ITEM_CLASS_WEAPON_TWO ) {
+			cInvenTory.PickUpTwoHandItem( &cInvenTory.InvenItem[k] );		// the real one (right hand), both hands cleared
+			if ( !cInvenTory.InvenItem[k].sItemInfo.ItemHeader.dwChkSum ) continue;	// the left hand's shadow
+		}
+		memcpy( &TempItem , &cInvenTory.InvenItem[k] , sizeof(sITEM) );
+		cInvenTory.InvenItem[k].Flag = 0;
+		if ( cInvenTory.InvenItem[k].ItemPosition ) {
+			sinSetCharItem( cInvenTory.InvenItem[k].CODE , cInvenTory.InvenItem[k].SetModelPosi, FALSE );
+			sInven[cInvenTory.InvenItem[k].ItemPosition-1].ItemIndex = 0;
+		}
+		cInvenTory.ReFormInvenItem();
+		cInvenTory.CheckWeight();
+		cInvenTory.SetItemToChar();
+
+		TempItem.ItemPosition = 0;
+		TempItem.Flag = 1;
+		if ( !cInvenTory.InvenEmptyAearCheck( &TempItem ) ) {
+			if ( sinThrowItemToFeild( &TempItem ) ) TempItem.Flag = 0;
+		}
+	}
+
+	sinGM_DeckOutCount = ItemCount;
+	return TRUE;
+}
+
 int sinSetInvenItem(sITEMINFO *sItemInfo ) //아이템을 집을때 함수가 호출된다
 {
 
@@ -492,12 +541,31 @@ int sinSetInvenItem(sITEMINFO *sItemInfo ) //아이템을 집을때 함수가 �
 	pMessageItem = 0;   //물약 버릴때 관련된 포인터 초기화 (음하하하 간단히 해결이다 )
 
 
-	if(LoadItemImage(sItemInfo,&sinTempItem)){ 
+	if(LoadItemImage(sItemInfo,&sinTempItem)){
 		if(sinTempItem.sItemInfo.PotionCount <= 0 )     //포션카운트를 보정한다
 			sinTempItem.sItemInfo.PotionCount = 1;
 
+		if ( sinGM_DeckOutCount>0 ) {
+			// GM /DeckMeOut!: on into its (emptied) slot, else into the bag, else onto the ground
+			// (on even without the stats for it yet: it shows red and waits until they are spent)
+			sinGM_DeckOutCount--;
+			cInvenTory.CheckRequireItemToSet(&sinTempItem);
+			sinTempItem.sItemInfo.NotUseFlag = 0;
+			if(!cInvenTory.AutoSetInvenItem(&sinTempItem)){
+				if(sinThrowItemToFeild(&sinTempItem))
+					sinTempItem.Flag = 0;
+			}
+			else{
+				cInvenTory.CheckRequireItem();		// mark what the stats don't cover yet
+				cInvenTory.SetItemToChar();
+				cInvenTory.CheckWeight();
+			}
+			SaveGameData();
+			return TRUE;
+		}
+
 		//오영석
-		if(MouseItem.Flag || g_IsDxProjectZoomIn){ //마우스에 아이템이 있을경우에는 인벤에 곧바로 셋팅한다 
+		if(MouseItem.Flag || g_IsDxProjectZoomIn){ //마우스에 아이템이 있을경우에는 인벤에 곧바로 셋팅한다
 		//if(MouseItem.Flag ){ //마우스에 아이템이 있을경우에는 인벤에 곧바로 셋팅한다 
 			if(cInvenTory.CheckRequireItemToSet(&sinTempItem)){         //곧바로 셋팅될수있는지를 체크한다  
 				if(!cInvenTory.AutoSetInvenItem(&sinTempItem)){ //셋팅이 되지않으면 
@@ -1886,9 +1954,22 @@ int StopCharMotion(int x ,int y)
 		if(x > 240 && x < 240+44 && y > 380 && y < 380+44){				
 			if(CheckNowQuestState(SIN_QUEST_CODE_CHANGEJOB4)){
 				sinChangeJobButtonShow4 = 0;
-				SkillMasterFlag =0; //메세지 박스를 없애준다 
-				cSinHelp.sinShowHelp(SIN_HELP_KIND_QUEST,QuestMessageBoxPosi2.x,QuestMessageBoxPosi2.y,QuestMessageBoxSize2.x,QuestMessageBoxSize2.y, RGBA_MAKE(0,15,128,125),QuestFilePath4[0]);  
+				SkillMasterFlag =0; //메세지 박스를 없애준다
+				cSinHelp.sinShowHelp(SIN_HELP_KIND_QUEST,QuestMessageBoxPosi2.x,QuestMessageBoxPosi2.y,QuestMessageBoxSize2.x,QuestMessageBoxSize2.y, RGBA_MAKE(0,15,128,125),QuestFilePath4[0]);
 				ChangeJobButonCheck2 = 1; //버튼머시기때문에 이렇게 해준다 이유는 묻지마라!
+			}
+		}
+	}
+
+	/* tier 5: the fifth rank-up (the "4th Rank-Up Test") */
+	if(SkillMasterFlag && sinChangeJobButtonShow5){
+		if(x > 240 && x < 240+44 && y > 380 && y < 380+44){
+			if(CheckNowQuestState(SIN_QUEST_CODE_CHANGEJOB5)){
+				sinChangeJobButtonShow5 = 0;
+				SkillMasterFlag = 0;
+				extern int sinCheckChangeJobQuest5Offer();
+				sinCheckChangeJobQuest5Offer();
+				ChangeJobButonCheck2 = 1;			// the click that opened the dialog must not also close it
 			}
 		}
 	}
@@ -2415,6 +2496,10 @@ int sinSkillMaster(int ChangeJob)
 			sinQuest_ChangeJob2.State = 0;
 			SkillNpcFlag = 0;
 		}
+		else if( sinQuest_ChangeJob5.CODE){		// tier 5: the fifth rank-up quest
+			SkillNpcFlag = 0;
+			sinCheckChangeJobQuest5();
+		}
 		else if( sinQuest_ChangeJob4.CODE){
 			SkillNpcFlag = 0;
 			sinCheckChangeJobQuest4();
@@ -2449,6 +2534,9 @@ int sinSkillMaster(int ChangeJob)
 	if(sinQuest_ChangeJob4.State){//여기서두 초기화해준다
 		sinChangeJobButtonShow4 = 0;
 	}
+	if(sinQuest_ChangeJob5.CODE){		// tier 5
+		sinChangeJobButtonShow5 = 0;
+	}
 
 
 	//퀘스트를 마치면 초기화해준다
@@ -2470,10 +2558,13 @@ int sinSkillMaster(int ChangeJob)
 	case 3:
 		ChangeJobSkillPlus = 17;
 	break;
+	default:		// tier 5: the fifth rank shows the four tier 5 skills too
+		ChangeJobSkillPlus = 21;
+	break;
 	}
 
 
-	
+
 
 	SkillTreeCheckFlag = 1;
 	for(int i=1; i  < ChangeJobSkillPlus ; i++){	
@@ -2638,13 +2729,16 @@ short sinGetStamina()
 }
 
 //라이프를 셋팅한다				//kyle xtrapHeap
+int sinGM_GodMode = 0;		// GM /IDDQD (the server's smTRANSCODE_GM_GODMODE): life, mana and stamina stay full
+
 void sinSetLife(short Life)
 {
 #ifdef _XTRAP_GUARD_4_CLIENT //HEAP MEMORY TEST
 	XTrap_CE1_Func11_Protect( &(sinChar->Life), sizeof(sinChar->Life) );	//보호영역 무결성 체크
 #endif
 
-	//CheckCharForm(); //인증 
+	//CheckCharForm(); //인증
+	if ( sinGM_GodMode ) Life = sinChar->Life[1];		// GM /IDDQD
 	sinChar->Life[0] = Life;
 	if(sinChar->Life[0] < 0 ) sinChar->Life[0] = 0;
 	if(sinChar->Life[0] >= sinChar->Life[1] )sinChar->Life[0] = sinChar->Life[1];
@@ -2665,7 +2759,8 @@ void sinSetMana(short Mana)
 	XTrap_CE1_Func11_Protect( &(sinChar->Mana), sizeof(sinChar->Mana) );	//보호영역 무결성 체크
 #endif
 
-	//CheckCharForm(); //인증 
+	//CheckCharForm(); //인증
+	if ( sinGM_GodMode ) Mana = sinChar->Mana[1];		// GM /IDDQD
 	sinChar->Mana[0] = Mana;
 	if(sinChar->Mana[0] < 0 ) sinChar->Mana[0] = 0;
 	if(sinChar->Mana[0] >= sinChar->Mana[1] )sinChar->Mana[0] = sinChar->Mana[1];
@@ -2684,7 +2779,8 @@ void sinSetStamina(short Stamina)
 	XTrap_CE1_Func11_Protect( &(sinChar->Stamina), sizeof(sinChar->Stamina) );	//보호영역 무결성 체크
 #endif
 
-	//CheckCharForm(); //인증 
+	//CheckCharForm(); //인증
+	if ( sinGM_GodMode ) Stamina = sinChar->Stamina[1];	// GM /IDDQD
 	sinChar->Stamina[0] = Stamina;
 	if(sinChar->Stamina[0] < 0 ) sinChar->Stamina[0] = 0;
 	if(sinChar->Stamina[0] >= sinChar->Stamina[1] )sinChar->Stamina[0] = sinChar->Stamina[1];
@@ -2809,6 +2905,7 @@ int sinSetAgingItemIncreState(sITEMINFO *pItem)
 			sinSetDurabilityAging(pItem); 
 
 		break;
+		case sinWV1: //vambraces age as claws
 		case sinWC1: //클러
 			//공격력 
 			sinSetDamageAging(pItem);
@@ -2829,7 +2926,8 @@ int sinSetAgingItemIncreState(sITEMINFO *pItem)
 			sinSetDurabilityAging(pItem); 
 
 		break;
-		case sinWM1: //메지컬 스테프 
+		case sinWN1: //phantoms age as staves
+		case sinWM1: //메지컬 스테프
 			//공격력 
 			sinSetDamageAging(pItem);
 
@@ -2862,7 +2960,8 @@ int sinSetAgingItemIncreState(sITEMINFO *pItem)
 			sinSetDurabilityAging(pItem); 
 		break;
 
-		case sinWS2: //칼  
+		case sinWD1: //daggers age as swords
+		case sinWS2: //칼
 			//공격력 
 			sinSetDamageAging(pItem);
 
@@ -3125,6 +3224,7 @@ int sinAgingItemInit(sITEMINFO *pItem , int Down)
 			sinDownDurabilityAging(pItem); 
 
 		break;
+		case sinWV1: //vambraces age as claws
 		case sinWC1: //클러
 			//공격력 
 			sinDownDamageAging(pItem,AgingLevelTemp);
@@ -3145,7 +3245,8 @@ int sinAgingItemInit(sITEMINFO *pItem , int Down)
 			sinDownDurabilityAging(pItem); 
 
 		break;
-		case sinWM1: //메지컬 스테프 
+		case sinWN1: //phantoms age as staves
+		case sinWM1: //메지컬 스테프
 			//공격력 
 			sinDownDamageAging(pItem,AgingLevelTemp);
 
@@ -3178,7 +3279,8 @@ int sinAgingItemInit(sITEMINFO *pItem , int Down)
 			sinDownDurabilityAging(pItem); 
 		break;
 
-		case sinWS2: //칼  
+		case sinWD1: //daggers age as swords
+		case sinWS2: //칼
 			//공격력 
 			sinDownDamageAging(pItem,AgingLevelTemp);
 
@@ -5021,6 +5123,7 @@ DWORD SummonSkillCode[] = {
 	SKILL_METAL_GOLEM,
 	SKILL_FIRE_ELEMENTAL,
 	SKILL_RECALL_WOLVERIN,
+	SKILL_SUMMON_ARCUDA,		// tier 5 Atalanta
 	0,
 
 };

@@ -1153,7 +1153,7 @@ int RecordLogSql( DWORD	dwRecCode , char *szIP , char *lpUserID , char *lpCharNa
 
 	LogSqlData[cnt].szRace[0] = 0;
 
-	if ( JobCode<=4 )
+	if ( JOB_IS_TEMPSKRON(JobCode) )
 		lstrcpy( LogSqlData[cnt].szRace , "Tempskron" );
 	else
 		lstrcpy( LogSqlData[cnt].szRace , "Moryon" );
@@ -1245,7 +1245,7 @@ int RecordGameLogSql( DWORD	dwRecCode , char *szIP , char *lpUserID , char *lpCh
 
 	LogSqlData[cnt].szRace[0] = 0;
 
-	if ( JobCode<=4 )
+	if ( JOB_IS_TEMPSKRON(JobCode) )
 		lstrcpy( LogSqlData[cnt].szRace , "Tempskron" );
 	else
 		lstrcpy( LogSqlData[cnt].szRace , "Moryon" );

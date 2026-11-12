@@ -652,6 +652,17 @@ static void SetOldField( sFIELD *lpField , int Origin , int OffsetX , int Offset
 	lpField->AddStartPoint( x , z );
 }
 
+// The field whose stage file name ends with szStage (no case), or NULL
+static sFIELD *FindFieldByStage( const char *szStage )
+{
+	int len = lstrlen( szStage );
+	for( int cnt=0; cnt<FIELD_MAX; cnt++ ) {
+		int n = lstrlen( sField[cnt].szName );
+		if ( n>=len && lstrcmpi( sField[cnt].szName+n-len, szStage )==0 ) return &sField[cnt];
+	}
+	return NULL;
+}
+
 //필드 초기화
 int InitField()
 {
@@ -2595,6 +2606,104 @@ cnt++;
 	sField[cnt].AddStageObject( "AncientW\\RotObj10.ASE" );
 	cnt++;
 
+	//////////////////////// later fields ////////////////////////
+	// Maps whose stages, spawns and images were in the data and on the server but not in
+	// this list. They sit at their original places and are joined by warp gates at their
+	// original positions; a gate's level is the level of the field it leads into.
+	int AncientWeapons = cnt-1;
+
+	int IceMine = cnt;
+	sField[cnt].SetName( "Mine\\mine-1.ASE" , "mine-1" );				//72 아이스 마인
+	sField[cnt].State			= FIELD_STATE_DUNGEON;
+	sField[cnt].BackMusicCode	= BGM_CODE_DUNGEON;
+	sField[cnt].ServerCode		= PLAY_SERVER_CODE_EXTEND;
+	sField[cnt].SetCenterPos( 18006 , -34740 );
+	sField[cnt].AddStartPoint( 18006 , -34740 );
+	cnt++;
+
+	sField[cnt].SetName( "Sod\\sod-2.ASE" , "sod-2" );					//73 벨라트라 2
+	sField[cnt].State			= FIELD_STATE_RUIN;
+	sField[cnt].BackImageCode[0]= FIELD_BACKIMAGE_RUIN2;
+	sField[cnt].BackImageCode[1]= FIELD_BACKIMAGE_GLOWRUIN2;
+	sField[cnt].BackImageCode[2]= FIELD_BACKIMAGE_NIGHTRUIN2;
+	sField[cnt].BackMusicCode	= BGM_CODE_CUSTOM;
+	sField[cnt].ServerCode		= PLAY_SERVER_CODE_EXTEND;
+	sField[cnt].SetCenterPos( 21600 , 17000 );
+	cnt++;
+
+	int SecretLab = cnt;
+	sField[cnt].SetName( "Slab\\Slab.ASE" , "Slab" );					//74 비밀 연구소
+	sField[cnt].State			= FIELD_STATE_DUNGEON;
+	sField[cnt].BackMusicCode	= BGM_CODE_DUNGEON;
+	sField[cnt].ServerCode		= PLAY_SERVER_CODE_EXTEND;
+	sField[cnt].SetCenterPos( -11975 , -62457 );
+	sField[cnt].AddStartPoint( -11975 , -62457 );
+	cnt++;
+
+	sField[cnt].SetName( "swamp\\swamp.ASE" , 0 );						//75 액션 필드 (늪)
+	sField[cnt].State			= FIELD_STATE_ACTION;
+	sField[cnt].BackMusicCode	= BGM_CODE_DUNGEON;
+	sField[cnt].ServerCode		= PLAY_SERVER_CODE_MAIN;
+	sField[cnt].SetCenterPos( 4550 , 42820 );
+	cnt++;
+
+	int SeaOfAbyss = cnt;
+	sField[cnt].SetName( "SeaA\\SeaA.ASE" , "SeaA" );					//76 심연의 바다
+	sField[cnt].State			= FIELD_STATE_DUNGEON;
+	sField[cnt].BackMusicCode	= BGM_CODE_DUNGEON;
+	sField[cnt].ServerCode		= PLAY_SERVER_CODE_EXTEND;
+	sField[cnt].SetCenterPos( -19925 , -3858 );
+	sField[cnt].AddStartPoint( -19925 , -3858 );
+	sField[cnt].AddStageObject( "SeaA\\sea_ani01.ASE" );		// the names are kept, not copied: literals only
+	sField[cnt].AddStageObject( "SeaA\\sea_ani02.ASE" );
+	sField[cnt].AddStageObject( "SeaA\\sea_ani03.ASE" );
+	sField[cnt].AddStageObject( "SeaA\\sea_ani04.ASE" );
+	sField[cnt].AddStageObject( "SeaA\\sea_ani05.ASE" );
+	sField[cnt].AddStageObject( "SeaA\\sea_ani06.ASE" );
+	sField[cnt].AddStageObject( "SeaA\\sea_ani07.ASE" );
+	sField[cnt].AddStageObject( "SeaA\\sea_ani08.ASE" );
+	sField[cnt].AddStageObject( "SeaA\\sea_ani09.ASE" );
+	sField[cnt].AddStageObject( "SeaA\\sea_ani10.ASE" );
+	cnt++;
+
+	{
+		sFIELD *lpDesert3 = FindFieldByStage( "De-3.ase" );
+		sFIELD *lpLost = FindFieldByStage( "lostisland.ASE" );
+		sFIELD *lpIce1 = FindFieldByStage( "ice1.ASE" );
+
+		// Desert 3 <-> Secret Laboratory <-> Ancient Weapons
+		if ( lpDesert3 ) {
+			lpDesert3->AddWarpGate( 29559 , 2499 , 828 , 64 , 32 );
+			lpDesert3->AddWarpOutGate( &sField[SecretLab] , -11975 , -62457 , 209 );
+			lpDesert3->WarpGate[ lpDesert3->WarpGateActiveNum ].LimitLevel = 108;
+			sField[SecretLab].AddWarpGate( -11973 , -62662 , 173 , 64 , 32 );
+			sField[SecretLab].AddWarpOutGate( lpDesert3 , 29551 , 2366 , 826 );
+		}
+		sField[SecretLab].AddWarpGate( -12003 , -54164 , 374 , 64 , 32 );
+		sField[SecretLab].AddWarpOutGate( &sField[AncientWeapons] , 12795 , -73112 , 458 );
+		sField[SecretLab].WarpGate[ sField[SecretLab].WarpGateActiveNum ].LimitLevel = 110;
+		sField[AncientWeapons].AddWarpGate( 12796 , -74250 , 458 , 64 , 32 );
+		sField[AncientWeapons].AddWarpOutGate( &sField[SecretLab] , -11998 , -55120 , 393 );
+
+		// Lost Island <-> Sea of Abyss
+		if ( lpLost ) {
+			lpLost->AddWarpGate( -14197 , -1788 , 174 , 64 , 32 );
+			lpLost->AddWarpOutGate( &sField[SeaOfAbyss] , -21965 , -5655 , 159 );
+			lpLost->WarpGate[ lpLost->WarpGateActiveNum ].LimitLevel = 115;
+			sField[SeaOfAbyss].AddWarpGate( -21970 , -5959 , 157 , 64 , 32 );
+			sField[SeaOfAbyss].AddWarpOutGate( lpLost , -14250 , -1548 , 196 );
+		}
+
+		// Ice Mine -> Ice 1 (into the mine: /field or a teleporter, as no gate leads there)
+		if ( lpIce1 ) {
+			sField[IceMine].AddWarpGate( 17944 , -34641 , 246 , 64 , 32 );
+			sField[IceMine].AddWarpOutGate( lpIce1 , 35352 , 31928 , 829 );
+		}
+	}
+#ifdef PT_WEB
+	printf( "[field] Ancient Weapons and later fields are %d..%d\n", AncientWeapons, cnt-1 );
+#endif
+
 	//////////////////////// 확장 테스트용 ////////////////////
 
 
@@ -2754,7 +2863,7 @@ int StartField()
 	JobCode = lpCurPlayer->smCharInfo.JOB_CODE;
 	if ( JobCode==0 ) JobCode = NewCharInfo.JobCode;
 
-	if ( JobCode>4 && sField[START_FIELD_MORYON].szName[0] ) 
+	if ( !JOB_IS_TEMPSKRON(JobCode) && sField[START_FIELD_MORYON].szName[0] )
 		StartNum = START_FIELD_MORYON;				//직업이 모라이온 이다!
 	else
 		StartNum = START_FIELD_NUM;
@@ -2859,7 +2968,7 @@ int WarpStartField( int *mx, int *mz )
 	int cnt;
 	int	StartNum = START_FIELD_NUM;
 
-	if ( lpCurPlayer->smCharInfo.JOB_CODE>4 && sField[START_FIELD_MORYON].szName[0] ) {
+	if ( !JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) && sField[START_FIELD_MORYON].szName[0] ) {
 		StartNum = START_FIELD_MORYON;				//직업이 모라이온 이다!
 	}
 

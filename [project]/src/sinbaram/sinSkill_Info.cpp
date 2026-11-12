@@ -710,3 +710,261 @@ int Meteo_UseMana[10]   = {100,104,108,112,116,120,124,128,132,136};
 int C_Skill_HpPoint[10]   ={100,110,120,130,140,150,160,170,180,190};//hp상승
 int C_Skill_AttPercent[10]={10,11,12,13,14,15,16,17,18,19};          //공격력 상승
 int C_Skill_EvaPercent[10]   ={10,11,12,13,14,15,16,17,18,19};       //회피율 상승
+
+
+/*----------------------------------------------------------------------------*
+*	Tier 5 (the fifth rank). Mana per rank for every class's four; the rest of
+*	the numbers come with each class's skills as they are made.
+*-----------------------------------------------------------------------------*/
+int Land_Mining_UseMana[10]			= {55,58,61,64,67,70,73,76,79,82};
+int Hyper_Sonic_UseMana[10]			= {80,85,90,95,100,105,110,115,120,125};
+int Rolling_Smash_UseMana[10]		= {60,63,66,69,72,75,78,81,84,87};
+int Power_Enhancement_UseMana[10]	= {85,90,95,100,105,110,115,120,125,130};
+
+int Down_Hit_UseMana[10]			= {58,61,64,67,70,73,76,79,82,85};
+int Power_Dash_UseMana[10]			= {70,75,80,85,90,95,100,105,110,115};
+int Mortal_Blow_UseMana[10]			= {63,66,69,72,75,78,81,84,87,90};
+int Bloody_Berserker_UseMana[10]	= {86,90,94,98,102,106,110,114,118,122};
+
+int Dancing_Reaper_UseMana[10]		= {58,61,64,67,70,73,76,79,82,85};
+int Final_Spear_UseMana[10]			= {63,66,69,72,75,78,81,84,87,90};
+int Amplified_UseMana[10]			= {86,90,94,98,102,106,110,114,118,122};
+int Side_Spin_Attack_UseMana[10]	= {70,75,80,85,90,95,100,105,110,115};
+
+int Evade_Shot_UseMana[10]			= {40,43,46,49,52,55,58,61,64,67};
+int Thunder_Rope_UseMana[10]		= {40,43,46,49,52,55,58,61,64,67};
+int Nature_Splash_UseMana[10]		= {45,48,51,54,57,60,63,66,69,72};
+int Circle_Trap_UseMana[10]			= {83,85,87,89,91,93,95,97,99,101};
+
+int Soul_Breaker_UseMana[10]		= {58,61,64,67,70,73,76,79,82,85};
+int Crescent_Moon_UseMana[10]		= {63,66,69,72,75,78,81,84,87,90};
+int Saint_Blade_UseMana[10]			= {58,61,64,67,70,73,76,79,82,85};
+int Holy_Benedic_UseMana[10]		= {86,90,94,98,102,106,110,114,118,122};
+
+int Talaria_UseMana[10]				= {55,57,59,62,65,68,72,76,80,84};
+int Galaxy_Coup_UseMana[10]			= {40,43,46,49,52,55,58,61,64,67};
+int Summon_Arcuda_UseMana[10]		= {73,75,77,80,83,86,90,94,98,102};
+int Snippy_Fear_UseMana[10]			= {45,48,51,54,57,60,63,66,69,72};
+
+int Spirit_Impact_UseMana[10]		= {120,125,130,135,140,145,150,155,160,165};
+int Piercing_Ice_UseMana[10]		= {135,139,143,147,151,155,159,163,167,171};
+int Summon_Ramiel_UseMana[10]		= {152,156,160,164,168,172,176,180,184,188};
+int Blessing_Krishna_UseMana[10]	= {166,170,174,178,182,186,190,194,198,202};
+
+int Silraphim_UseMana[10]			= {120,125,130,135,140,145,150,155,160,165};
+int Vis_Tenus_UseMana[10]			= {135,139,143,147,151,155,159,163,167,171};
+int Prima_Ignis_UseMana[10]			= {152,156,160,164,168,172,176,180,184,188};
+int Third_Anima_UseMana[10]			= {166,170,174,178,182,186,190,194,198,202};
+
+//[Mechanician] tier 5
+//Land Mining: mines burst around the caster
+int Land_Mining_DamagePercent[10]	= {30,38,46,54,62,70,78,86,94,102};			//the target: attack power +%
+int Land_Mining_AreaDamage[10][2]	= {{300,350},{320,380},{340,410},{360,440},{380,470},
+									   {400,500},{420,530},{440,560},{460,590},{480,620}};	//around: damage
+int Land_Mining_Area[10]			= {80,90,100,110,120,130,140,150,160,170};		//radius
+int Land_Mining_AttackNum[10]		= {5,5,6,6,7,7,8,8,9,9};					//most enemies struck
+
+//Hyper Sonic: attack speed
+int Hyper_Sonic_Speed[10]			= {3,6,9,11,13,15,16,17,18,19};				//attack speed +%
+int Hyper_Sonic_Time[10]			= {120,140,160,180,200,220,240,260,280,300};	//seconds
+
+//Rolling Smash: four heavy blows
+int Rolling_Smash_DamagePercent[10]	= {50,70,90,110,130,150,170,190,210,230};	//attack power +%
+int Rolling_Smash_AddHit[10]		= {60,80,100,120,140,160,180,200,220,240};	//attack rating +
+
+//Power Enhancement: the caster's attack power
+int Power_Enhancement_Damage[10]	= {4,10,16,22,28,34,40,46,52,58};			//min and max attack power +%
+int Power_Enhancement_Area[10]		= {200,220,240,260,280,300,320,340,360,380};	//party reach
+int Power_Enhancement_Time[10]		= {120,140,160,180,200,220,240,260,280,300};	//seconds
+
+//[Pikeman] tier 5
+//Dancing Reaper: leaps and lands one heavy strike
+int Dancing_Reaper_DamagePercent[10]	= {60,80,100,120,140,160,180,200,220,240};	//attack power +%
+
+//Final Spear: spears burst from the ground around the caster
+int Final_Spear_Area[10]			= {120,130,140,150,160,170,180,190,200,210};	//radius
+int Final_Spear_AreaDamage[10][2]	= {{250,300},{270,350},{290,400},{310,450},{330,500},
+									   {350,550},{370,600},{390,650},{410,700},{430,750}};	//added damage
+
+//Amplified: less absorption for more damage and attack rating
+int Amplified_SubAbsorb[10]			= {-5,-7,-9,-11,-13,-15,-17,-19,-21,-23};		//absorption
+int Amplified_AddHit[10]			= {30,35,40,45,50,55,60,65,70,75};			//attack rating +%
+int Amplified_Damage[10]			= {30,40,50,60,70,80,90,100,110,120};		//attack power +%
+int Amplified_Time[10]				= {120,140,160,180,200,220,240,260,280,300};	//seconds
+
+//Side Spin Attack: a sliding strike that drains life
+int Side_Spin_DamagePercent[10]		= {40,60,80,100,120,140,160,180,200,220};	//attack power +%
+int Side_Spin_LifeAbsorb[10]		= {10,13,16,19,22,25,28,31,34,37};			//% of the hit back as life
+
+//[Archer] tier 5
+//Evade Shot: leaps back and shoots, stunning the target (bosses are spared the stun)
+int Evade_Shot_DamagePercent[10]	= {65,78,91,104,117,130,143,156,169,182};	//attack power +%
+int Evade_Shot_StunTime[10]			= {4,6,8,10,12,13,14,15,16,17};				//stun, seconds
+
+//Thunder Roop: a lightning arrow with more reach and accuracy
+int Thunder_Rope_Range[10]			= {20,25,30,35,40,45,50,55,60,65};			//shooting range +
+int Thunder_Rope_DamagePercent[10]	= {80,100,120,140,160,180,200,220,240,260};	//attack power +%
+int Thunder_Rope_AddHit[10]			= {55,57,61,67,75,85,97,111,127,145};		//attack rating +%
+
+//Nature Splash: an arrow bursting on the enemies around the target
+int Nature_Splash_DamagePercent[10]	= {70,90,110,130,150,170,190,210,230,250};	//attack power +%
+int Nature_Splash_Area[10]			= {95,100,105,110,115,120,125,130,135,140};	//radius
+
+//Circle Trap: traps the enemies around the target and slows them
+int Circle_Trap_DamagePercent[10]	= {115,135,155,175,195,215,235,255,275,295};	//attack power +%
+int Circle_Trap_Area[10]			= {95,100,105,110,115,120,125,130,135,140};	//radius
+int Circle_Trap_Slow[10]			= {10,12,14,16,18,20,22,24,26,28};			//slower by %
+int Circle_Trap_SlowTime10[10]		= {5,10,15,20,25,30,35,40,45,50};			//slow, tenths of a second
+
+//[Knight] tier 5
+//Soul Breaker: a heavy sword strike with more accuracy
+int Soul_Breaker_DamagePercent[10]	= {45,70,95,120,145,170,195,220,245,270};	//attack power +%
+int Soul_Breaker_AddHit[10]			= {40,45,50,55,60,65,70,75,80,85};			//attack rating +%
+
+//Crescent Moon: closes in from afar and strikes
+int Crescent_Moon_DamagePercent[10]	= {170,180,190,200,210,220,230,240,250,260};	//attack power +%
+int Crescent_Moon_Range[10]			= {150,155,160,165,170,175,180,185,190,195};	//reach
+
+//Saint Blade: holy strike, more against the undead
+int Saint_Blade_DamagePercent[10]	= {50,85,120,155,190,225,260,295,330,365};	//attack power +%
+int Saint_Blade_Undead[10]			= {5,10,15,20,25,30,35,40,45,50};			//undead: a further +%
+
+//Holy Benedic: more damage to the undead for a time
+int Holy_Benedic_Undead[10]			= {25,30,35,40,45,50,55,60,65,70};			//undead: attack power +%
+int Holy_Benedic_Time[10]			= {120,140,160,180,200,220,240,260,280,300};	//seconds
+
+//[Atalanta] tier 5
+//Talaria: faster on the move
+int Talaria_Speed[10]				= {1,1,1,2,2,2,3,3,3,4};					//move speed +
+int Talaria_Time[10]				= {120,140,160,180,200,220,240,260,280,300};	//seconds
+
+//Galaxy Coup: a javelin pinning the target and the enemies around it
+int Galaxy_Coup_DamagePercent[10]	= {80,95,110,125,140,155,170,185,200,215};	//attack power +%
+int Galaxy_Coup_Area[10]			= {100,105,110,115,120,125,130,135,140,145};	//radius
+int Galaxy_Coup_AddHit[10]			= {30,45,60,75,90,105,120,135,150,165};		//attack rating +%
+
+//Summon Arcuda: a bear that fights at your side for 360 seconds
+int Summon_Arcuda_Damage[10][2]		= {{120,140},{130,150},{140,160},{150,170},{160,180},
+									   {170,190},{180,200},{190,210},{200,220},{210,230}};	//its attack power
+int Summon_Arcuda_Hit[10]			= {1000,1100,1200,1300,1400,1500,1600,1700,1800,1900};	//its attack rating
+int Summon_Arcuda_Defense[10]		= {1300,1400,1500,1600,1700,1800,1900,2000,2100,2200};	//its defense (+ agility x2)
+int Summon_Arcuda_Life[10]			= {2500,2700,2900,3100,3300,3500,3700,3900,4100,4300};	//its life
+int Summon_Arcuda_Time[10]			= {360,360,360,360,360,360,360,360,360,360};	//seconds
+
+//Snippy Fear: a critical javelin blow from further away
+int Snippy_Fear_DamagePercent[10]	= {115,135,155,175,195,215,235,255,275,295};	//attack power +%
+int Snippy_Fear_Critical[10]		= {5,8,11,14,17,20,23,26,29,32};			//critical +%
+int Snippy_Fear_Range[10]			= {20,25,30,35,40,45,50,55,60,65};			//throwing range +
+
+//[Priestess] tier 5. Magic damage, per PristonWorld:
+//  min = A + spirit/2 + level/2 + weapon min x M, max = B + spirit + level/2 + weapon max x M
+//Spirit Impact: a shockwave at the target's spirit
+int Spirit_Impact_Damage[10][2]		= {{350,410},{390,450},{430,490},{470,530},{510,570},
+									   {550,610},{590,650},{630,690},{670,730},{710,770}};	//A, B
+int Spirit_Impact_WeaponX[10]		= {2,2,2,3,3,3,4,4,4,5};					//M
+int Spirit_Impact_Range[10]			= {170,175,180,185,190,195,200,205,210,215};	//casting range
+
+//Piercing Ice: ice spears (the page hides the formula: Spirit Impact's, M = 2)
+int Piercing_Ice_Damage[10][2]		= {{420,530},{470,580},{520,630},{570,680},{620,730},
+									   {670,780},{720,830},{770,880},{820,930},{870,980}};	//A, B
+
+//Summon Ramiel: an angel striking with lightning (shares Summon Muspell's server slot)
+int Summon_Ramiel_Damage[10][2]		= {{170,210},{190,230},{210,250},{230,270},{250,290},
+									   {270,310},{290,330},{310,350},{330,370},{350,390}};	//its attack power
+int Summon_Ramiel_Attack_Delay[10]	= {7,7,7,6,6,6,5,5,5,4};					//seconds between strikes
+int Summon_Ramiel_BlockPercent[10]	= {5,6,7,8,9,10,11,12,13,14};				//your block +%
+int Summon_Ramiel_UndeadAbsorbPercent[10] = {25,35,45,55,65,75,85,95,105,115};	//undead attacks absorbed %
+int Summon_Ramiel_Time[10]			= {120,140,160,180,200,220,240,260,280,300};	//seconds
+
+//Blessing Krishna: your defense and absorption
+int Blessing_Krishna_Defense[10]	= {10,15,20,25,30,35,40,45,50,55};			//defense +%
+int Blessing_Krishna_Absorb[10]		= {2,2,2,5,5,5,8,8,8,10};					//absorption +
+int Blessing_Krishna_Time[10]		= {120,130,140,150,160,170,180,190,200,210};	//seconds
+
+//[Magician] tier 5. Magic damage, per PristonWorld:
+//  min = A + spirit/2 + level + weapon min x M, max = B + spirit + level + weapon max x M
+//Silraphim: summons Silraphim to strike the target
+int Silraphim_Damage[10][2]			= {{350,410},{390,450},{430,490},{470,530},{510,570},
+									   {550,610},{590,650},{630,690},{670,730},{710,770}};	//A, B
+int Silraphim_WeaponX[10]			= {2,2,2,3,3,3,4,4,4,5};					//M
+int Silraphim_Range[10]				= {110,120,130,140,150,160,170,180,190,200};	//casting range
+
+//Vis Tenus: shrinks the target: less life, less damage for a time
+int Vis_Tenus_LifeDown[10]			= {10,15,20,25,30,35,40,45,50,55};			//life -% (a quarter on bosses)
+int Vis_Tenus_DamageDown[10]		= {10,13,16,19,22,25,28,31,34,37};			//its damage -%
+int Vis_Tenus_Time[10]				= {10,15,20,25,30,35,40,45,50,55};			//seconds
+
+//Prima Ignis: a critical fire strike
+int Prima_Ignis_Damage[10][2]		= {{400,500},{450,550},{500,600},{550,650},{600,700},
+									   {650,750},{700,800},{750,850},{800,900},{850,950}};	//A, B
+int Prima_Ignis_WeaponX[10]			= {2,2,3,3,4,4,5,5,6,6};					//M
+
+//Third Anima: more magic damage for less mana
+int Third_Anima_Damage[10]			= {15,30,45,60,75,90,105,120,135,150};		//magic damage +%
+int Third_Anima_ManaDown[10]		= {5,10,15,20,25,30,35,40,45,50};			//max mana -%
+int Third_Anima_Time[10]			= {120,130,140,150,160,170,180,190,200,210};	//seconds
+
+// the server's Summon Muspell param -> Muspell's or Ramiel's numbers (the rank, with
+// MUSPELL_PARAM_RAMIEL set for Summon Ramiel; Tempskron.h has the same define)
+#ifndef MUSPELL_PARAM_RAMIEL
+#define	MUSPELL_PARAM_RAMIEL	0x100
+#endif
+int Muspell_BlockOf( int dwParam )
+{
+	int pt = dwParam&0xFF;
+	if ( pt>9 ) pt = 9;
+	return (dwParam&MUSPELL_PARAM_RAMIEL) ? Summon_Ramiel_BlockPercent[pt] : Summon_Muspell_BlockPercent[pt];
+}
+int Muspell_UndeadAbsorbOf( int dwParam )
+{
+	int pt = dwParam&0xFF;
+	if ( pt>9 ) pt = 9;
+	return (dwParam&MUSPELL_PARAM_RAMIEL) ? Summon_Ramiel_UndeadAbsorbPercent[pt] : Summon_Muspell_UndeadAbsorbPercent[pt];
+}
+int Muspell_DamageOf( int dwParam , int i )
+{
+	int pt = dwParam&0xFF;
+	if ( pt>9 ) pt = 9;
+	return (dwParam&MUSPELL_PARAM_RAMIEL) ? Summon_Ramiel_Damage[pt][i&1] : Summon_Muspell_Damage[pt][i&1];
+}
+
+//[Fighter] tier 5
+//Down Hit: lifts the target and strikes it 3 times
+int Down_Hit_DamagePercent[10]		= {50,80,110,140,170,200,230,260,290,320};	//attack power +%
+int Down_Hit_AddHit[10]				= {5,10,15,20,25,30,35,40,45,50};			//attack rating +%
+
+//Power Dash: charges the target and stuns it (bosses are spared the stun)
+int Power_Dash_DamagePercent[10]	= {15,30,45,60,75,90,105,120,135,150};		//attack power +%
+int Power_Dash_StunTime[10]			= {10,13,16,19,22,25,28,31,34,37};			//stun, seconds
+int Power_Dash_Range[10]			= {190,190,190,190,190,190,190,190,190,190};	//charge reach
+
+//Mortal Blow: a slow spin hitting the target and the enemies around the caster
+int Mortal_Blow_DamagePercent[10]	= {40,60,80,100,120,140,160,180,200,220};	//the target: attack power +%
+int Mortal_Blow_AreaDamage[10][2]	= {{150,200},{170,230},{190,260},{210,290},{230,320},
+									   {250,350},{270,380},{290,410},{310,440},{330,470}};	//around: damage
+int Mortal_Blow_Area[10]			= {120,130,140,150,160,170,180,190,200,210};	//radius
+int Mortal_Blow_AttackNum[10]		= {5,5,6,6,7,7,8,8,9,9};					//most enemies struck
+
+//Bloody Berserker: more damage, less absorption (replaces Berserker)
+int Bloody_Berserker_AddAttack[10]	= {110,140,170,200,230,260,290,320,350,380};	//added attack power
+int Bloody_Berserker_SubAbsorb[10]	= {-5,-7,-9,-11,-13,-15,-17,-19,-21,-23};		//absorption
+int Bloody_Berserker_Time[10]		= {240,280,320,360,400,440,480,520,560,600};	//seconds
+
+// Berserker and Bloody Berserker share the server's one Berserker slot: the param
+// is the 0-based rank, with BERSERKER_PARAM_BLOODY set for Bloody Berserker.
+// (this file includes nothing, so the flag is repeated from Tempskron.h)
+#ifndef BERSERKER_PARAM_BLOODY
+#define	BERSERKER_PARAM_BLOODY	0x100
+#endif
+int Berserker_AddAttackOf( int dwParam )
+{
+	int pt = dwParam&0xFF;
+	if ( pt>9 ) pt = 9;
+	return (dwParam&BERSERKER_PARAM_BLOODY) ? Bloody_Berserker_AddAttack[pt] : Berserker_AddAttack[pt];
+}
+int Berserker_SubAbsorbOf( int dwParam )
+{
+	int pt = dwParam&0xFF;
+	if ( pt>9 ) pt = 9;
+	return (dwParam&BERSERKER_PARAM_BLOODY) ? Bloody_Berserker_SubAbsorb[pt] : Berserker_SubAbsorb[pt];
+}

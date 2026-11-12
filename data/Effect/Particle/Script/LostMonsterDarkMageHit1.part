@@ -1,0 +1,69 @@
+particlesystem "FireJet" 1.00 {
+  position = XYZ(0,0,0)
+  
+  eventsequence "Light1" {
+    sourceblendmode = BLEND_LAMP
+    numparticles = 1
+    gravity = XYZ(0,0,0)
+    emitrate = 40
+    loops = 1
+    lifetime = Random(0.5,1)
+    texture = "effect\\particle\\flare.bmp"
+    initial color = rgba(200,200,200,200)
+    initial size = 80
+    initial velocity = XYZ(0,0,0)
+    initial partAngleZ = random(0,360)
+    fade so final color = rgba(0,0,0,0)
+    fade so final size = 40
+    }
+   eventsequence "Second" {
+    sourceblendmode = BLEND_INVSHADOW
+    numparticles = 15
+    gravity = XYZ(0,-10,0)
+    emitradius = xyz(random(-15,15),random(-15,15),random(-15, 15))
+    emitrate = 150
+    loops = 1
+    lifetime = Random(0.2,0.6)
+    texture = "effect\\particle\\MonParticle01.bmp"
+    initial color = rgba(255,255,255,255)
+    initial size = random(15,30)
+    initial velocity = XYZ(random(-15,15),random(20,50),random(-15,15))
+    fade so final color = rgba(0,0,0,0)
+    fade so final size = 30
+    }
+
+   eventsequence "faeries" {
+    sourceblendmode = BLEND_LAMP
+    loops = 1
+    numparticles = 20
+    gravity = XYZ(0,-10,0)
+    emitrate = 150
+    emitradius = xyz(random(--18,18),random(-20,10),random(-18,18))
+    lifetime = random(0.2,0.8)
+    texture = "effect\\particle\\dust2.bmp"
+    initial size = random(20,40)
+    initial color = rgba(255,50,0,200)
+    initial velocity = XYZ(random(-20,20),random(10,80),random(-20,20))
+    fade so final color = rgba(200,0,0,0)
+    fade so final size = 20
+    }
+
+    eventsequence "FireJet" {
+    sourceblendmode = BLEND_LAMP
+    numparticles = 20
+    gravity = XYZ(0,-150,0)
+    emitrate = 200
+    loops = 1
+    lifetime = Random(0.5,2)
+    texture = "effect\\particle\\fire-1.bmp"
+    initial color = rgba(255,255,255,255)
+    initial size = random(5,10)
+    emitradius = xyz(random(--10,10),random(-10,20),random(-10,10))
+    initial velocity = XYZ(random(-30,30),random(30,90),random(-30,30))
+    fade so final color = rgba(0,0,0,0)
+    fade so final size = 1
+    }
+}
+
+
+

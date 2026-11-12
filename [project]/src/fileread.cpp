@@ -23,6 +23,7 @@ static char line[512];
 
 //######################################################################################
 //작 성 자 : 오 영 석
+WORD GetMotionItemIndexOfSlot( int ItemSlot );		// character.cpp
 void ModelKeyWordEncode( DWORD dwFileCode, smMODELINFO *lpMODELINFO );
 int  ModelKeyWordDecode( DWORD dwFileCode, smMODELINFO *lpMODELINFO );
 void MotionKeyWordEncode( DWORD dwCode, smMODELINFO *lpMODELINFO );
@@ -187,6 +188,11 @@ JOBNAME_BIT BitMaskJobNames[] = {
 	{	"Knight"		,	0x0020	},
 	{	"Magician"		,	0x0040	},
 	{	"Priest"		,	0x0080	},
+
+	// the later classes (JOB_CODE 9..11): their motion tables' bits (M6Bip/M7Bip/M8Bip)
+	{	"Assassin"		,	0x0100	},
+	{	"Shaman"		,	0x0200	},
+	{	"MartialArtist"	,	0x0400	},
 
 	{	"" , 0 },
 
@@ -633,14 +639,15 @@ char *szFallStandSmallWord = "작은착지";
 					if ( lstrcmp( strBuff , "\270\360\265\316" )==0 ) {
 						Info->MotionInfo[MotionLastPos].ItemCodeCount = 0; break; }
 
+					if ( Info->MotionInfo[MotionLastPos].ItemCodeCount>=MOTION_TOOL_MAX/2 ) break;
 					if ( lstrcmp( strBuff , "\276\370\300\275" )==0 ) {
 						Info->MotionInfo[MotionLastPos].ItemCodeList[
-								Info->MotionInfo[MotionLastPos].ItemCodeCount++] = 0xFF;
+								Info->MotionInfo[MotionLastPos].ItemCodeCount++] = 0xFFFF;		// bare hands
 					}
 					else {
-						//코드검색 하여 설정
+						//코드검색 하여 설정 (our item table's index; keys we don't have are skipped)
 						for(cnt=0;cnt<MAX_ITEM;cnt++) {
-							if ( lstrcmp( strBuff , sItem[cnt].LastCategory )==0 ) {
+							if ( lstrcmpi( strBuff , sItem[cnt].LastCategory )==0 ) {
 								Info->MotionInfo[MotionLastPos].ItemCodeList[
 									Info->MotionInfo[MotionLastPos].ItemCodeCount++] = cnt;
 								break;
@@ -897,6 +904,14 @@ char *szFallStandSmallWord = "작은착지";
 	//모션 파일 없구 .. 동작 모음만 있으면..모션 생성
 	//######################################################################################
 	//작 성 자 : 오 영 석
+#ifdef PT_WEB
+	// The web build never rebuilds a motion file from its parts: the data has the merged
+	// .smb (m1..m8.smb), and an empty talk-motion name would otherwise count as "missing"
+	// and download and merge every part (tens of MB per character).
+	for(cnt=MotionFileListCnt-1;cnt>=0;cnt--)
+		delete szMotionFileList[cnt];
+	MotionFileListCnt = 0;
+#endif
 	if( MotionFileListCnt )
 	//if( MotionFileListCnt > 1 )
 	{
@@ -911,11 +926,18 @@ char *szFallStandSmallWord = "작은착지";
 			if ( pat3d ) delete pat3d;
 		}
 
-		for(cnt=MotionFileListCnt-1;cnt>=0;cnt--) 
+		for(cnt=MotionFileListCnt-1;cnt>=0;cnt--)
 			delete szMotionFileList[cnt];
 	}
 	//######################################################################################
 
+#ifdef PT_WEB
+	// The web build reads the class motion tables (char\tmABCD\M?Bip.in) as text: their
+	// weapon keys and skill names resolve against our own item and skill tables, which the
+	// v3215 .inx files' numbers do not (they index that client's tables). No compiled copy is
+	// written: the page keeps files the game writes, so it would go stale with the data.
+	return TRUE;
+#endif
 
 #ifndef _W_SERVER
 		if ( !smConfig.DebugMode ) {
@@ -966,15 +988,27 @@ char *szFallStandSmallWord = "작은착지";
 static_assert( sizeof(smMODELINFO)==95268, "smMODELINFO must match the v3215 .inx size" );
 static_assert( SMMODELINFO_OLD_SIZE==67084, "old .inx size" );
 
+// character.cpp: an entry of our item table (sItem) as a v3215 motion item index
+WORD GetMotionItemIndexOfSlot( int ItemSlot );
+
 static void MotionInfoFromOld( BYTE *lpOld, smMOTIONINFO *lpNew, int Count )
 {
-	int headSize = MOTIONINFO_LIST_OFS + MOTION_TOOL_MAX_OLD;		//State ~ ItemCodeList[52]
-	int tailSize = MOTIONINFO_OLD_SIZE - headSize;					//dwJobCodeBit ~ MotionFrame
+	int headSize = MOTIONINFO_LIST_OFS;								//State ~ ItemCodeCount
+	int tailSize = MOTIONINFO_OLD_SIZE - headSize - MOTION_TOOL_MAX_OLD;	//dwJobCodeBit ~ MotionFrame
 
 	for ( int cnt=0; cnt<Count; cnt++ ) {
 		BYTE *lpDest = (BYTE *)&lpNew[cnt];
 		memcpy( lpDest, lpOld, headSize );
-		memcpy( lpDest + MOTIONINFO_LIST_OFS + MOTION_TOOL_MAX, lpOld + headSize, tailSize );
+		memcpy( lpDest + MOTIONINFO_LIST_OFS + MOTION_TOOL_MAX, lpOld + headSize + MOTION_TOOL_MAX_OLD, tailSize );
+
+		// the old list: one byte per weapon, our item table's index (0xFF bare hands)
+		BYTE *lpList = lpOld + headSize;
+		int n = lpNew[cnt].ItemCodeCount;
+		if ( n<0 || n>MOTION_TOOL_MAX/2 ) n = 0;
+		lpNew[cnt].ItemCodeCount = n;
+		for ( int i=0; i<MOTION_TOOL_MAX/2; i++ )
+			lpNew[cnt].ItemCodeList[i] = i<n ? ( lpList[i]==0xFF ? 0xFFFF : lpList[i] ) : 0;
+
 		lpOld += MOTIONINFO_OLD_SIZE;
 	}
 }
@@ -2222,6 +2256,11 @@ int SetServerConfig( char *decode , char *lpPoint )
 	}
 	if ( !flag && lstrcmpi( decode , "*OFFLINE_PASSWORDS" )==0 ) {
 		rsServerConfig.OfflinePasswords = TRUE;
+		flag++;
+	}
+	// test server only: GM gold/exp/level commands without the rest of *TEST_SERVER
+	if ( !flag && lstrcmpi( decode , "*GM_CHEATS" )==0 ) {
+		rsServerConfig.GmCheats = TRUE;
 		flag++;
 	}
 
@@ -5554,10 +5593,16 @@ int DecodeOpenMonster( char *szCharFile , rsSTG_MONSTER_LIST *lpStgMonList , smC
 
 
 //최소 최대치에서 랜덤값 산출
+// GM /DeckMeOut!: CreateDefItem rolls every range at its best (and specialisation requirement
+// changes at their lowest)
+int Random_MaxMode = 0;
+
 int GetRandomPos( int Min , int Max )
 {
 	int sb;
 	int rnd;
+
+	if ( Random_MaxMode ) return (Random_MaxMode>0)==(Max>Min) ? Max : Min;	// >0 the best, <0 the least
 
 	sb = (Max+1)-Min;
 
@@ -5573,6 +5618,8 @@ float GetRandomFloatPos( float Min , float Max )
 	int sb;
 	int rnd;
 
+	if ( Random_MaxMode ) return (Random_MaxMode>0)==(Max>Min) ? Max : Min;	// >0 the best, <0 the least
+
 	sb = (int)(( Max - Min)*100.0f);
 
 	if ( sb==0 ) return Max;
@@ -5586,6 +5633,8 @@ float GetRandomFloatPos2( float Min , float Max )
 {
 	int sb;
 	int rnd;
+
+	if ( Random_MaxMode ) return (Random_MaxMode>0)==(Max>Min) ? Max : Min;	// >0 the best, <0 the least
 
 	sb = (int)(( Max - Min)*10.0f);
 
@@ -5616,6 +5665,8 @@ int GetRandomPos_Normal( int inMin , int inMax )
 	int sb,sc;
 	int rnd;
 	int	Min,Max;
+
+	if ( Random_MaxMode ) return GetRandomPos( inMin , inMax );
 
 	if ( !Random_NormalMode ) 
 		return GetRandomPos( inMin , inMax );
@@ -5855,6 +5906,9 @@ int CreateDefItem( sITEMINFO *lpItem , sDEF_ITEMINFO *lpDefItem , int SpJobCode 
 		//랜덤 특화직업 추가
 		cnt = rand()%10;			//특화 추가될 확률 20%
 
+		// GM /DeckMeOut!: the player's class or no specialisation at all
+		if ( Random_MaxMode && !SpJobCode ) cnt = 100;
+
 		// 석지용 - 믹스쳐 리셋 (무특화를 위해 완죤 날치기를....;;;)
 		if( NotItemSpecial )
 		{
@@ -5915,7 +5969,9 @@ int CreateDefItem( sITEMINFO *lpItem , sDEF_ITEMINFO *lpDefItem , int SpJobCode 
 				
 
 
-			// 특화 지업별  요구능력치 보정
+			// 특화 지업별  요구능력치 보정 (GM /DeckMeOut!: the smallest requirements)
+			int SaveMaxMode = Random_MaxMode;
+			if ( Random_MaxMode ) Random_MaxMode = -1;
 			for( cnt=0;cnt<sSPECIAL_REVISION_MAX;cnt++ ) {
 				if ( sSpecialRevision[cnt].dwJobCode==dwSpecialJob ) {
 					//레벨
@@ -5956,6 +6012,7 @@ int CreateDefItem( sITEMINFO *lpItem , sDEF_ITEMINFO *lpDefItem , int SpJobCode 
 					}
 				}
 			}
+			Random_MaxMode = SaveMaxMode;
 /*
 			if ( dwSpecialJob==JOB_CODE_ARCHER || dwSpecialJob==JOB_CODE_ATALANTA ) {
 				//아쳐 아탈 특화
@@ -6204,7 +6261,8 @@ JOB_DATA_CODE	*GetJobDataCode(	DWORD BaseJob	, int	JobCnt )
 
 	cnt = 0;
 	JobCount = 0;
-	JobCount2 = JobCnt&3;
+	JobCount2 = JobCnt;					// ranks 0..4 (4: the fifth rank, tier 5 skills)
+	if ( JobCount2<0 || JobCount2>4 ) JobCount2 = 4;
 	bJob = BaseJob&0xFFFF;
 
 	if ( !JobCnt ) {
@@ -6446,6 +6504,40 @@ SKILL_DATA_CODE	SkillDataCode[] = {
 	{	"FLAMEWAVE"				,	SKILL_PLAY_FLAME_WAVE			},
 	{	"DISTORTION"			,	SKILL_PLAY_DISTORTION			},
 	{	"METEO"					,	SKILL_PLAY_METEO				},
+
+	// tier 5, as the class motion tables (M?Bip.in) name them
+	{	"DownHit"				,	SKILL_PLAY_DOWN_HIT				},
+	{	"PowerDash"				,	SKILL_PLAY_POWER_DASH			},
+	{	"MotalBlow"				,	SKILL_PLAY_MORTAL_BLOW			},
+	{	"BloodyBerserker"		,	SKILL_PLAY_BLOODY_BERSERKER		},
+	{	"Landmining"			,	SKILL_PLAY_LAND_MINING			},
+	{	"HyperSonic"			,	SKILL_PLAY_HYPER_SONIC			},
+	{	"RollingSmash"			,	SKILL_PLAY_ROLLING_SMASH		},
+	{	"PowerEnhance"			,	SKILL_PLAY_POWER_ENHANCEMENT	},
+	{	"DancingReaper"			,	SKILL_PLAY_DANCING_REAPER		},
+	{	"FinalSpear"			,	SKILL_PLAY_FINAL_SPEAR			},
+	{	"Amplified"				,	SKILL_PLAY_AMPLIFIED			},
+	{	"SideSpinAttack"		,	SKILL_PLAY_SIDE_SPIN_ATTACK		},
+	{	"EvadeShot"				,	SKILL_PLAY_EVADE_SHOT			},
+	{	"ThunderRoop"			,	SKILL_PLAY_THUNDER_ROPE			},
+	{	"NatureSplash"			,	SKILL_PLAY_NATURE_SPLASH		},
+	{	"CircleTrap"			,	SKILL_PLAY_CIRCLE_TRAP			},
+	{	"SoulBreaker"			,	SKILL_PLAY_SOUL_BREAKER			},
+	{	"CrescentMoon"			,	SKILL_PLAY_CRESCENT_MOON		},
+	{	"SaintBlade"			,	SKILL_PLAY_SAINT_BLADE			},
+	{	"HolyBenedic"			,	SKILL_PLAY_HOLY_BENEDIC			},
+	{	"Talaria"				,	SKILL_PLAY_TALARIA				},
+	{	"GalaxyCoup"			,	SKILL_PLAY_GALAXY_COUP			},
+	{	"SummonArcuda"			,	SKILL_PLAY_SUMMON_ARCUDA		},
+	{	"SnippyFear"			,	SKILL_PLAY_SNIPPY_FEAR			},
+	{	"SpiritImpact"			,	SKILL_PLAY_SPIRIT_IMPACT		},
+	{	"PiercingIce"			,	SKILL_PLAY_PIERCING_ICE			},
+	{	"SummonRamiel"			,	SKILL_PLAY_SUMMON_RAMIEL		},
+	{	"BlessingKrishna"		,	SKILL_PLAY_BLESSING_KRISHNA		},
+	{	"Silraphim"				,	SKILL_PLAY_SILRAPHIM			},
+	{	"VisTenus"				,	SKILL_PLAY_VIS_TENUS			},
+	{	"Primaignis"			,	SKILL_PLAY_PRIMA_IGNIS			},
+	{	"ThirdAnima"			,	SKILL_PLAY_THIRD_ANIMA			},
 
 	{	"",0 }
 };

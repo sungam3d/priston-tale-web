@@ -1,6 +1,6 @@
 ﻿
 #define CHARACTER_USER_MAX			5
-#define CHARACTER_JOB_MAX			4
+#define CHARACTER_JOB_MAX			6		// classes per race on the job screen: Tempskron 6 (with the Assassin and the Martial Artist), Morion 5 (with the Shaman)
 
 
 #define CHARACTER_SELECT_STATE		0
@@ -70,7 +70,7 @@ public:
 	int						MoryonJobLogoImage[4];	//TempscronJobLogo Image 번호..
 
 							//모라연 얼굴그림.
-	int						MorFaceImage[4][4][2];	//0:Fighter 1:Mechanician 2:Archer 3: Pikeman //얼굴의 종류.. //0:옆얼굴 1: 정면얼굴.
+	int						MorFaceImage[CHARACTER_JOB_MAX][4][2];	//0:Fighter 1:Mechanician 2:Archer 3: Pikeman //얼굴의 종류.. //0:옆얼굴 1: 정면얼굴.
 
 
 	int USE_MOR;			//기본은 1이며 Init_UseMor() 에서 셋팅됨.
@@ -101,10 +101,10 @@ public:
 	int						RaceTextBoxImage[2];
 	int						JobTextBoxImage[2];
 	
-	int						TempscronJobImage[4][2];
-	int						MoryonJobImage[4][2];
-	int						TempscronJobTextImage[4];
-	int						MoryonJobTextImage[4];
+	int						TempscronJobImage[CHARACTER_JOB_MAX][2];
+	int						MoryonJobImage[CHARACTER_JOB_MAX][2];
+	int						TempscronJobTextImage[CHARACTER_JOB_MAX];
+	int						MoryonJobTextImage[CHARACTER_JOB_MAX];
 
 
 	int						FaceBoxBigImage[2];
@@ -176,7 +176,7 @@ private:
 	//Face Select 2d 얼굴 이미지들...
 	LPDIRECTDRAWSURFACE4	FaceSelectImage;
 	//int						FaceFrameImage;
-	int						TempFaceImage[4][4][2];	//0:Fighter 1:Mechanician 2:Archer 3: Pikeman //얼굴의 종류.. //0:옆얼굴 1: 정면얼굴.
+	int						TempFaceImage[CHARACTER_JOB_MAX][4][2];	//0:Fighter 1:Mechanician 2:Archer 3: Pikeman //얼굴의 종류.. //0:옆얼굴 1: 정면얼굴.
 	
 
 	//Name Select
@@ -257,6 +257,7 @@ private:
 	int		CameraUpDown();
 	int		AddUserCharacter(char *chrFile1, char *chrFile2, int jobCode = 0);
 	int		AddJobCharacter(char *chrFile1, char *chrFile2, int index = -1);
+	void	SetupJobCharacters(int tribe);		// the race's classes on the job screen
 	int		GetSelectCharacter( smCHAR *lpChar );
 	void	LoadLoadingImage(int level);
 

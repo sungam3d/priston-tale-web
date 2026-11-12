@@ -2446,19 +2446,19 @@ int PlayPat3D()
 													switch( lpCharMsTrace->smCharInfo.wPlayClass[0] ) {
 														//NPC 퀘스트 처리
 														case 1001:
-															if ( lpCurPlayer->smCharInfo.JOB_CODE<=4 )
+															if ( JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) )
 																sinCheckLevelQuest30();
 															break;
 														case 1002:
-															if ( lpCurPlayer->smCharInfo.JOB_CODE>4 )
+															if ( !JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) )
 																sinCheckLevelQuest30();
 															break;
 														case 1003:
-															if ( lpCurPlayer->smCharInfo.JOB_CODE<=4 )
+															if ( JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) )
 																sinCheckLevelQuest55();
 															break;
 														case 1004:
-															if ( lpCurPlayer->smCharInfo.JOB_CODE>4 )
+															if ( !JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) )
 																sinCheckLevelQuest55_2();
 															break;
 														case 1005:
@@ -2483,6 +2483,9 @@ int PlayPat3D()
 														case 1013:
 															sinCheckLevelQuest90_2(1);
 															chaQuest.showFuryQuest();
+															break;
+														case 2100:		// tier 5: Elder Hosean (the fifth rank-up quest)
+															sinChangeJob5Hosean();
 															break;
 													}
 
@@ -3502,6 +3505,7 @@ int DrawPat3D( int x, int y, int z, int ax, int ay, int az )
 			case SKILL_GODLY_SHIELD:		//가들리 쉴드
 			case SKILL_FROST_JAVELIN:		//프로스트 제블린 과 겸용
 			case SKILL_SUMMON_MUSPELL:		//서몬부스펠 과 겸용
+			case SKILL_SUMMON_RAMIEL:		// tier 5
 				lpCurPlayer->dwDispAppSkill |=  SKILL_APPMASK_GODLY_SHIELD;
 				break;
 			}

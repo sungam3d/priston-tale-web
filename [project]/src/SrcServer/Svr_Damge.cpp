@@ -1012,7 +1012,7 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 
 	if ( lpPlayInfo2->dwSkill_Berserker_Time ) {	//버서커 흡수력 감소
 		if ( lpPlayInfo2->dwSkill_Berserker_Time>dwPlayServTime ) {
-			TransAttackData.Power -= Berserker_SubAbsorb[lpPlayInfo2->dwSkill_Berserker_Param];
+			TransAttackData.Power -= Berserker_SubAbsorbOf( (int)lpPlayInfo2->dwSkill_Berserker_Param );	// or Bloody Berserker's
 			if ( TransAttackData.Power<0 ) return FALSE;
 		}
 		else {
@@ -1094,10 +1094,10 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 	if ( lpPlayInfo2->dwSkill_SummonMuspell_Time ) {	//서몬 무스펠
 		if ( lpPlayInfo2->dwSkill_SummonMuspell_Time>dwPlayServTime ) {
 
-			if ( (rand()%100)<Summon_Muspell_BlockPercent[ lpPlayInfo2->dwSkill_SummonMuspell_Param ] ) {
+			if ( (rand()%100)<Muspell_BlockOf( lpPlayInfo2->dwSkill_SummonMuspell_Param ) ) {
 #ifdef DISP_DAMAGE
 				if ( lpPlayInfo2->AdminMode>2 ) {
-					wsprintf( szDispDamage , ">%s \260\370\260\335 \303\337\260\241 \310\270\307\307 ( Summon Muspell [%d] )" , lpPlayInfo->smCharInfo.szName , Summon_Muspell_BlockPercent[ lpPlayInfo2->dwSkill_SummonMuspell_Param ] );
+					wsprintf( szDispDamage , ">%s \260\370\260\335 \303\337\260\241 \310\270\307\307 ( Summon Muspell [%d] )" , lpPlayInfo->smCharInfo.szName , Muspell_BlockOf( lpPlayInfo2->dwSkill_SummonMuspell_Param ) );
 					rsDisplayDamgeToClient( lpPlayInfo2 , szDispDamage );
 				}
 #endif
@@ -1397,6 +1397,8 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 								break;
 
 							case SKILL_PLAY_CYCLONE_STRIKE:
+							case SKILL_PLAY_MORTAL_BLOW:
+							case SKILL_PLAY_LAND_MINING:
 								if ( (rand()%100)<GetCritical2( lpPlayInfo , lpCharInfo , dm_Critical_Temp ) ) {
 									pow = (pow*170)/100;						//크리티컬 공격가중
 #ifdef DISP_DAMAGE
@@ -1857,6 +1859,8 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 								break;
 
 							case SKILL_PLAY_CYCLONE_STRIKE:
+							case SKILL_PLAY_MORTAL_BLOW:
+							case SKILL_PLAY_LAND_MINING:
 								if ( (rand()%100)<GetCritical( lpPlayInfo , lpChar , dm_Critical_Temp ) ) {
 									pow = (pow*170)/100;						//크리티컬 공격가중
 #ifdef DISP_DAMAGE
@@ -1881,6 +1885,12 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 						}
 
 						lpChar->PlayStunCount = 0;			//중립모드 해제
+
+						if ( SkillCode==SKILL_PLAY_CIRCLE_TRAP && lpChar->smCharInfo.wPlayClass[0]!=MONSTER_CLASS_BOSS ) {
+							//Archer tier 5: Circle Trap slows (16 = one second)
+							lpChar->PlaySlowCount = (16*Circle_Trap_SlowTime10[SkillPoint])/10;
+							lpChar->PlaySlowSpeed = 256-(256*Circle_Trap_Slow[SkillPoint])/100;
+						}
 
 						Dmg3 = pow;
 
@@ -3648,6 +3658,116 @@ int rsSetSkillAttack( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA
 				lpTransAttackData->Power += (lpTransAttackData->Power*30)/100;
 			}
 			break;
+
+		//Fighter tier 5 (the fifth rank only)
+		case SKILL_PLAY_DOWN_HIT:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_FIGHTER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Down_Hit_DamagePercent[Point])/100;
+			break;
+
+		case SKILL_PLAY_POWER_DASH:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_FIGHTER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Power_Dash_DamagePercent[Point])/100;
+			// the stun: monsters only, bosses spared (16 = one second)
+			if ( lpChar && lpChar->smCharInfo.State==smCHAR_STATE_ENEMY &&
+				lpChar->smCharInfo.wPlayClass[0]!=MONSTER_CLASS_BOSS && lpChar->smCharInfo.Life[0]>0 ) {
+				lpChar->PlayStunCount = 16*Power_Dash_StunTime[Point];
+			}
+			break;
+
+		//Priestess and Magician tier 5 (the fifth rank only): magic, by PristonWorld's formula
+		//(Critical[1] is the spirit, Power2 the weapon's damage)
+		case SKILL_PLAY_SPIRIT_IMPACT:
+		case SKILL_PLAY_PIERCING_ICE:
+		case SKILL_PLAY_SILRAPHIM:
+		case SKILL_PLAY_PRIMA_IGNIS:
+			{
+				int job, a, b, m, lv;
+				switch( dwSkillCode ) {
+				case SKILL_PLAY_SPIRIT_IMPACT:	job = JOBCODE_PRIESTESS; a = Spirit_Impact_Damage[Point][0]; b = Spirit_Impact_Damage[Point][1]; m = Spirit_Impact_WeaponX[Point]; lv = lpPlayInfo->smCharInfo.Level/2;	break;
+				case SKILL_PLAY_PIERCING_ICE:	job = JOBCODE_PRIESTESS; a = Piercing_Ice_Damage[Point][0];  b = Piercing_Ice_Damage[Point][1];  m = 2;							lv = lpPlayInfo->smCharInfo.Level/2;	break;
+				case SKILL_PLAY_SILRAPHIM:		job = JOBCODE_MAGICIAN;  a = Silraphim_Damage[Point][0];     b = Silraphim_Damage[Point][1];     m = Silraphim_WeaponX[Point];		lv = lpPlayInfo->smCharInfo.Level;		break;
+				default:						job = JOBCODE_MAGICIAN;  a = Prima_Ignis_Damage[Point][0];   b = Prima_Ignis_Damage[Point][1];   m = Prima_Ignis_WeaponX[Point];	lv = lpPlayInfo->smCharInfo.Level;		break;
+				}
+				if ( lpPlayInfo->smCharInfo.JOB_CODE!=job || lpPlayInfo->smCharInfo.ChangeJob<4 || !lpChar ) return FALSE;
+
+				power[0] = a + lpTransAttackData2->Critical[1]/2 + lv + lpTransAttackData2->Power2[0]*m;
+				power[1] = b + lpTransAttackData2->Critical[1]   + lv + lpTransAttackData2->Power2[1]*m;
+				lpTransAttackData->Power = GetRandomPos( power[0] , power[1] );
+				if ( dwSkillCode!=SKILL_PLAY_PRIMA_IGNIS )
+					lpTransAttackData2->Critical[0] = 0;		// Prima Ignis keeps its critical
+			}
+			break;
+
+		case SKILL_PLAY_VIS_TENUS:			//Magician tier 5: less life now, less damage for a time
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_MAGICIAN || lpPlayInfo->smCharInfo.ChangeJob<4 || !lpChar ) return FALSE;
+			{
+				int pct = Vis_Tenus_LifeDown[Point];
+				if ( lpChar->smCharInfo.wPlayClass[0]==MONSTER_CLASS_BOSS ) pct /= 4;
+				pow = (lpChar->smCharInfo.Life[0]*pct)/100;
+				if ( pow<1 ) pow = 1;
+				lpTransAttackData->Power = pow;
+				lpTransAttackData2->Critical[0] = 0;
+				if ( lpChar->smCharInfo.State==smCHAR_STATE_ENEMY ) {
+					lpChar->PlayHolyMind[0] = Vis_Tenus_DamageDown[Point];
+					lpChar->PlayHolyMind[1] = 16*Vis_Tenus_Time[Point];
+				}
+			}
+			break;
+
+		//Atalanta tier 5 (the fifth rank only)
+		case SKILL_PLAY_SNIPPY_FEAR:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ATALANTA || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Snippy_Fear_DamagePercent[Point])/100;
+			lpTransAttackData2->Critical[0] += Snippy_Fear_Critical[Point];
+			break;
+
+		//Knight tier 5 (the fifth rank only)
+		case SKILL_PLAY_SOUL_BREAKER:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_KNIGHT || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Soul_Breaker_DamagePercent[Point])/100;
+			break;
+		case SKILL_PLAY_CRESCENT_MOON:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_KNIGHT || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Crescent_Moon_DamagePercent[Point])/100;
+			break;
+		case SKILL_PLAY_SAINT_BLADE:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_KNIGHT || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Saint_Blade_DamagePercent[Point])/100;
+			if ( lpChar && lpChar->smCharInfo.Brood==smCHAR_MONSTER_UNDEAD )
+				lpTransAttackData->Power += (lpTransAttackData->Power*Saint_Blade_Undead[Point])/100;
+			break;
+
+		//Archer tier 5 (the fifth rank only)
+		case SKILL_PLAY_EVADE_SHOT:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ARCHER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Evade_Shot_DamagePercent[Point])/100;
+			// the stun: monsters only, bosses spared (16 = one second)
+			if ( lpChar && lpChar->smCharInfo.State==smCHAR_STATE_ENEMY &&
+				lpChar->smCharInfo.wPlayClass[0]!=MONSTER_CLASS_BOSS && lpChar->smCharInfo.Life[0]>0 ) {
+				lpChar->PlayStunCount = 16*Evade_Shot_StunTime[Point];
+			}
+			break;
+		case SKILL_PLAY_THUNDER_ROPE:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ARCHER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Thunder_Rope_DamagePercent[Point])/100;
+			break;
+
+		//Pikeman tier 5 (the fifth rank only)
+		case SKILL_PLAY_DANCING_REAPER:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_PIKEMAN || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Dancing_Reaper_DamagePercent[Point])/100;
+			break;
+		case SKILL_PLAY_SIDE_SPIN_ATTACK:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_PIKEMAN || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Side_Spin_DamagePercent[Point])/100;
+			break;
+
+		//Mechanician tier 5 (the fifth rank only)
+		case SKILL_PLAY_ROLLING_SMASH:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_MECHANICIAN || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Rolling_Smash_DamagePercent[Point])/100;
+			break;
 /*
 		case SKILL_PLAY_CYCLONE_STRIKE:
 			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_FIGHTER ) {
@@ -3708,8 +3828,8 @@ int rsSetSkillAttack( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA
 					return FALSE;
 				}
 
-				pow1 = Summon_Muspell_Damage[lpPlayInfo->dwSkill_SummonMuspell_Param][0];
-				pow2 = Summon_Muspell_Damage[lpPlayInfo->dwSkill_SummonMuspell_Param][1];
+				pow1 = Muspell_DamageOf( lpPlayInfo->dwSkill_SummonMuspell_Param , 0 );
+				pow2 = Muspell_DamageOf( lpPlayInfo->dwSkill_SummonMuspell_Param , 1 );
 
 				lpTransAttackData->Power = GetRandomPos( pow1, pow2 );
 				lpTransAttackData2->Critical[0] = 0;
@@ -3735,6 +3855,54 @@ int rsSetSkillPlus( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA *
 	if ( !lpPlayInfo->AdminMode )
 		dwAttSkillCode = lpTransAttackData2->SkillCode;
 
+
+	if ( lpPlayInfo->dwSkill_PowerEnhance_Time ) {
+		//tier 5 Mechanician: Power Enhancement, attack power +%
+		if ( lpPlayInfo->dwSkill_PowerEnhance_Time<dwPlayServTime ) {
+			lpPlayInfo->dwSkill_PowerEnhance_Time = 0;
+			lpPlayInfo->dwSkill_PowerEnhance_Param = 0;
+		}
+		else {
+			lpTransAttackData2->Power[0] += (lpTransAttackData2->Power[0]*lpPlayInfo->dwSkill_PowerEnhance_Param)/100;
+			lpTransAttackData2->Power[1] += (lpTransAttackData2->Power[1]*lpPlayInfo->dwSkill_PowerEnhance_Param)/100;
+			lpTransAttackData->Power += (lpTransAttackData->Power*lpPlayInfo->dwSkill_PowerEnhance_Param)/100;
+		}
+	}
+
+	if ( lpPlayInfo->dwSkill_Amplified_Time ) {
+		//tier 5 Pikeman: Amplified, attack power +% (its absorption cost is the client's)
+		if ( lpPlayInfo->dwSkill_Amplified_Time<dwPlayServTime ) {
+			lpPlayInfo->dwSkill_Amplified_Time = 0;
+			lpPlayInfo->dwSkill_Amplified_Param = 0;
+		}
+		else {
+			lpTransAttackData2->Power[0] += (lpTransAttackData2->Power[0]*lpPlayInfo->dwSkill_Amplified_Param)/100;
+			lpTransAttackData2->Power[1] += (lpTransAttackData2->Power[1]*lpPlayInfo->dwSkill_Amplified_Param)/100;
+			lpTransAttackData->Power += (lpTransAttackData->Power*lpPlayInfo->dwSkill_Amplified_Param)/100;
+		}
+	}
+
+	if ( lpPlayInfo->dwSkill_ThirdAnima_Time ) {
+		//tier 5 Magician: Third Anima, magic damage +%
+		if ( lpPlayInfo->dwSkill_ThirdAnima_Time<dwPlayServTime ) {
+			lpPlayInfo->dwSkill_ThirdAnima_Time = 0;
+			lpPlayInfo->dwSkill_ThirdAnima_Param = 0;
+		}
+		else if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_MAGICIAN && dwSkillCode ) {
+			lpTransAttackData->Power += (lpTransAttackData->Power*lpPlayInfo->dwSkill_ThirdAnima_Param)/100;
+		}
+	}
+
+	if ( lpPlayInfo->dwSkill_HolyBenedic_Time ) {
+		//tier 5 Knight: Holy Benedic, attack power +% against the undead
+		if ( lpPlayInfo->dwSkill_HolyBenedic_Time<dwPlayServTime ) {
+			lpPlayInfo->dwSkill_HolyBenedic_Time = 0;
+			lpPlayInfo->dwSkill_HolyBenedic_Param = 0;
+		}
+		else if ( lpChar && lpChar->smCharInfo.Brood==smCHAR_MONSTER_UNDEAD ) {
+			lpTransAttackData->Power += (lpTransAttackData->Power*lpPlayInfo->dwSkill_HolyBenedic_Param)/100;
+		}
+	}
 
 	if ( lpPlayInfo->dwSkill_Maximize_Time && !dwAttSkillCode ) {
 		//맥시마이즈 적용 ( 최대 공격력 무기 최대치 만큼 추가 )
@@ -3827,7 +3995,7 @@ int rsSetSkillPlus( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA *
 			return TRUE;
 		}
 
-		lpTransAttackData->Power += Berserker_AddAttack[lpPlayInfo->dwSkill_Berserker_Param];
+		lpTransAttackData->Power += Berserker_AddAttackOf( (int)lpPlayInfo->dwSkill_Berserker_Param );	// or Bloody Berserker's
 	}
 
 	if ( lpPlayInfo->dwSkill_ForceOfNature_Time ) {
@@ -5128,6 +5296,76 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
 			return TRUE;
 
+		case SKILL_PLAY_MORTAL_BLOW:		//Fighter tier 5: the target, plus those around the caster
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_FIGHTER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			if ( lpTransSkillAttackData->TargetCount>Mortal_Blow_AttackNum[Point]+1 ) return FALSE;
+
+			lpTransAttackData->Power = GetRandomPos( lpTransRangeAttack->Power[0] , lpTransRangeAttack->Power[1] );
+			lpTransAttackData->Power+= (lpTransAttackData->Power*Mortal_Blow_DamagePercent[Point])/100;
+			lpTransSkillAttackData->AttackSize = Mortal_Blow_Area[Point];
+			lpTransSkillAttackData->Power = GetRandomPos( Mortal_Blow_AreaDamage[Point][0] , Mortal_Blow_AreaDamage[Point][1] );
+			lpTransSkillAttackData->AttackState = 0;
+			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
+			return TRUE;
+
+		case SKILL_PLAY_FINAL_SPEAR:		//Pikeman tier 5: weapon damage plus the spears', around the caster
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_PIKEMAN || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			if ( lpTransSkillAttackData->TargetCount>13 ) return FALSE;
+
+			pow = GetRandomPos( lpTransRangeAttack->Power[0] , lpTransRangeAttack->Power[1] );
+			pow += GetRandomPos( Final_Spear_AreaDamage[Point][0] , Final_Spear_AreaDamage[Point][1] );
+			lpTransAttackData->Power = pow;
+			lpTransSkillAttackData->AttackSize = Final_Spear_Area[Point];
+			lpTransSkillAttackData->Power = pow;
+			lpTransSkillAttackData->AttackState = 0;
+			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
+			return TRUE;
+
+		case SKILL_PLAY_GALAXY_COUP:		//Atalanta tier 5: weapon damage +%, the target and those around it
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ATALANTA || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			if ( lpTransSkillAttackData->TargetCount>13 ) return FALSE;
+
+			pow = GetRandomPos( lpTransRangeAttack->Power[0] , lpTransRangeAttack->Power[1] );
+			pow += (pow*Galaxy_Coup_DamagePercent[Point])/100;
+			lpTransAttackData->Power = pow;
+			lpTransSkillAttackData->AttackSize = Galaxy_Coup_Area[Point];
+			lpTransSkillAttackData->Power = pow;
+			lpTransSkillAttackData->AttackState = 0;
+			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
+			return TRUE;
+
+		case SKILL_PLAY_NATURE_SPLASH:		//Archer tier 5: weapon damage +%, the target and those around it
+		case SKILL_PLAY_CIRCLE_TRAP:		//(Circle Trap also slows them: RecvRangeAttack)
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ARCHER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			if ( lpTransSkillAttackData->TargetCount>13 ) return FALSE;
+
+			pow = GetRandomPos( lpTransRangeAttack->Power[0] , lpTransRangeAttack->Power[1] );
+			if ( dwSkillCode==SKILL_PLAY_NATURE_SPLASH ) {
+				pow += (pow*Nature_Splash_DamagePercent[Point])/100;
+				lpTransSkillAttackData->AttackSize = Nature_Splash_Area[Point];
+			}
+			else {
+				pow += (pow*Circle_Trap_DamagePercent[Point])/100;
+				lpTransSkillAttackData->AttackSize = Circle_Trap_Area[Point];
+			}
+			lpTransAttackData->Power = pow;
+			lpTransSkillAttackData->Power = pow;
+			lpTransSkillAttackData->AttackState = 0;
+			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
+			return TRUE;
+
+		case SKILL_PLAY_LAND_MINING:		//Mechanician tier 5: the target, plus those around it
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_MECHANICIAN || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			if ( lpTransSkillAttackData->TargetCount>Land_Mining_AttackNum[Point]+1 ) return FALSE;
+
+			lpTransAttackData->Power = GetRandomPos( lpTransRangeAttack->Power[0] , lpTransRangeAttack->Power[1] );
+			lpTransAttackData->Power+= (lpTransAttackData->Power*Land_Mining_DamagePercent[Point])/100;
+			lpTransSkillAttackData->AttackSize = Land_Mining_Area[Point];
+			lpTransSkillAttackData->Power = GetRandomPos( Land_Mining_AreaDamage[Point][0] , Land_Mining_AreaDamage[Point][1] );
+			lpTransSkillAttackData->AttackState = 0;
+			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
+			return TRUE;
+
 		case SKILL_PLAY_PHOENIX_SHOT:
 			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ARCHER ) return FALSE;
 
@@ -6053,6 +6291,7 @@ int	rsBillingItemSkill( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , int HitMonster
 
 	if ( SkillCode==SKILL_PLAY_ROAR || SkillCode==SKILL_PLAY_METAL_GOLEM || SkillCode==SKILL_PLAY_COMPULSION || SkillCode==SKILL_PLAY_EXTINCTION ||
 		SkillCode==SKILL_PLAY_RECALL_WOLVERIN || SkillCode==SKILL_PLAY_FIRE_ELEMENTAL || SkillCode==SKILL_PLAY_DISTORTION ||
+		SkillCode==SKILL_PLAY_SUMMON_ARCUDA || SkillCode==SKILL_PLAY_SUMMON_RAMIEL ||
 		SkillCode==SKILL_PLAY_PET_ATTACK || SkillCode==SKILL_PLAY_PET_ATTACK2 || lpPlayInfo->Position.Area==rsCASTLE_FIELD )
 	{
 		return FALSE;

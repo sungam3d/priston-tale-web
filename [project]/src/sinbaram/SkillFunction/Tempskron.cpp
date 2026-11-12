@@ -20,8 +20,10 @@ int CheckMastery;	//사용가능 숙련도
 int NotUseSkillElement[3] ={0,0,0};	//요구치를 충족하지 못한다면  
 
 //수정햇음!!
-int sinMasterSkill_Money[16] = {500,1000,1500,2000,3000,5000,7000,9000,10000,12000,15000,20000,25000,30000,35000,40000};	
-int sinMasterSkill_PlusMoney[16] = {500,600,700,800,1000,1200,1400,1600,2000,2500,3000,4000,5000,6000,7000,8000};	
+int sinMasterSkill_Money[SIN_MAX_USE_SKILL-1] = {500,1000,1500,2000,3000,5000,7000,9000,10000,12000,15000,20000,25000,30000,35000,40000,
+	50000,60000,70000,80000};	// + tier 5
+int sinMasterSkill_PlusMoney[SIN_MAX_USE_SKILL-1] = {500,600,700,800,1000,1200,1400,1600,2000,2500,3000,4000,5000,6000,7000,8000,
+	10000,12000,14000,16000};	// + tier 5
 
 
 #define GROUP_MECHANICIAN		0x01000000
@@ -31,7 +33,7 @@ int sinMasterSkill_PlusMoney[16] = {500,600,700,800,1000,1200,1400,1600,2000,250
 
 
 
-int sinMasteryIncreaIndex[16] = {5,5,5,5,7,7,7,7,9,9,9,9,14,15,16,17};
+int sinMasteryIncreaIndex[SIN_MAX_USE_SKILL-1] = {5,5,5,5,7,7,7,7,9,9,9,9,14,15,16,17,18,19,20,21};	// + tier 5
 
 
 //유지형스킬을 무기가바뀔때 취소한다
@@ -174,7 +176,10 @@ void CheckContinueSkill()
 				ContinueSkill[i].CheckTime--;
 			}
 			if((ContinueSkill[i].UseTime*70) < ContinueSkill[i].CheckTime){	
-				if(ContinueSkill[i].CODE == CHANGE_JOB3_QUEST){ //퀘스트를 한단계 내린다
+				if(ContinueSkill[i].CODE == CHANGE_JOB3_QUEST && sinQuest_ChangeJob5.CODE){	// tier 5: the fifth rank-up quest's timer
+					sinChangeJob5TimerOut();
+				}
+				else if(ContinueSkill[i].CODE == CHANGE_JOB3_QUEST){ //퀘스트를 한단계 내린다
 					if(sinQuest_ChangeJob4.Monster[1])
 						sinQuest_ChangeJob4.State--;
 					sinQuest_ChangeJob4.Monster[0] = 0; //몬스터수 초기화
@@ -1918,6 +1923,7 @@ int F_Destoryer()
 }
 int F_Berserker()
 {
+	cSkill.CancelContinueSkill( SKILL_BLOODY_BERSERKER );	// one Berserker slot on the server: the newer cast wins
 	pUseSkill->UseTime = Berserker_Time[pUseSkill->Point-1];
 	sinContinueSkillSet(pUseSkill);
 	sinUseManaStamina(pUseSkill);
@@ -1931,6 +1937,160 @@ int F_Cyclone_Strike()
 }
 int F_Boost_Health()
 {
+	return TRUE;
+}
+
+//Fighter tier 5
+int F_Down_Hit()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Power_Dash()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Mortal_Blow()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Bloody_Berserker()
+{
+	cSkill.CancelContinueSkill( SKILL_BERSERKER );		// the two share the server's slot: this one replaces it
+	pUseSkill->UseTime = Bloody_Berserker_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();
+	return TRUE;
+}
+int F_Tier5_Pending()
+{
+	return FALSE;
+}
+
+//Mechanician tier 5
+int F_Land_Mining()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Hyper_Sonic()
+{
+	pUseSkill->UseTime = Hyper_Sonic_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();		// the attack speed (sinInvenTory.cpp SetItemToChar)
+	return TRUE;
+}
+int F_Rolling_Smash()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Power_Enhancement()
+{
+	pUseSkill->UseTime = Power_Enhancement_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();		// the shown attack power; the server adds it to each hit
+	return TRUE;
+}
+
+//Pikeman tier 5
+int F_Dancing_Reaper()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Final_Spear()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Amplified()
+{
+	pUseSkill->UseTime = Amplified_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();		// absorption, attack rating, shown damage
+	return TRUE;
+}
+int F_Side_Spin_Attack()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+
+//Archer tier 5 (all four are shots)
+int F_Evade_Shot()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Thunder_Rope()	{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Nature_Splash()	{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Circle_Trap()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+
+//Knight tier 5
+int F_Soul_Breaker()	{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Crescent_Moon()	{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Saint_Blade()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Holy_Benedic()
+{
+	pUseSkill->UseTime = Holy_Benedic_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+
+//Atalanta tier 5
+int F_Talaria()
+{
+	pUseSkill->UseTime = Talaria_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();		// the move speed (sinInvenTory.cpp SetItemToChar)
+	return TRUE;
+}
+int F_Galaxy_Coup()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Summon_Arcuda()
+{
+	pUseSkill->UseTime = Summon_Arcuda_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();
+	SummonSkillCodeIndex[3] = 0;		// sinSubMain.cpp SummonSkillCode: its attack mode
+	return TRUE;
+}
+int F_Snippy_Fear()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+
+//Priestess tier 5
+int F_Spirit_Impact()	{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Piercing_Ice()	{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Summon_Ramiel()
+{
+	pUseSkill->UseTime = Summon_Ramiel_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Blessing_Krishna()
+{
+	pUseSkill->UseTime = Blessing_Krishna_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();		// defense and absorption
+	return TRUE;
+}
+
+//Magician tier 5
+int F_Silraphim()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Vis_Tenus()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Prima_Ignis()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Third_Anima()
+{
+	pUseSkill->UseTime = Third_Anima_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();		// the lower max mana
 	return TRUE;
 }
 

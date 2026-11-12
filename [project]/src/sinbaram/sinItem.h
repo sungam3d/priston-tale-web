@@ -8,7 +8,7 @@
 
 #define _SINITEM_HEADER_
 
-#define MAX_ITEM					983	 //071203 (700->720 ) pluto  
+#define MAX_ITEM					1072 // 983 + the daggers, phantoms and vambraces (89, tier 5 project) //071203 (700->720 ) pluto
 										 //작성자 : 박재원,  작성일 : 08.04.07
 										 //내  용 : 클랜치프 링 20개 추가(720->740)					
 										 // 박재원 - 수표 삭제 후 746 부터 시작
@@ -108,6 +108,22 @@
 #define sinWS1			0x01060000	//Shooters
 #define sinWS2			0x01070000	//Swords
 #define sinWT1			0x01080000	//Throwing Arms
+#define sinWN1			0x01090000	//Phantoms (the Shaman)
+#define sinWD1			0x010A0000	//Daggers (the Assassin)
+#define sinWV1			0x010B0000	//Vambraces (the Martial Artist)
+
+// Daggers are the Assassin's alone, phantoms the Shaman's, vambraces the Martial Artist's, who
+// wields no other weapon (classes 9 / 10 / 11, smPacket.h JOBCODE_*).
+inline int CanClassUseWeapon( int JobCode, DWORD dwItemCode )
+{
+	DWORD dwFamily = dwItemCode & 0xFFFF0000;
+	JobCode &= 0xFFFF;
+	if ( dwFamily==sinWD1 ) return JobCode==9;
+	if ( dwFamily==sinWN1 ) return JobCode==10;
+	if ( dwFamily==sinWV1 ) return JobCode==11;
+	if ( JobCode==11 && (dwItemCode&0xFF000000)==0x01000000 ) return 0;
+	return 1;
+}
 
 /*---------------------------------------------*
 *			(방어구)1차 카테고리 					    

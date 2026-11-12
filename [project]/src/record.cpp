@@ -604,12 +604,21 @@ struct	RECORD_SKILL {
 */
 
 //스킬 저장
-int	RecordSkill( RECORD_SKILL *lpRecordSkill )
+int	RecordSkill( RECORD_SKILL *lpRecordSkill , RECORD_SKILL5 *lpSkill5 )
 {
 	int cnt;
 	int mcnt;
 
-	for(cnt=0;cnt<SIN_MAX_USE_SKILL;cnt++) {
+	// the tier 5 skills (17..20) have their own block; the 16-slot one wraps 16 onto 0
+	for(cnt=SIN_TIER5_FIRST;cnt<SIN_MAX_USE_SKILL;cnt++) {
+		mcnt = cnt-SIN_TIER5_FIRST;
+		int pt = sinSkill.UseSkill[cnt].Point;
+		lpSkill5->bSkillPoint[mcnt] = (BYTE)( pt>255 ? 255 : ( pt<0 ? 0 : pt ) );
+		lpSkill5->wSkillMastery[mcnt] = (WORD)( sinSkill.UseSkill[cnt].UseSkillCount<10000 ? sinSkill.UseSkill[cnt].UseSkillCount : 10000 );
+		lpSkill5->bShortKey[mcnt] = sinSkill.UseSkill[cnt].ShortKey|(sinSkill.UseSkill[cnt].MousePosi<<4);
+	}
+
+	for(cnt=0;cnt<SIN_TIER5_FIRST;cnt++) {
 		mcnt = cnt&15;							//스킬 저장 영역 강제로 보정 ( 배열을 16개만 잡아놔서 16번 배열은 0에 저장 )
 
 		lpRecordSkill->bSkillPoint[mcnt] = sinSkill.UseSkill[cnt].Point;
@@ -690,7 +699,7 @@ int GetStatePoint_LevelQuest( int Level , DWORD dwLevelQuestLog )
 
 
 //스킬 복구
-int	RestoreSkill( RECORD_SKILL *lpRecordSkill , DWORD dwLevelQuestLog )
+int	RestoreSkill( RECORD_SKILL *lpRecordSkill , DWORD dwLevelQuestLog , RECORD_SKILL5 *lpSkill5 )
 {
 	int cnt,mcnt;
 	int	Point,EPoint;
@@ -704,7 +713,7 @@ int	RestoreSkill( RECORD_SKILL *lpRecordSkill , DWORD dwLevelQuestLog )
 		lpRecordSkill->bShortKey[0] = 0;
 	}
 
-	for(cnt=0;cnt<SIN_MAX_USE_SKILL;cnt++) {
+	for(cnt=0;cnt<SIN_TIER5_FIRST;cnt++) {
 		mcnt = cnt&15;							//스킬 저장 영역 강제로 보정 ( 배열을 16개만 잡아놔서 16번 배열은 0에 저장 )
 
 		if ( cnt>0 ) {	//주먹은 제외
@@ -714,6 +723,20 @@ int	RestoreSkill( RECORD_SKILL *lpRecordSkill , DWORD dwLevelQuestLog )
 			sinSkill.UseSkill[cnt].MousePosi = lpRecordSkill->bShortKey[mcnt]>>4;
 			sinSkill.UseSkill[cnt].Position = cnt+1;
 			//Point += sinSkill.UseSkill[cnt].Point;
+		}
+	}
+	for(cnt=SIN_TIER5_FIRST;cnt<SIN_MAX_USE_SKILL;cnt++) {		// the tier 5 skills
+		mcnt = cnt-SIN_TIER5_FIRST;
+		sinSkill.UseSkill[cnt].Point = lpSkill5->bSkillPoint[mcnt];
+		sinSkill.UseSkill[cnt].UseSkillCount = lpSkill5->wSkillMastery[mcnt];
+		sinSkill.UseSkill[cnt].ShortKey = lpSkill5->bShortKey[mcnt]&0xF;
+		sinSkill.UseSkill[cnt].MousePosi = lpSkill5->bShortKey[mcnt]>>4;
+		sinSkill.UseSkill[cnt].Position = cnt+1;
+	}
+	if ( lpCurPlayer->smCharInfo.ChangeJob<4 ) {		// tier 5 points without the fifth rank: drop them (refunded below)
+		for(cnt=SIN_TIER5_FIRST;cnt<SIN_MAX_USE_SKILL;cnt++) {
+			sinSkill.UseSkill[cnt].Point = 0;
+			sinSkill.UseSkill[cnt].UseSkillCount = 0;
 		}
 	}
 
@@ -730,6 +753,8 @@ int	RestoreSkill( RECORD_SKILL *lpRecordSkill , DWORD dwLevelQuestLog )
 	sinSkill.UseSkill[0].Position = 1;
 
 
+	if ( lpRecordSkill->wSelectSkill[0]>=SIN_MAX_USE_SKILL ) lpRecordSkill->wSelectSkill[0] = 0;
+	if ( lpRecordSkill->wSelectSkill[1]>=SIN_MAX_USE_SKILL ) lpRecordSkill->wSelectSkill[1] = 0;
 	sinSkill.pLeftSkill = &sinSkill.UseSkill[ lpRecordSkill->wSelectSkill[0] ];
 	sinSkill.pRightSkill = &sinSkill.UseSkill[ lpRecordSkill->wSelectSkill[1] ];
 
@@ -776,7 +801,7 @@ int	RestoreSkill( RECORD_SKILL *lpRecordSkill , DWORD dwLevelQuestLog )
 
 
 //스킬 첵크
-int	CheckSkillPoint( int Level , RECORD_SKILL *lpRecordSkill , int *spTotal , DWORD dwLevelQuestLog )
+int	CheckSkillPoint( int Level , RECORD_SKILL *lpRecordSkill , int *spTotal , DWORD dwLevelQuestLog , RECORD_SKILL5 *lpSkill5 )
 {
 	int cnt,mcnt;
 	int	Point,EPoint;
@@ -786,13 +811,21 @@ int	CheckSkillPoint( int Level , RECORD_SKILL *lpRecordSkill , int *spTotal , DW
 	Point = 0;
 	EPoint = 0;
 
+	// the tier 5 skills share the fourth tier's (elite) points
+	if ( lpSkill5 ) {
+		for(cnt=0;cnt<RECORD_SKILL5_MAX;cnt++) {
+			if ( lpSkill5->bSkillPoint[cnt]>10 ) return FALSE;
+			EPoint += lpSkill5->bSkillPoint[cnt];
+		}
+	}
+
 	//for(cnt=1;cnt<SIN_MAX_USE_SKILL;cnt++) {
 	for(cnt=1;cnt<13;cnt++) {
 		if ( lpRecordSkill->bSkillPoint[cnt]>10 ) return FALSE;
 		Point += abs(lpRecordSkill->bSkillPoint[cnt]);
 	}
 
-	for(cnt=13;cnt<SIN_MAX_USE_SKILL;cnt++) {
+	for(cnt=13;cnt<SIN_TIER5_FIRST;cnt++) {		// 13..16 (16 is kept in [0]); tier 5 is counted above
 		mcnt = cnt&15;
 		if ( lpRecordSkill->bSkillPoint[mcnt]>10 ) return FALSE;
 		EPoint += abs(lpRecordSkill->bSkillPoint[mcnt]);
@@ -892,7 +925,7 @@ int RecordGameData( sGAME_SAVE_INFO *lpGameSaveInfo )
 	lpGameSaveInfo->TotalSubExp = GetTotalSubExp();
 
 	//스킬 저장
-	RecordSkill( &lpGameSaveInfo->SkillInfo );
+	RecordSkill( &lpGameSaveInfo->SkillInfo , &lpGameSaveInfo->Skill5Info );
 	//기본공격 단축키정보
 	lpGameSaveInfo->ShortKey_NormalAttack = sinSkill.UseSkill[0].ShortKey|( sinSkill.UseSkill[0].MousePosi<<4 );
 
@@ -1810,7 +1843,7 @@ int rsRECORD_DBASE::ResotrRecordData( smCHAR_INFO *lpCharInfo , sITEM *lpItems ,
 	CheckCharForm();
 
 	//스킬 복구
-	RestoreSkill( &TransRecordData.GameSaveInfo.SkillInfo , TransRecordData.GameSaveInfo.dwLevelQuestLog );
+	RestoreSkill( &TransRecordData.GameSaveInfo.SkillInfo , TransRecordData.GameSaveInfo.dwLevelQuestLog , &TransRecordData.GameSaveInfo.Skill5Info );
 	//기본공격 단축기 복구
 	sinSkill.UseSkill[0].ShortKey = TransRecordData.GameSaveInfo.ShortKey_NormalAttack&0xF;
 	sinSkill.UseSkill[0].MousePosi = TransRecordData.GameSaveInfo.ShortKey_NormalAttack>>4;
@@ -2356,7 +2389,7 @@ int rsRECORD_DBASE::SendRecordDataToClient( rsPLAYINFO *lpPlayInfo , char *szNam
 	//SoD장 시작 보정
 	if ( lpTransRecord->GameSaveInfo.PlayStageNum==rsSOD_FIELD ) lpTransRecord->GameSaveInfo.PlayStageNum = rsSOD_VILLAGE;
 	if ( lpTransRecord->GameSaveInfo.PlayStageNum==QUEST_ARENA_FIELD ) {	//대전 격투장
-		if ( lpTransRecord->smCharInfo.JOB_CODE<=4 )
+		if ( JOB_IS_TEMPSKRON(lpTransRecord->smCharInfo.JOB_CODE) )
 			lpTransRecord->GameSaveInfo.PlayStageNum = START_FIELD_NUM;
 		else
 			lpTransRecord->GameSaveInfo.PlayStageNum = START_FIELD_MORYON;
@@ -2490,6 +2523,13 @@ int rsRECORD_DBASE::SendRecordDataToClient( rsPLAYINFO *lpPlayInfo , char *szNam
 
 #define	RECORD_ITEM_INFO_HEAD_SIZE		44
 
+#ifdef _W_SERVER
+int rsInvenTrace( rsPLAYINFO *lpPlayInfo , const char *szWhat , int a , int b , int c );		// OnSever.cpp
+#define INVEN_TRACE(p,w,a,b,c)	rsInvenTrace(p,w,a,b,c)
+#else
+#define INVEN_TRACE(p,w,a,b,c)
+#endif
+
 //불러온 아이템 목록을 유저정보에 저장
 int rsRECORD_DBASE::MakeRecordItemList( rsPLAYINFO *lpPlayInfo )
 {
@@ -2580,6 +2620,7 @@ int rsRECORD_DBASE::MakeRecordItemList( rsPLAYINFO *lpPlayInfo )
 	lpPlayInfo->ThrowItemCount = ThrowItemCount;
 	memcpy( lpPlayInfo->ThrowItemInfo , ThrowItemInfo , sizeof(sTHROW_ITEM_INFO)*ThrowItemCount );
 
+	INVEN_TRACE( lpPlayInfo , "list built from saved character, items in save" , TransRecordData.ItemCount , ThrowItemCount , 0 );
 
 	return TRUE;
 }
@@ -2855,7 +2896,7 @@ int rsRECORD_DBASE::RecvRecordDataFromClient( TRANS_RECORD_DATAS *lpTransRecord 
 		///////////////////////////////////////////////////////////////////////////
 
 		//스킬 첵크
-		if ( CheckSkillPoint( TransRecordData.smCharInfo.Level , &TransRecordData.GameSaveInfo.SkillInfo , 0 , TransRecordData.GameSaveInfo.dwLevelQuestLog )==FALSE ) {
+		if ( CheckSkillPoint( TransRecordData.smCharInfo.Level , &TransRecordData.GameSaveInfo.SkillInfo , 0 , TransRecordData.GameSaveInfo.dwLevelQuestLog , &TransRecordData.GameSaveInfo.Skill5Info )==FALSE ) {
 			//스킬포인트 조작 오류
 			return	-10;
 		}
@@ -2938,7 +2979,7 @@ int rsRECORD_DBASE::RecvRecordDataFromClient( TRANS_RECORD_DATAS *lpTransRecord 
 			//죽으면서 드롭한 사람 시작 좌표 마을로 보정 후 저장
 			TransRecordData.smCharInfo.Life[0] = TransRecordData.smCharInfo.Life[1]/2;
 
-			if ( TransRecordData.smCharInfo.JOB_CODE<5 ) {
+			if ( JOB_IS_TEMPSKRON(TransRecordData.smCharInfo.JOB_CODE) ) {
 				//템스크론
 				TransRecordData.GameSaveInfo.PlayStageNum = START_FIELD_NUM;
 				TransRecordData.GameSaveInfo.PosX = 746752;
@@ -3098,6 +3139,8 @@ int rsRecordMemoryBuff_CheckInvenItem( rsPLAYINFO *lpPlayInfo , int Mode )
 	lpRecItem = (BYTE *)&lpTransRecordData->Data;
 	BuffSize = 0;
 
+	INVEN_TRACE( lpPlayInfo , "CHECK before writing the character file, mode / items in it" , Mode , lpTransRecordData->ItemCount , 0 );
+	int TraceStripped = 0;
 
 	for( cnt=0;cnt<lpTransRecordData->ItemCount;cnt++ ) {
 		if ( cnt>=(INVENTORY_MAXITEM*2) ) break;
@@ -3106,7 +3149,7 @@ int rsRecordMemoryBuff_CheckInvenItem( rsPLAYINFO *lpPlayInfo , int Mode )
 		DecodeCompress( (BYTE *)lpRecItem , (BYTE *)&sRecordItem , RECORD_ITEM_INFO_HEAD_SIZE );
 
 
-		if ( sRecordItem.sItemInfo.CODE && 
+		if ( sRecordItem.sItemInfo.CODE &&
 			sRecordItem.sItemInfo.ItemHeader.Head && sRecordItem.sItemInfo.ItemHeader.dwChkSum ) {
 
 			flag = 0;
@@ -3180,6 +3223,8 @@ int rsRecordMemoryBuff_CheckInvenItem( rsPLAYINFO *lpPlayInfo , int Mode )
 
 				}
 
+				TraceStripped++;
+				INVEN_TRACE( lpPlayInfo , "  not in the list: item code / serial" , (int)sRecordItem.sItemInfo.CODE , (int)sRecordItem.sItemInfo.ItemHeader.Head , (int)sRecordItem.sItemInfo.ItemHeader.dwChkSum );
 				if ( cnt2>=lpTransRecordData->ThrowItemCount ) {
 					//로그에 기록
 					smTransCommand.WParam = 8000;
@@ -3234,6 +3279,7 @@ int rsRecordMemoryBuff_CheckInvenItem( rsPLAYINFO *lpPlayInfo , int Mode )
 		memcpy( lpTransRecordData->ThrowItemInfo , ThrowItemInfo, sizeof(sTHROW_ITEM_INFO)*ThrowItemCount );
 		lpTransRecordData->ThrowItemCount = ThrowItemCount;
 	}
+	INVEN_TRACE( lpPlayInfo , "CHECK done: items not in the list" , TraceStripped , ThrowItemCount , 0 );
 
 	//창고를 연적이 있으면 창고도 검사
 
@@ -3553,7 +3599,7 @@ int rsRECORD_DBASE::SendUserDataToClient( char *szID , smWINSOCK *lpsmSock , cha
 
 					if ( lpCharInfo->StartField==rsSOD_FIELD ) lpCharInfo->StartField = rsSOD_VILLAGE;
 					if ( lpCharInfo->StartField==QUEST_ARENA_FIELD ) {
-						if ( lpCharInfo->JOB_CODE<=4 )
+						if ( JOB_IS_TEMPSKRON(lpCharInfo->JOB_CODE) )
 							lpCharInfo->StartField = START_FIELD_NUM;
 						else
 							lpCharInfo->StartField = START_FIELD_MORYON;

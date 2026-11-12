@@ -909,6 +909,66 @@ int OpenPlaySkill( sSKILL *lpSkill )
 			}
 		}
 		break;
+
+	case SKILL_BLOODY_BERSERKER:		// tier 5
+		if ( lpCurPlayer->MotionInfo->State<0x100 ) {
+			if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+
+				lpCurPlayer->AttackSkil = SKILL_PLAY_BLOODY_BERSERKER;
+				lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+				lpCurPlayer->BeginSkill( lpCurPlayer->AttackSkil , 0 , 0 ,0,0,0 );
+
+				lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+				lpCurPlayer->MotionLoopSpeed = 70;
+				lpCurPlayer->MotionLoop = 1;
+
+				SendProcessSKillToServer( SKILL_PLAY_BLOODY_BERSERKER , lpSkill->Point , 0, 0 );
+
+				flag++;
+			}
+		}
+		break;
+
+	//Mechanician tier 5 buffs
+	//tier 5 self buffs: the client keeps the timer; those the server counts are sent to it
+	case SKILL_HYPER_SONIC:			//Mechanician: attack speed, any weapon (the client counts it)
+	case SKILL_POWER_ENHANCEMENT:	//Mechanician: attack power (the server)
+	case SKILL_AMPLIFIED:			//Pikeman: damage (the server), attack rating and absorption (the client)
+	case SKILL_HOLY_BENEDIC:		//Knight: damage against the undead (the server)
+	case SKILL_TALARIA:				//Atalanta: move speed (the client)
+	case SKILL_SUMMON_ARCUDA:		//Atalanta: the server summons Arcuda
+	case SKILL_SUMMON_RAMIEL:		//Priestess: an angel striking on a timer (Summon Muspell's slot)
+	case SKILL_BLESSING_KRISHNA:	//Priestess: defense and absorption (the client)
+	case SKILL_THIRD_ANIMA:			//Magician: magic damage (the server), less max mana (the client)
+		if ( lpCurPlayer->MotionInfo->State<0x100 ) {
+			int t5play = 0, t5server = 0;
+			switch( lpSkill->CODE ) {
+			case SKILL_SUMMON_RAMIEL:		t5play = SKILL_PLAY_SUMMON_RAMIEL;		t5server = 1;	break;
+			case SKILL_BLESSING_KRISHNA:	t5play = SKILL_PLAY_BLESSING_KRISHNA;					break;
+			case SKILL_THIRD_ANIMA:			t5play = SKILL_PLAY_THIRD_ANIMA;		t5server = 1;	break;
+			case SKILL_TALARIA:				t5play = SKILL_PLAY_TALARIA;							break;
+			case SKILL_SUMMON_ARCUDA:		t5play = SKILL_PLAY_SUMMON_ARCUDA;		t5server = 1;	break;
+			case SKILL_HOLY_BENEDIC:		t5play = SKILL_PLAY_HOLY_BENEDIC;		t5server = 1;	break;
+			case SKILL_HYPER_SONIC:			t5play = SKILL_PLAY_HYPER_SONIC;							break;
+			case SKILL_POWER_ENHANCEMENT:	t5play = SKILL_PLAY_POWER_ENHANCEMENT;	t5server = 1;	break;
+			case SKILL_AMPLIFIED:			t5play = SKILL_PLAY_AMPLIFIED;			t5server = 1;	break;
+			}
+			if ( t5play && lpSkill->Skill_Info.FuncPointer()==TRUE && lpSkill->Point ) {
+				lpCurPlayer->AttackSkil = t5play;
+				lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+				lpCurPlayer->BeginSkill( lpCurPlayer->AttackSkil , 0 , 0 ,0,0,0 );
+
+				lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+				lpCurPlayer->MotionLoopSpeed = 70;
+				lpCurPlayer->MotionLoop = 1;
+
+				if ( t5server )
+					SendProcessSKillToServer( t5play , lpSkill->Point , 0, 0 );
+
+				flag++;
+			}
+		}
+		break;
 /*
 	case SKILL_CYCLONE_STRIKE:
 		//CYCLONE_STRIKE
@@ -1321,6 +1381,44 @@ int GetSkillDistRange( sSKILL *lpSkill , int AttackRange , int AttackMode )
 
 	case SKILL_VIRTUAL_LIFE:
 		return 200*fONE;
+
+	//tier 5
+	case SKILL_CRESCENT_MOON:
+		if ( lpSkill->Point ) {
+			cnt = Crescent_Moon_Range[lpSkill->Point-1]*fONE;
+			if ( AttackRange>cnt ) break;
+			LastAttackRange = cnt;
+			return cnt;
+		}
+		break;
+
+	case SKILL_SPIRIT_IMPACT:
+		if ( lpSkill->Point ) return Spirit_Impact_Range[lpSkill->Point-1]*fONE;
+		break;
+	case SKILL_SILRAPHIM:
+		if ( lpSkill->Point ) return Silraphim_Range[lpSkill->Point-1]*fONE;
+		break;
+	case SKILL_PIERCING_ICE:
+	case SKILL_PRIMA_IGNIS:
+		return 200*fONE;
+	case SKILL_VIS_TENUS:
+		return 180*fONE;
+
+	case SKILL_SNIPPY_FEAR:
+		if ( lpSkill->Point ) {
+			cnt = AttackRange+Snippy_Fear_Range[lpSkill->Point-1]*fONE;
+			LastAttackRange = cnt;
+			return cnt;
+		}
+		break;
+
+	case SKILL_THUNDER_ROPE:
+		if ( lpSkill->Point ) {
+			cnt = AttackRange+Thunder_Rope_Range[lpSkill->Point-1]*fONE;
+			LastAttackRange = cnt;
+			return cnt;
+		}
+		break;
 
 	}
 
@@ -3310,6 +3408,287 @@ int Avalanche_ArrowNum[10]	= {3,3,3,4,4,4,5,5,5,6};
 			dm_SendRangeDamage( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ,  lpChar , 0 , 0 ,0,0, lpCurPlayer->AttackSkil );
 		}
 		return TRUE;
+
+	//Fighter tier 5
+	case SKILL_DOWN_HIT:
+		//lifts the target and strikes 3 times: now, then on the clip's first two events (like Destroyer)
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_DOWN_HIT;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+
+			lpCurPlayer->MotionLoopSpeed = GetAttackSpeedFrame( lpCurPlayer->smCharInfo.Attack_Speed , 1 );
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	case SKILL_POWER_DASH:
+		//one strike that stuns (the server stuns: monsters only, not bosses)
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_POWER_DASH;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	case SKILL_MORTAL_BLOW:
+		//the target, plus the enemies around the caster (like Cyclone Strike)
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_MORTAL_BLOW;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			dm_SelectRange( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ, Mortal_Blow_Area[lpSkill->Point-1] , TRUE , Mortal_Blow_AttackNum[lpSkill->Point-1] );
+			dm_AddRangeDamage( lpChar );
+			dm_SendRangeDamage( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ,  lpChar , 0 , 0 ,0,0, lpCurPlayer->AttackSkil );
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	//Mechanician tier 5
+	case SKILL_LAND_MINING:
+		//mines burst around the target: the target, plus the enemies around it
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_LAND_MINING;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			dm_SelectRange( lpChar->pX, lpChar->pY, lpChar->pZ, Land_Mining_Area[lpSkill->Point-1] , TRUE , Land_Mining_AttackNum[lpSkill->Point-1] );
+			dm_AddRangeDamage( lpChar );
+			dm_SendRangeDamage( lpChar->pX, lpChar->pY, lpChar->pZ,  lpChar , 0 , 0 ,0,0, lpCurPlayer->AttackSkil );
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	case SKILL_ROLLING_SMASH:
+		//a spinning combo: the cast's strike, then one on each of the clip's first three events
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			RetryPlayAttack( lpChar );
+			lpCurPlayer->AttackSkil = SKILL_PLAY_ROLLING_SMASH;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			temp = lpCurPlayer->smCharInfo.Attack_Rating;
+			lpCurPlayer->smCharInfo.Attack_Rating += Rolling_Smash_AddHit[lpSkill->Point-1];
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			lpCurPlayer->smCharInfo.Attack_Rating = temp;
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+
+			lpCurPlayer->MotionLoopSpeed = GetAttackSpeedFrame( lpCurPlayer->smCharInfo.Attack_Speed , 1 );
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	//Pikeman tier 5
+	case SKILL_DANCING_REAPER:
+	case SKILL_SIDE_SPIN_ATTACK:
+		//one heavy strike (Side Spin Attack also drains life: the share of an average hit)
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = (lpSkill->CODE==SKILL_DANCING_REAPER) ? SKILL_PLAY_DANCING_REAPER : SKILL_PLAY_SIDE_SPIN_ATTACK;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+			else if ( lpSkill->CODE==SKILL_SIDE_SPIN_ATTACK && lpSkill->Point ) {
+				int pt = lpSkill->Point-1;
+				int hit = (lpCurPlayer->smCharInfo.Attack_Damage[0]+lpCurPlayer->smCharInfo.Attack_Damage[1])/2;
+				hit += (hit*Side_Spin_DamagePercent[pt])/100;
+				int life = sinGetLife() + (hit*Side_Spin_LifeAbsorb[pt])/100;
+				if ( life>lpCurPlayer->smCharInfo.Life[1] ) life = lpCurPlayer->smCharInfo.Life[1];
+				if ( sinGetLife()>0 ) sinSetLife( life );
+			}
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	//Knight tier 5: single strikes (Soul Breaker with more accuracy, Crescent Moon from afar,
+	//Saint Blade with more against the undead)
+	case SKILL_SOUL_BREAKER:
+	case SKILL_CRESCENT_MOON:
+	case SKILL_SAINT_BLADE:
+		if ( lpSkill->Point && lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			switch( lpSkill->CODE ) {
+			case SKILL_SOUL_BREAKER:	lpCurPlayer->AttackSkil = SKILL_PLAY_SOUL_BREAKER;	break;
+			case SKILL_CRESCENT_MOON:	lpCurPlayer->AttackSkil = SKILL_PLAY_CRESCENT_MOON;	break;
+			default:					lpCurPlayer->AttackSkil = SKILL_PLAY_SAINT_BLADE;	break;
+			}
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			temp = lpCurPlayer->smCharInfo.Attack_Rating;
+			if ( lpSkill->CODE==SKILL_SOUL_BREAKER )
+				lpCurPlayer->smCharInfo.Attack_Rating += (temp*Soul_Breaker_AddHit[lpSkill->Point-1])/100;
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			lpCurPlayer->smCharInfo.Attack_Rating = temp;
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	//Priestess and Magician tier 5: single-target magic (the server works out the damage)
+	case SKILL_SPIRIT_IMPACT:
+	case SKILL_PIERCING_ICE:
+	case SKILL_SILRAPHIM:
+	case SKILL_VIS_TENUS:			//less life now, less damage for a time
+	case SKILL_PRIMA_IGNIS:
+		if ( lpSkill->Point && lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			switch( lpSkill->CODE ) {
+			case SKILL_SPIRIT_IMPACT:	lpCurPlayer->AttackSkil = SKILL_PLAY_SPIRIT_IMPACT;	break;
+			case SKILL_PIERCING_ICE:	lpCurPlayer->AttackSkil = SKILL_PLAY_PIERCING_ICE;	break;
+			case SKILL_SILRAPHIM:		lpCurPlayer->AttackSkil = SKILL_PLAY_SILRAPHIM;		break;
+			case SKILL_VIS_TENUS:		lpCurPlayer->AttackSkil = SKILL_PLAY_VIS_TENUS;		break;
+			default:					lpCurPlayer->AttackSkil = SKILL_PLAY_PRIMA_IGNIS;	break;
+			}
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			lpCurPlayer->MotionLoopSpeed = GetAttackSpeedFrame( 8 );
+			lpCurPlayer->MotionLoop = 1;
+
+			cnt = dm_SendTransDamage( lpChar , wpDamage[0],wpDamage[1] , 0, 0, lpCurPlayer->AttackSkil , FALSE );
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+			else
+				DamageExp( lpChar , cnt );
+		}
+		return TRUE;
+
+	//Atalanta tier 5
+	case SKILL_GALAXY_COUP:			//a javelin on the target and the enemies around it, more accurate
+		if ( lpSkill->Point && lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_GALAXY_COUP;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			temp = lpCurPlayer->smCharInfo.Attack_Rating;
+			lpCurPlayer->smCharInfo.Attack_Rating += (temp*Galaxy_Coup_AddHit[lpSkill->Point-1])/100;
+			dm_SelectRange( lpChar->pX, lpChar->pY, lpChar->pZ, Galaxy_Coup_Area[lpSkill->Point-1] , TRUE , 12 );
+			dm_AddRangeDamage( lpChar );
+			dm_SendRangeDamage( lpChar->pX, lpChar->pY, lpChar->pZ,  lpChar , 0 , 0 ,0,0, lpCurPlayer->AttackSkil );
+			lpCurPlayer->smCharInfo.Attack_Rating = temp;
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	case SKILL_SNIPPY_FEAR:			//one critical javelin blow, from further away
+		if ( lpSkill->Point && lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_SNIPPY_FEAR;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	//Archer tier 5
+	case SKILL_EVADE_SHOT:			//one shot that stuns (the server stuns: monsters only, not bosses)
+	case SKILL_THUNDER_ROPE:		//one shot, with more reach and accuracy
+		if ( lpCurPlayer->CheckShootingTest(lpChar)==FALSE ) {
+			lpCurPlayer->AttackCritcal = -1;
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_STAND );
+			return TRUE;
+		}
+		if ( lpSkill->Point && lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = (lpSkill->CODE==SKILL_EVADE_SHOT) ? SKILL_PLAY_EVADE_SHOT : SKILL_PLAY_THUNDER_ROPE;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			temp = lpCurPlayer->smCharInfo.Attack_Rating;
+			if ( lpSkill->CODE==SKILL_THUNDER_ROPE )
+				lpCurPlayer->smCharInfo.Attack_Rating += (temp*Thunder_Rope_AddHit[lpSkill->Point-1])/100;
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			lpCurPlayer->smCharInfo.Attack_Rating = temp;
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+			else
+				DamageExp( lpChar , cnt );
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	case SKILL_NATURE_SPLASH:		//an arrow bursting on the target and the enemies around it
+	case SKILL_CIRCLE_TRAP:			//the same, and the server slows them
+		if ( lpCurPlayer->CheckShootingTest(lpChar)==FALSE ) {
+			lpCurPlayer->AttackCritcal = -1;
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_STAND );
+			return TRUE;
+		}
+		if ( lpSkill->Point && lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			int area = (lpSkill->CODE==SKILL_NATURE_SPLASH) ? Nature_Splash_Area[lpSkill->Point-1] : Circle_Trap_Area[lpSkill->Point-1];
+			lpCurPlayer->AttackSkil = (lpSkill->CODE==SKILL_NATURE_SPLASH) ? SKILL_PLAY_NATURE_SPLASH : SKILL_PLAY_CIRCLE_TRAP;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			dm_SelectRange( lpChar->pX, lpChar->pY, lpChar->pZ, area , TRUE , 12 );
+			dm_AddRangeDamage( lpChar );
+			dm_SendRangeDamage( lpChar->pX, lpChar->pY, lpChar->pZ,  lpChar , 0 , 0 ,0,0, lpCurPlayer->AttackSkil );
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	case SKILL_FINAL_SPEAR:
+		//spears burst from the ground: the target and the enemies around the caster
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_FINAL_SPEAR;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			dm_SelectRange( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ, Final_Spear_Area[lpSkill->Point-1] , TRUE , 12 );
+			dm_AddRangeDamage( lpChar );
+			dm_SendRangeDamage( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ,  lpChar , 0 , 0 ,0,0, lpCurPlayer->AttackSkil );
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
 	//파이크맨
 	case SKILL_ASSASSIN_EYE:
 		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
@@ -3547,6 +3926,17 @@ int Avalanche_ArrowNum[10]	= {3,3,3,4,4,4,5,5,5,6};
 	case SKILL_SUMMON_MUSPELL:
 	case SKILL_FIRE_ELEMENTAL:
 	case SKILL_DISTORTION:
+	//tier 5 self casts
+	case SKILL_BLOODY_BERSERKER:
+	case SKILL_HYPER_SONIC:
+	case SKILL_POWER_ENHANCEMENT:
+	case SKILL_AMPLIFIED:
+	case SKILL_HOLY_BENEDIC:
+	case SKILL_TALARIA:
+	case SKILL_SUMMON_ARCUDA:
+	case SKILL_SUMMON_RAMIEL:
+	case SKILL_BLESSING_KRISHNA:
+	case SKILL_THIRD_ANIMA:
 
 
 		return TRUE;

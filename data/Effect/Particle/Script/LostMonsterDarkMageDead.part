@@ -1,0 +1,69 @@
+particlesystem "HolyValor" 1.00 {
+  position = XYZ(0,0,0)
+  eventsequence "light2" {
+    sourceblendmode = BLEND_LAMP
+    particleType = TYPE_THREE
+    numparticles = 12
+    gravity = XYZ(0,0,0)
+    delay = 0.32
+    emitrate = 50
+    loops = 1
+    emitradius = xyz(random(-20,20),random(-10,0),random(-20,20))
+    lifetime = 1
+    texture = "effect\\particle\\star06Y_04.bmp"
+    initial size = random(4,8)
+    initial sizeext = random(300,400)
+    initial color = rgba(180, 80, 160, 50)
+    fade so at 0.4 color = rgba(255,150,50,180)
+    initial velocity = XYZ(0,random(300,400),0)
+    fade so final color = rgba(180,80,160,0)
+    fade so final sizeext = random(400,600)
+    fade so final size = 5
+    }
+    eventsequence "light2" {
+    sourceblendmode = BLEND_LAMP
+    particleType = TYPE_THREE
+    numparticles = 10
+    gravity = XYZ(0,0,0)
+    emitrate = 30
+    loops = 1
+    delay = 0.32
+    emitradius = xyz(random(-5,5),random(-20,0),random(-5,5))
+    lifetime = 1
+    texture = "effect\\particle\\flare.bmp"
+    initial size = random(6,10)
+    initial sizeext = random(100,150)
+    initial color = rgba(255,255,255,50)
+    fade so at 0.4 color = rgba(255,255,255,100)
+    at 0.5 color = rgba(255,255,255,150)
+    initial velocity = XYZ(0,random(500,600),0)
+    fade so final color = rgba(0,0,0,0)
+    fade so final sizeext = random(700,800)
+    fade so final size = 3
+    }
+
+    eventsequence "snow" {
+    sourceblendmode = BLEND_LAMP
+    numparticles = 30
+    gravity = XYZ(0,0,0)
+    emitrate = 100
+    emitradius = XYZ(random(-20,20),random(0,20),random(-20,20))
+    loops = 1
+    delay = 0.2
+    lifetime = random(0.5,1)
+    gravity = XYZ(0, random(-10,-5), 0)
+    texture = "effect\\particle\\flare.bmp"
+    initial color = rgba(255,255,255,255)
+    initial size    = random(5,7)
+    initial velocity = XYZ(random(-15,15),random(50,200),random(-15,15))
+    fade so at 0.5 color = rgba(255,150,50,255)
+    fade so at 1.2 color = rgba(255,150,50,255)
+    at 0.1 size = 15
+    at 0.2 size = 20
+    at 0.3 size = 15
+    at 0.4 size = 20
+    at 0.5 size = 15
+    fade so final color = rgba(180, 80, 160, 0)
+   }
+   
+}

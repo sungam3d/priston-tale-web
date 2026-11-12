@@ -2391,8 +2391,8 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 					ReformCharForm();
 				}
 				else {
-					if ( lpCurPlayer->smCharInfo.ChangeJob>=0 && lpCurPlayer->smCharInfo.ChangeJob<4 ) {
-						ChangeModelSkin( lpCurPlayer , 0 , lpCurPlayer->smCharInfo.ChangeJob , 0 , GetFaceHairSkin(lpCurPlayer) );			//테스트 ( 일반얼굴 ) // 얼큰이 오류 수정
+					if ( lpCurPlayer->smCharInfo.ChangeJob>=0 && lpCurPlayer->smCharInfo.ChangeJob<=4 ) {
+						ChangeModelSkin( lpCurPlayer , 0 , JOB_FACE(lpCurPlayer->smCharInfo.ChangeJob) , 0 , GetFaceHairSkin(lpCurPlayer) );			//테스트 ( 일반얼굴 ) // 얼큰이 오류 수정
 						ReformCharForm();
 					}
 				}
@@ -2556,6 +2556,35 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
  			cSinSiege.SetTaxRate( lpTransCommand->SParam );	//세율 설정
 			break;
 
+		case smTRANSCODE_GM_SETLEVEL:
+			// GM /MakeMeLevel: the server has already moved its own level and start exp
+			lpTransCommand = (smTRANS_COMMAND *)pData->Buff;
+			{
+				extern int sinGM_ApplyLevel( int Level , int SaveNow );
+				sinGM_ApplyLevel( lpTransCommand->WParam , TRUE );
+			}
+			break;
+
+		case smTRANSCODE_GM_GODMODE:
+			// GM /IDDQD (the server checked the GM may)
+			lpTransCommand = (smTRANS_COMMAND *)pData->Buff;
+			{
+				extern int sinGM_GodMode;
+				sinGM_GodMode = lpTransCommand->WParam ? 1 : 0;
+				AddChatBuff( (char *)( sinGM_GodMode ? "> God mode ON: life, mana and stamina stay full" : "> God mode OFF" ) , 0 );
+				ResetEnergyGraph( 4 );
+			}
+			break;
+
+		case smTRANSCODE_GM_DECKOUT:
+			// GM /DeckMeOut!: empty the slots its items go into
+			lpTransCommand = (smTRANS_COMMAND *)pData->Buff;
+			{
+				extern int sinGM_DeckOutClearSlots( DWORD dwPositionMask , int ItemCount );
+				sinGM_DeckOutClearSlots( (DWORD)lpTransCommand->WParam , lpTransCommand->LParam );
+			}
+			break;
+
 		case smTRANSCODE_ADDEXP:
 		case smTRANSCODE_ADDEXP_PARTY:
 			//경험치 획득
@@ -2677,13 +2706,13 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 
 				if ( StageField[ lpCurPlayer->OnStageField ]->FieldCode==3 ) {
 					//리카르텐
-					if ( lpCurPlayer->smCharInfo.JOB_CODE<5 ) {
+					if ( JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) ) {
 						sinSkillMaster(lpTransCommand->WParam);
 					}
 				}
 				if ( StageField[ lpCurPlayer->OnStageField ]->FieldCode==21 ) {
 					//필라이
-					if ( lpCurPlayer->smCharInfo.JOB_CODE>=5 )
+					if ( !JOB_IS_TEMPSKRON(lpCurPlayer->smCharInfo.JOB_CODE) )
 					{
 						sinSkillMaster(lpTransCommand->WParam);
 					}
@@ -3672,6 +3701,9 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 				case SKILL_PLAY_FIRE_ELEMENTAL:
 					cnt = SKILL_FIRE_ELEMENTAL;
 					break;
+				case SKILL_PLAY_SUMMON_ARCUDA:		// tier 5
+					cnt = SKILL_SUMMON_ARCUDA;
+					break;
 			}
 			cSkill.CancelContinueSkill( cnt );
 			break;
@@ -3703,7 +3735,11 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 			}
 			else if ( lpTransCommand->WParam==HAQUEST_CODE_FURYOFPHANTOM ) {
 				//퓨리 배틀 승리
-				chaQuest.RecvBattleNpcResult(1);	
+				chaQuest.RecvBattleNpcResult(1);
+			}
+			else if ( lpTransCommand->WParam==SIN_QUEST_CODE_CHANGEJOB5 ) {
+				// tier 5: Hestian beaten in the quest arena
+				sinBattleNpcResult5( 1 );
 			}
 			else
 				sinMorayionNpcChangeJob_Two();
@@ -7235,6 +7271,13 @@ int	SaveGameData()
 		}
 	}
 	return FALSE;
+}
+
+// Save in a few seconds (GM /MakeMeLevel: gives the server time to read the chat command first)
+int SetSaveSoon( int ms )
+{
+	rsRecorder.dwNextRecordTime = dwPlayTime+ms;
+	return TRUE;
 }
 
 //게임 저장 상태 ( FALSE 저장중 ( 서버로부터 결과를 받지 못함 ) )

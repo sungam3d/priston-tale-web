@@ -103,8 +103,12 @@ extern int OldLevel;		//레벨을 저장한다
 extern int sinLevelPoint;	//레벨 포인트를 저장한다 
 extern int OldLevelTemp;	//레벨을 저장한다 후 또 저장하다 (왜? 나쁜넘들이 설치지못하도록)
 
-extern  int TempNewCharacterInit[4][6];
-extern  int MorNewCharacterInit[4][6];
+// rows of new-character stats per race (HoLogin.cpp): Tempskron 6 classes, Morion 5 (+ an empty row)
+#ifndef NEW_CHAR_JOB_MAX
+#define NEW_CHAR_JOB_MAX	6
+#endif
+extern  int TempNewCharacterInit[NEW_CHAR_JOB_MAX][6];
+extern  int MorNewCharacterInit[NEW_CHAR_JOB_MAX][6];
 extern  sDISPLAYSTATE sDisplayState[10];
 
 extern  int ChatKindIndexNum;

@@ -39,6 +39,16 @@ struct	RECORD_SKILL {
 	//int		RemainPoint;
 };
 
+// The four tier 5 skills (UseSkill 17..20). Kept in the save's spare buffer, so a
+// record keeps its size and an older one reads as "nothing learned".
+#define	RECORD_SKILL5_MAX	4
+struct	RECORD_SKILL5 {
+	BYTE	bSkillPoint[RECORD_SKILL5_MAX];
+	WORD	wSkillMastery[RECORD_SKILL5_MAX];
+	BYTE	bShortKey[RECORD_SKILL5_MAX];
+};
+static_assert( sizeof(RECORD_SKILL5)==16 , "RECORD_SKILL5 takes 4 DWORDs of sGAME_SAVE_INFO's spare buffer" );
+
 //퀘스트 저장 정보
 struct	sQUEST_INFO	{
 	WORD	wQuestCode[2];
@@ -126,7 +136,9 @@ struct	sGAME_SAVE_INFO {
 
 	WORD	wSkillDelayUsing[2];	// 장별 - 스킬 딜레이
 
-	DWORD	dwTemp2[34];			//예비 버퍼 //	dwTemp2[38] -> dwTemp2[35] // 박재원 - 부스터 아이템(생명력, 기력, 근력) // 장별 - 스킬 딜레이 35->34
+	RECORD_SKILL5	Skill5Info;		// the tier 5 skills (taken from dwTemp2: 34 -> 30)
+
+	DWORD	dwTemp2[30];			//예비 버퍼 //	dwTemp2[38] -> dwTemp2[35] // 박재원 - 부스터 아이템(생명력, 기력, 근력) // 장별 - 스킬 딜레이 35->34
 	//DWORD	dwTemp[(121-17)];				//예비 버퍼
 	// 장별 - 예비버퍼
 	//DWORD	dwTemp3[2096];
@@ -285,7 +297,7 @@ int Record_LastQuest( WORD	wQuestCode );
 int FindLastQuestCode( WORD wQuestCode );
 
 //스킬 첵크
-int	CheckSkillPoint( int Level , RECORD_SKILL *lpRecordSkill , int *spTotal , DWORD dwLevelQuestLog );
+int	CheckSkillPoint( int Level , RECORD_SKILL *lpRecordSkill , int *spTotal , DWORD dwLevelQuestLog , RECORD_SKILL5 *lpSkill5=0 );
 
 
 

@@ -416,7 +416,7 @@ int cPCBANGPET::CheckPetData()
 		PetMessageHelp("*Welcom_ALL");
 
 		//종족별 메세지를 보여준다
-		if(sinChar->JOB_CODE < 5 ){ //템스크론 
+		if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE) ){ //템스크론 
 			PetMessageHelp("*Welcom_Tems");
 
 		}

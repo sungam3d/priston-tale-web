@@ -987,10 +987,338 @@ char *szModel_Magican[FACE_MODEL_MAX][HEAREPOTION_MAX] = {			//메지션
 	}
 };
 
+// Assassin (JOB_CODE 9): heads Tfh-E01..13; a/b/c/d/t only for 01..03 (the rest keep the plain head)
+char *szModel_AssassinFaceName[FACE_MODEL_MAX][HEAREPOTION_MAX] = {
+	{
+		"char\\tmABCD\\Tfh-E01.inf",
+		"char\\tmABCD\\Tfh-E02.inf",
+		"char\\tmABCD\\Tfh-E03.inf",
+		"char\\tmABCD\\Tfh-E04.inf",
+		"char\\tmABCD\\Tfh-E05.inf",
+		"char\\tmABCD\\Tfh-E06.inf",
+		"char\\tmABCD\\Tfh-E07.inf",
+		"char\\tmABCD\\Tfh-E08.inf",
+		"char\\tmABCD\\Tfh-E09.inf",
+		"char\\tmABCD\\Tfh-E10.inf",
+		"char\\tmABCD\\Tfh-E11.inf",
+		"char\\tmABCD\\Tfh-E12.inf",
+		"char\\tmABCD\\Tfh-E13.inf"
+	},
+	{
+		"char\\tmABCD\\Tfh-E01a.inf",
+		"char\\tmABCD\\Tfh-E02a.inf",
+		"char\\tmABCD\\Tfh-E03a.inf",
+		"char\\tmABCD\\Tfh-E04.inf",
+		"char\\tmABCD\\Tfh-E05.inf",
+		"char\\tmABCD\\Tfh-E06.inf",
+		"char\\tmABCD\\Tfh-E07.inf",
+		"char\\tmABCD\\Tfh-E08.inf",
+		"char\\tmABCD\\Tfh-E09.inf",
+		"char\\tmABCD\\Tfh-E10.inf",
+		"char\\tmABCD\\Tfh-E11.inf",
+		"char\\tmABCD\\Tfh-E12.inf",
+		"char\\tmABCD\\Tfh-E13.inf"
+	},
+	{
+		"char\\tmABCD\\Tfh-E01b.inf",
+		"char\\tmABCD\\Tfh-E02b.inf",
+		"char\\tmABCD\\Tfh-E03b.inf",
+		"char\\tmABCD\\Tfh-E04.inf",
+		"char\\tmABCD\\Tfh-E05.inf",
+		"char\\tmABCD\\Tfh-E06.inf",
+		"char\\tmABCD\\Tfh-E07.inf",
+		"char\\tmABCD\\Tfh-E08.inf",
+		"char\\tmABCD\\Tfh-E09.inf",
+		"char\\tmABCD\\Tfh-E10.inf",
+		"char\\tmABCD\\Tfh-E11.inf",
+		"char\\tmABCD\\Tfh-E12.inf",
+		"char\\tmABCD\\Tfh-E13.inf"
+	},
+	{
+		"char\\tmABCD\\Tfh-E01c.inf",
+		"char\\tmABCD\\Tfh-E02c.inf",
+		"char\\tmABCD\\Tfh-E03c.inf",
+		"char\\tmABCD\\Tfh-E04.inf",
+		"char\\tmABCD\\Tfh-E05.inf",
+		"char\\tmABCD\\Tfh-E06.inf",
+		"char\\tmABCD\\Tfh-E07.inf",
+		"char\\tmABCD\\Tfh-E08.inf",
+		"char\\tmABCD\\Tfh-E09.inf",
+		"char\\tmABCD\\Tfh-E10.inf",
+		"char\\tmABCD\\Tfh-E11.inf",
+		"char\\tmABCD\\Tfh-E12.inf",
+		"char\\tmABCD\\Tfh-E13.inf"
+	},
+	{
+		"char\\tmABCD\\Tfh-E01t.inf",
+		"char\\tmABCD\\Tfh-E02t.inf",
+		"char\\tmABCD\\Tfh-E03t.inf",
+		"char\\tmABCD\\Tfh-E01t.inf",
+		"char\\tmABCD\\Tfh-E02t.inf",
+		"char\\tmABCD\\Tfh-E03t.inf",
+		"char\\tmABCD\\Tfh-E01t.inf",
+		"char\\tmABCD\\Tfh-E02t.inf",
+		"char\\tmABCD\\Tfh-E03t.inf",
+		"char\\tmABCD\\Tfh-E01t.inf",
+		"char\\tmABCD\\Tfh-E02t.inf",
+		"char\\tmABCD\\Tfh-E03t.inf",
+		"char\\tmABCD\\Tfh-E01t.inf"
+	},
+	{
+		"char\\tmABCD\\Tfh-E01t.inf",
+		"char\\tmABCD\\Tfh-E02t.inf",
+		"char\\tmABCD\\Tfh-E03t.inf",
+		"char\\tmABCD\\Tfh-E01t.inf",
+		"char\\tmABCD\\Tfh-E02t.inf",
+		"char\\tmABCD\\Tfh-E03t.inf",
+		"char\\tmABCD\\Tfh-E01t.inf",
+		"char\\tmABCD\\Tfh-E02t.inf",
+		"char\\tmABCD\\Tfh-E03t.inf",
+		"char\\tmABCD\\Tfh-E01t.inf",
+		"char\\tmABCD\\Tfh-E02t.inf",
+		"char\\tmABCD\\Tfh-E03t.inf",
+		"char\\tmABCD\\Tfh-E01t.inf"
+	},
+	{
+		"char\\tmABCD\\Tfh-E18t.inf",
+		"char\\tmABCD\\Tfh-E18t.inf",
+		"char\\tmABCD\\Tfh-E18t.inf",
+		"char\\tmABCD\\Tfh-E18t.inf",
+		"char\\tmABCD\\Tfh-E18t.inf",
+		"char\\tmABCD\\Tfh-E18t.inf",
+		"char\\tmABCD\\Tfh-E18t.inf",
+		"char\\tmABCD\\Tfh-E18t.inf",
+		"char\\tmABCD\\Tfh-E18t.inf",
+		"char\\tmABCD\\Tfh-E18t.inf",
+		"char\\tmABCD\\Tfh-E18t.inf",
+		"char\\tmABCD\\Tfh-E18t.inf",
+		"char\\tmABCD\\Tfh-E18t.inf"
+	}
+};
+
+// Shaman (JOB_CODE 10): heads Mmh-E01..13; a/b/c/d/t only for 01..03 (the rest keep the plain head)
+char *szModel_ShamanFaceName[FACE_MODEL_MAX][HEAREPOTION_MAX] = {
+	{
+		"char\\tmABCD\\Mmh-E01.inf",
+		"char\\tmABCD\\Mmh-E02.inf",
+		"char\\tmABCD\\Mmh-E03.inf",
+		"char\\tmABCD\\Mmh-E04.inf",
+		"char\\tmABCD\\Mmh-E05.inf",
+		"char\\tmABCD\\Mmh-E06.inf",
+		"char\\tmABCD\\Mmh-E07.inf",
+		"char\\tmABCD\\Mmh-E08.inf",
+		"char\\tmABCD\\Mmh-E09.inf",
+		"char\\tmABCD\\Mmh-E10.inf",
+		"char\\tmABCD\\Mmh-E11.inf",
+		"char\\tmABCD\\Mmh-E12.inf",
+		"char\\tmABCD\\Mmh-E13.inf"
+	},
+	{
+		"char\\tmABCD\\Mmh-E01a.inf",
+		"char\\tmABCD\\Mmh-E02a.inf",
+		"char\\tmABCD\\Mmh-E03a.inf",
+		"char\\tmABCD\\Mmh-E04.inf",
+		"char\\tmABCD\\Mmh-E05.inf",
+		"char\\tmABCD\\Mmh-E06.inf",
+		"char\\tmABCD\\Mmh-E07.inf",
+		"char\\tmABCD\\Mmh-E08.inf",
+		"char\\tmABCD\\Mmh-E09.inf",
+		"char\\tmABCD\\Mmh-E10.inf",
+		"char\\tmABCD\\Mmh-E11.inf",
+		"char\\tmABCD\\Mmh-E12.inf",
+		"char\\tmABCD\\Mmh-E13.inf"
+	},
+	{
+		"char\\tmABCD\\Mmh-E01b.inf",
+		"char\\tmABCD\\Mmh-E02b.inf",
+		"char\\tmABCD\\Mmh-E03b.inf",
+		"char\\tmABCD\\Mmh-E04.inf",
+		"char\\tmABCD\\Mmh-E05.inf",
+		"char\\tmABCD\\Mmh-E06.inf",
+		"char\\tmABCD\\Mmh-E07.inf",
+		"char\\tmABCD\\Mmh-E08.inf",
+		"char\\tmABCD\\Mmh-E09.inf",
+		"char\\tmABCD\\Mmh-E10.inf",
+		"char\\tmABCD\\Mmh-E11.inf",
+		"char\\tmABCD\\Mmh-E12.inf",
+		"char\\tmABCD\\Mmh-E13.inf"
+	},
+	{
+		"char\\tmABCD\\Mmh-E01c.inf",
+		"char\\tmABCD\\Mmh-E02c.inf",
+		"char\\tmABCD\\Mmh-E03c.inf",
+		"char\\tmABCD\\Mmh-E04.inf",
+		"char\\tmABCD\\Mmh-E05.inf",
+		"char\\tmABCD\\Mmh-E06.inf",
+		"char\\tmABCD\\Mmh-E07.inf",
+		"char\\tmABCD\\Mmh-E08.inf",
+		"char\\tmABCD\\Mmh-E09.inf",
+		"char\\tmABCD\\Mmh-E10.inf",
+		"char\\tmABCD\\Mmh-E11.inf",
+		"char\\tmABCD\\Mmh-E12.inf",
+		"char\\tmABCD\\Mmh-E13.inf"
+	},
+	{
+		"char\\tmABCD\\Mmh-E01t.inf",
+		"char\\tmABCD\\Mmh-E02t.inf",
+		"char\\tmABCD\\Mmh-E03t.inf",
+		"char\\tmABCD\\Mmh-E01t.inf",
+		"char\\tmABCD\\Mmh-E02t.inf",
+		"char\\tmABCD\\Mmh-E03t.inf",
+		"char\\tmABCD\\Mmh-E01t.inf",
+		"char\\tmABCD\\Mmh-E02t.inf",
+		"char\\tmABCD\\Mmh-E03t.inf",
+		"char\\tmABCD\\Mmh-E01t.inf",
+		"char\\tmABCD\\Mmh-E02t.inf",
+		"char\\tmABCD\\Mmh-E03t.inf",
+		"char\\tmABCD\\Mmh-E01t.inf"
+	},
+	{
+		"char\\tmABCD\\Mmh-E01t.inf",
+		"char\\tmABCD\\Mmh-E02t.inf",
+		"char\\tmABCD\\Mmh-E03t.inf",
+		"char\\tmABCD\\Mmh-E01t.inf",
+		"char\\tmABCD\\Mmh-E02t.inf",
+		"char\\tmABCD\\Mmh-E03t.inf",
+		"char\\tmABCD\\Mmh-E01t.inf",
+		"char\\tmABCD\\Mmh-E02t.inf",
+		"char\\tmABCD\\Mmh-E03t.inf",
+		"char\\tmABCD\\Mmh-E01t.inf",
+		"char\\tmABCD\\Mmh-E02t.inf",
+		"char\\tmABCD\\Mmh-E03t.inf",
+		"char\\tmABCD\\Mmh-E01t.inf"
+	},
+	{
+		"char\\tmABCD\\Mmh-E18t.inf",
+		"char\\tmABCD\\Mmh-E18t.inf",
+		"char\\tmABCD\\Mmh-E18t.inf",
+		"char\\tmABCD\\Mmh-E18t.inf",
+		"char\\tmABCD\\Mmh-E18t.inf",
+		"char\\tmABCD\\Mmh-E18t.inf",
+		"char\\tmABCD\\Mmh-E18t.inf",
+		"char\\tmABCD\\Mmh-E18t.inf",
+		"char\\tmABCD\\Mmh-E18t.inf",
+		"char\\tmABCD\\Mmh-E18t.inf",
+		"char\\tmABCD\\Mmh-E18t.inf",
+		"char\\tmABCD\\Mmh-E18t.inf",
+		"char\\tmABCD\\Mmh-E18t.inf"
+	}
+};
+
+// Martial Artist (JOB_CODE 11): heads tfh-f01..13; a/b/c/d/t only for 01..03 (the rest keep the plain head)
+char *szModel_MartialFaceName[FACE_MODEL_MAX][HEAREPOTION_MAX] = {
+	{
+		"char\\tmABCD\\tfh-f01.inf",
+		"char\\tmABCD\\tfh-f02.inf",
+		"char\\tmABCD\\tfh-f03.inf",
+		"char\\tmABCD\\tfh-f04.inf",
+		"char\\tmABCD\\tfh-f05.inf",
+		"char\\tmABCD\\tfh-f06.inf",
+		"char\\tmABCD\\tfh-f07.inf",
+		"char\\tmABCD\\tfh-f08.inf",
+		"char\\tmABCD\\tfh-f09.inf",
+		"char\\tmABCD\\tfh-f10.inf",
+		"char\\tmABCD\\tfh-f11.inf",
+		"char\\tmABCD\\tfh-f12.inf",
+		"char\\tmABCD\\tfh-f13.inf"
+	},
+	{
+		"char\\tmABCD\\tfh-f01a.inf",
+		"char\\tmABCD\\tfh-f02a.inf",
+		"char\\tmABCD\\tfh-f03a.inf",
+		"char\\tmABCD\\tfh-f04.inf",
+		"char\\tmABCD\\tfh-f05.inf",
+		"char\\tmABCD\\tfh-f06.inf",
+		"char\\tmABCD\\tfh-f07.inf",
+		"char\\tmABCD\\tfh-f08.inf",
+		"char\\tmABCD\\tfh-f09.inf",
+		"char\\tmABCD\\tfh-f10.inf",
+		"char\\tmABCD\\tfh-f11.inf",
+		"char\\tmABCD\\tfh-f12.inf",
+		"char\\tmABCD\\tfh-f13.inf"
+	},
+	{
+		"char\\tmABCD\\tfh-f01b.inf",
+		"char\\tmABCD\\tfh-f02b.inf",
+		"char\\tmABCD\\tfh-f03b.inf",
+		"char\\tmABCD\\tfh-f04.inf",
+		"char\\tmABCD\\tfh-f05.inf",
+		"char\\tmABCD\\tfh-f06.inf",
+		"char\\tmABCD\\tfh-f07.inf",
+		"char\\tmABCD\\tfh-f08.inf",
+		"char\\tmABCD\\tfh-f09.inf",
+		"char\\tmABCD\\tfh-f10.inf",
+		"char\\tmABCD\\tfh-f11.inf",
+		"char\\tmABCD\\tfh-f12.inf",
+		"char\\tmABCD\\tfh-f13.inf"
+	},
+	{
+		"char\\tmABCD\\tfh-f01c.inf",
+		"char\\tmABCD\\tfh-f02c.inf",
+		"char\\tmABCD\\tfh-f03c.inf",
+		"char\\tmABCD\\tfh-f04.inf",
+		"char\\tmABCD\\tfh-f05.inf",
+		"char\\tmABCD\\tfh-f06.inf",
+		"char\\tmABCD\\tfh-f07.inf",
+		"char\\tmABCD\\tfh-f08.inf",
+		"char\\tmABCD\\tfh-f09.inf",
+		"char\\tmABCD\\tfh-f10.inf",
+		"char\\tmABCD\\tfh-f11.inf",
+		"char\\tmABCD\\tfh-f12.inf",
+		"char\\tmABCD\\tfh-f13.inf"
+	},
+	{
+		"char\\tmABCD\\tfh-f01t.inf",
+		"char\\tmABCD\\tfh-f02t.inf",
+		"char\\tmABCD\\tfh-f03t.inf",
+		"char\\tmABCD\\tfh-f01t.inf",
+		"char\\tmABCD\\tfh-f02t.inf",
+		"char\\tmABCD\\tfh-f03t.inf",
+		"char\\tmABCD\\tfh-f01t.inf",
+		"char\\tmABCD\\tfh-f02t.inf",
+		"char\\tmABCD\\tfh-f03t.inf",
+		"char\\tmABCD\\tfh-f01t.inf",
+		"char\\tmABCD\\tfh-f02t.inf",
+		"char\\tmABCD\\tfh-f03t.inf",
+		"char\\tmABCD\\tfh-f01t.inf"
+	},
+	{
+		"char\\tmABCD\\tfh-f01t.inf",
+		"char\\tmABCD\\tfh-f02t.inf",
+		"char\\tmABCD\\tfh-f03t.inf",
+		"char\\tmABCD\\tfh-f01t.inf",
+		"char\\tmABCD\\tfh-f02t.inf",
+		"char\\tmABCD\\tfh-f03t.inf",
+		"char\\tmABCD\\tfh-f01t.inf",
+		"char\\tmABCD\\tfh-f02t.inf",
+		"char\\tmABCD\\tfh-f03t.inf",
+		"char\\tmABCD\\tfh-f01t.inf",
+		"char\\tmABCD\\tfh-f02t.inf",
+		"char\\tmABCD\\tfh-f03t.inf",
+		"char\\tmABCD\\tfh-f01t.inf"
+	},
+	{
+		"char\\tmABCD\\tfh-f18t.inf",
+		"char\\tmABCD\\tfh-f18t.inf",
+		"char\\tmABCD\\tfh-f18t.inf",
+		"char\\tmABCD\\tfh-f18t.inf",
+		"char\\tmABCD\\tfh-f18t.inf",
+		"char\\tmABCD\\tfh-f18t.inf",
+		"char\\tmABCD\\tfh-f18t.inf",
+		"char\\tmABCD\\tfh-f18t.inf",
+		"char\\tmABCD\\tfh-f18t.inf",
+		"char\\tmABCD\\tfh-f18t.inf",
+		"char\\tmABCD\\tfh-f18t.inf",
+		"char\\tmABCD\\tfh-f18t.inf",
+		"char\\tmABCD\\tfh-f18t.inf"
+	}
+};
+
+#define	ARMOR_JOB_ROWS		11	// armour rows (playsub.cpp ArmorJobNum): 8 classes + the Assassin, the Shaman, the Martial Artist
 #define	ARMOR_FILE_MAX		54 // 54
 
 //일반 옷 모델 목록
-char *szArmorNumFile[8][ARMOR_FILE_MAX] = {
+char *szArmorNumFile[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	{ "A001.ini" , "A001.ini",  "A002.ini",  "A003.ini",  "A004.ini",  "A005.ini",  "A006.ini",  "A007.ini", "A008.ini", "A009.ini", "A010.ini", 
 	  "A011.ini" , "A012.ini",  "A013.ini",  "A014.ini",  "A015.ini",  "A016.ini",  "A017.ini",  "A018.ini", "A019.ini", "A020.ini", "A021.ini",  
 	  "A001.ini" , "A022.ini",  "A023.ini",  "A024.ini",  "A001.ini",  "A001.ini",  "A001.ini",  "A001.ini",
@@ -1056,9 +1384,42 @@ char *szArmorNumFile[8][ARMOR_FILE_MAX] = {
 	  "Cmd003.ini", "Cmd003.ini", "Cmd003.ini", "Cmd003.ini", "Cmd004.ini", "Cmd004.ini", "Cmd004.ini", "Cmd004.ini",
 	  "Cmd005.ini", "Cmd006.ini", "Cmd007.ini", "Cmd008.ini", "Cmd009.ini", "Cmd010.ini", "Cmd011.ini", "Cmd012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
+
+	// Assassin (JOB_CODE 9)
+	{
+	  "e001.ini", "e001.ini", "e002.ini", "e003.ini", "e004.ini", "e005.ini", "e006.ini", "e007.ini",
+	  "e008.ini", "e009.ini", "e010.ini", "e011.ini", "e012.ini", "e013.ini", "e014.ini", "e015.ini",
+	  "e016.ini", "e017.ini", "e018.ini", "e019.ini", "e020.ini", "e021.ini", "e001.ini", "e022.ini",
+	  "e023.ini", "e024.ini", "e001.ini", "e001.ini", "e001.ini", "e001.ini", "Ce001.ini", "Ce001.ini",
+	  "Ce001.ini", "Ce001.ini", "Ce002.ini", "Ce002.ini", "Ce002.ini", "Ce002.ini", "Ce003.ini", "Ce003.ini",
+	  "Ce003.ini", "Ce003.ini", "Ce004.ini", "Ce004.ini", "Ce004.ini", "Ce004.ini", "Ce005.ini", "Ce006.ini",
+	  "Ce007.ini", "Ce008.ini", "Ce009.ini", "Ce010.ini", "Ce011.ini", "Ce012.ini"
+	},
+
+	// Shaman (JOB_CODE 10)
+	{
+	  "me001.ini", "me001.ini", "me002.ini", "me003.ini", "me004.ini", "me005.ini", "me006.ini", "me007.ini",
+	  "me008.ini", "me009.ini", "me010.ini", "me011.ini", "me012.ini", "me013.ini", "me014.ini", "me015.ini",
+	  "me016.ini", "me017.ini", "me018.ini", "me019.ini", "me020.ini", "me021.ini", "me001.ini", "me022.ini",
+	  "me023.ini", "me024.ini", "me001.ini", "me001.ini", "me001.ini", "me001.ini", "Cme001.ini", "Cme001.ini",
+	  "Cme001.ini", "Cme001.ini", "Cme002.ini", "Cme002.ini", "Cme002.ini", "Cme002.ini", "Cme003.ini", "Cme003.ini",
+	  "Cme003.ini", "Cme003.ini", "Cme004.ini", "Cme004.ini", "Cme004.ini", "Cme004.ini", "Cme005.ini", "Cme006.ini",
+	  "Cme007.ini", "Cme008.ini", "Cme009.ini", "Cme010.ini", "Cme011.ini", "Cme012.ini"
+	},
+
+	// Martial Artist (JOB_CODE 11)
+	{
+	  "f001.ini", "f001.ini", "f002.ini", "f003.ini", "f004.ini", "f005.ini", "f006.ini", "f007.ini",
+	  "f008.ini", "f009.ini", "f010.ini", "f011.ini", "f012.ini", "f013.ini", "f014.ini", "f015.ini",
+	  "f016.ini", "f017.ini", "f018.ini", "f019.ini", "f020.ini", "f021.ini", "f001.ini", "f022.ini",
+	  "f023.ini", "f024.ini", "f001.ini", "f001.ini", "f001.ini", "f001.ini", "Cf001.ini", "Cf001.ini",
+	  "Cf001.ini", "Cf001.ini", "Cf002.ini", "Cf002.ini", "Cf002.ini", "Cf002.ini", "Cf003.ini", "Cf003.ini",
+	  "Cf003.ini", "Cf003.ini", "Cf004.ini", "Cf004.ini", "Cf004.ini", "Cf004.ini", "Cf005.ini", "Cf006.ini",
+	  "f001.ini", "Cf008.ini", "f001.ini", "Cf010.ini", "Cf011.ini", "Cf012.ini"
+	}
 };
 //코믹 옷 모델 목록
-char *szArmorNumFile_Comic[8][ARMOR_FILE_MAX] = {
+char *szArmorNumFile_Comic[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	{ "A001.ini" , "A001.ini",  "A002.ini",  "A003.ini",  "A004.ini",  "A005.ini",  "A006.ini",  "A007.ini", "A008.ini", "A009.ini", "A010.ini", 
 	  "A011.ini" , "A012.ini",  "A013.ini",  "A014.ini",  "A015.ini",  "A016.ini",  "A017.ini",  "A018.ini", "A019.ini", "A020.ini", "A021.ini",  
 	  "A001.ini" , "A022.ini",  "A023.ini",  "A024.ini",  "A001.ini",  "A001.ini",  "A001.ini",  "A001.ini",
@@ -1123,6 +1484,39 @@ char *szArmorNumFile_Comic[8][ARMOR_FILE_MAX] = {
 	  "Cmd003.ini", "Cmd003.ini", "Cmd003.ini", "Cmd003.ini", "Cmd004.ini", "Cmd004.ini", "Cmd004.ini", "Cmd004.ini",
 	  "Cmd005.ini", "Cmd006.ini", "Cmd007.ini", "Cmd008.ini", "Cmd009.ini", "Cmd010.ini", "Cmd011.ini", "Cmd012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
+
+	// Assassin (JOB_CODE 9)
+	{
+	  "e001.ini", "e001.ini", "e002.ini", "e003.ini", "e004.ini", "e005.ini", "e006.ini", "e007.ini",
+	  "e008.ini", "e009.ini", "e010.ini", "e011.ini", "e012.ini", "e013.ini", "e014.ini", "e015.ini",
+	  "e016.ini", "e017.ini", "e018.ini", "e019.ini", "e020.ini", "e021.ini", "e001.ini", "e022.ini",
+	  "e023.ini", "e024.ini", "e001.ini", "e001.ini", "e001.ini", "e001.ini", "Ce001.ini", "Ce001.ini",
+	  "Ce001.ini", "Ce001.ini", "Ce002.ini", "Ce002.ini", "Ce002.ini", "Ce002.ini", "Ce003.ini", "Ce003.ini",
+	  "Ce003.ini", "Ce003.ini", "Ce004.ini", "Ce004.ini", "Ce004.ini", "Ce004.ini", "Ce005.ini", "Ce006.ini",
+	  "Ce007.ini", "Ce008.ini", "Ce009.ini", "Ce010.ini", "Ce011.ini", "Ce012.ini"
+	},
+
+	// Shaman (JOB_CODE 10)
+	{
+	  "me001.ini", "me001.ini", "me002.ini", "me003.ini", "me004.ini", "me005.ini", "me006.ini", "me007.ini",
+	  "me008.ini", "me009.ini", "me010.ini", "me011.ini", "me012.ini", "me013.ini", "me014.ini", "me015.ini",
+	  "me016.ini", "me017.ini", "me018.ini", "me019.ini", "me020.ini", "me021.ini", "me001.ini", "me022.ini",
+	  "me023.ini", "me024.ini", "me001.ini", "me001.ini", "me001.ini", "me001.ini", "Cme001.ini", "Cme001.ini",
+	  "Cme001.ini", "Cme001.ini", "Cme002.ini", "Cme002.ini", "Cme002.ini", "Cme002.ini", "Cme003.ini", "Cme003.ini",
+	  "Cme003.ini", "Cme003.ini", "Cme004.ini", "Cme004.ini", "Cme004.ini", "Cme004.ini", "Cme005.ini", "Cme006.ini",
+	  "Cme007.ini", "Cme008.ini", "Cme009.ini", "Cme010.ini", "Cme011.ini", "Cme012.ini"
+	},
+
+	// Martial Artist (JOB_CODE 11)
+	{
+	  "f001.ini", "f001.ini", "f002.ini", "f003.ini", "f004.ini", "f005.ini", "f006.ini", "f007.ini",
+	  "f008.ini", "f009.ini", "f010.ini", "f011.ini", "f012.ini", "f013.ini", "f014.ini", "f015.ini",
+	  "f016.ini", "f017.ini", "f018.ini", "f019.ini", "f020.ini", "f021.ini", "f001.ini", "f022.ini",
+	  "f023.ini", "f024.ini", "f001.ini", "f001.ini", "f001.ini", "f001.ini", "Cf001.ini", "Cf001.ini",
+	  "Cf001.ini", "Cf001.ini", "Cf002.ini", "Cf002.ini", "Cf002.ini", "Cf002.ini", "Cf003.ini", "Cf003.ini",
+	  "Cf003.ini", "Cf003.ini", "Cf004.ini", "Cf004.ini", "Cf004.ini", "Cf004.ini", "Cf005.ini", "Cf006.ini",
+	  "f001.ini", "Cf008.ini", "f001.ini", "Cf010.ini", "Cf011.ini", "Cf012.ini"
+	}
 };
 
 /*

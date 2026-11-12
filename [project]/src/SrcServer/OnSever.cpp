@@ -334,13 +334,14 @@ srCRISTAL_MONSTER srMarvelCristalMonsterBoss[MARVELCRISTAL_MAX] = {
 	{ " \300\314\271\314\306\274\270\243 \260\241\265\345 "		, 0 , 3		}
 };
 
-#define	srSKILL_MONSTER_MAX		3
+#define	srSKILL_MONSTER_MAX		4
 
 //스킬소환 몬스터
 srCRISTAL_MONSTER	srSkillMonster[srSKILL_MONSTER_MAX] = {
 	{ "\270\336\305\273 \260\355\267\275"		, 0 , 0	},
 	{ "\277\357\271\366\270\260"			, 0 , 0	},
-	{ "\306\304\300\314\276\356 \277\244\267\271\270\340\305\273"	, 0 , 0	}
+	{ "\306\304\300\314\276\356 \277\244\267\271\270\340\305\273"	, 0 , 0	},
+	{ "\276\306\270\243\304\355\264\331"	, 0 , 0	}		// tier 5 Atalanta: Arcuda (GameServer\Monster\100_s_Arcuda.inf)
 };
 
 // 장별 - 소울스톤
@@ -593,6 +594,9 @@ SetWindowText( hwnd , "Hotuk GameServer [ PT_TAIWAN ]" );
 #ifdef _LANGUAGE_ENGLISH
 #ifdef _LANGUAGE_PHILIPIN
 SetWindowText( hwnd , "Hotuk GameServer [ PT_PHILIPPINE ]" );
+#elif defined(PT_SERVER_PORT)
+// a test server beside the live one (smwsock.h): say so, so it isn't closed by mistake
+SetWindowText( hwnd , "TEST GameServer [ PT_ENGLISH ] port " PT_SERVER_PORT_TEXT );
 #else
 SetWindowText( hwnd , "Hotuk GameServer [ PT_ENGLISH ]" );
 #endif
@@ -3608,9 +3612,13 @@ smCHAR *OpenMonsterFromSkill( DWORD SkillCode , int x, int y, int z , rsPLAYINFO
 			lpCristalMonster = &srSkillMonster[2];
 			SkillMonsterAttackFlag = TRUE;
 			break;
+		case SKILL_PLAY_SUMMON_ARCUDA:		// tier 5
+			lpCristalMonster = &srSkillMonster[3];
+			SkillMonsterAttackFlag = TRUE;
+			break;
 	}
 
-	if ( !lpCristalMonster->lpCharInfo ) return NULL;
+	if ( !lpCristalMonster || !lpCristalMonster->lpCharInfo ) return NULL;
 
 	if ( lpPlayInfo ) {
 		//이미 소환된 몹 있으면 제거
@@ -3714,6 +3722,8 @@ smCHAR *OpenMonsterFromSkill( DWORD SkillCode , int x, int y, int z , rsPLAYINFO
 	return NULL;
 }
 
+int IsHestianModel( smCHAR_INFO *lpCharInfo );		// character.cpp (tier 5)
+
 //퀘스트 대전 몬스터 출현 시킴
 smCHAR *OpenMonster_QuestArena( rsPLAYINFO *lpPlayInfo , DWORD dwQuestCode , int Param=0 )
 {
@@ -3721,13 +3731,19 @@ smCHAR *OpenMonster_QuestArena( rsPLAYINFO *lpPlayInfo , DWORD dwQuestCode , int
 	STG_CHAR_INFO StgCharInfo;
 	int	len,cnt,pow;
 	smCHAR	*lpChar;
-	DWORD	dwSndCode;
+	DWORD	dwSndCode = 0;
 	int		OpenLevel = 0;
+	int		bHestian = 0;		// tier 5: the fifth rank-up quest's Hestian (found by model, level 100)
 
 
 	switch( dwQuestCode ) {
+		case SIN_QUEST_CODE_CHANGEJOB5:
+			bHestian = 1;
+			OpenLevel = 100;
+			break;
+
 		case SIN_QUEST_CODE_CHANGEJOB4:
-			if ( lpPlayInfo->smCharInfo.JOB_CODE<=4 )
+			if ( JOB_IS_TEMPSKRON(lpPlayInfo->smCharInfo.JOB_CODE) )
 				dwSndCode = snCHAR_SOUND_NPC_SKILLMASTER;
 			else
 				dwSndCode = snCHAR_SOUND_NPC_MAGICMASTER;
@@ -3770,7 +3786,8 @@ smCHAR *OpenMonster_QuestArena( rsPLAYINFO *lpPlayInfo , DWORD dwQuestCode , int
 
 		//특정 몬스터 호출
 		for(cnt=0;cnt<chrMonsterCnt;cnt++) {
-			if ( chrMonsterList[cnt].dwCharSoundCode==dwSndCode && (OpenLevel==0 || OpenLevel==chrMonsterList[cnt].Level) ) {
+			if ( ( bHestian ? IsHestianModel( &chrMonsterList[cnt] ) : chrMonsterList[cnt].dwCharSoundCode==dwSndCode ) &&
+				(OpenLevel==0 || OpenLevel==chrMonsterList[cnt].Level) ) {
 				memcpy(	&StgCharInfo.smCharInfo , &chrMonsterList[cnt] , sizeof( smCHAR_INFO ) ); 
 				len++;
 				break;
@@ -3788,6 +3805,8 @@ smCHAR *OpenMonster_QuestArena( rsPLAYINFO *lpPlayInfo , DWORD dwQuestCode , int
 				lpChar->lpLinkPlayInfo=lpPlayInfo;
 				lpChar->dwLinkObjectCode=lpPlayInfo->dwObjectSerial;
 				lpChar->dwUpdateCharInfoTime = dwPlayServTime+30*60*1000;						//30분후 제거
+				if ( bHestian )
+					lpChar->dwUpdateCharInfoTime = dwPlayServTime+8*60*1000;		// tier 5: her duel is 7 minutes
 
 				//상대 레벨에 따라 더욱 강화
 				pow = lpPlayInfo->smCharInfo.Level-60;
@@ -11534,6 +11553,16 @@ int AddNewPlayInfo( smWINSOCK *lpsmSock )
 	rsPlayInfo[cnt].dwSkill_AutoMation_Param = 0;
 	rsPlayInfo[cnt].dwSkill_Maximize_Time = 0;
 	rsPlayInfo[cnt].dwSkill_Maximize_Param = 0;
+	rsPlayInfo[cnt].dwSkill_PowerEnhance_Time = 0;
+	rsPlayInfo[cnt].dwSkill_PowerEnhance_Param = 0;
+	rsPlayInfo[cnt].dwSkill_ThirdAnima_Time = 0;
+	rsPlayInfo[cnt].dwSkill_ThirdAnima_Param = 0;
+	rsPlayInfo[cnt].dwSkill_BlessingKrishna_Time = 0;
+	rsPlayInfo[cnt].dwSkill_BlessingKrishna_Param = 0;
+	rsPlayInfo[cnt].dwSkill_HolyBenedic_Time = 0;
+	rsPlayInfo[cnt].dwSkill_HolyBenedic_Param = 0;
+	rsPlayInfo[cnt].dwSkill_Amplified_Time = 0;
+	rsPlayInfo[cnt].dwSkill_Amplified_Param = 0;
 	rsPlayInfo[cnt].dwSkill_PhysicalAbsorb_Time = 0;
 	rsPlayInfo[cnt].dwSkill_PhysicalAbsorb_Param = 0;
 	rsPlayInfo[cnt].dwSkill_ExtreamShield_Time = 0;
@@ -12152,10 +12181,33 @@ int	rsDeleteInvenItem( rsPLAYINFO *lpPlayInfo , DWORD dwCode , DWORD dwHead , DW
 	return -1;
 }
 
+// *GM_CHEATS (test server): trace of the server's own item list per connection, to find
+// why players' items get stripped on save. LogDebug\InvenTrace.log
+int rsInvenTrace( rsPLAYINFO *lpPlayInfo , const char *szWhat , int a , int b , int c )
+{
+	FILE *fp;
+	SYSTEMTIME st;
+	int cnt, used = 0;
+
+	if ( !rsServerConfig.GmCheats || !lpPlayInfo ) return FALSE;
+	for( cnt=0;cnt<INVEN_ITEM_INFO_MAX;cnt++ ) if ( lpPlayInfo->InvenItemInfo[cnt].dwCode ) used++;
+
+	fp = fopen( "LogDebug\\InvenTrace.log" , "ab" );
+	if ( !fp ) return FALSE;
+	GetLocalTime( &st );
+	fprintf( fp , "%d:%02d:%02d conn %p sock %p id '%s' name '%s' recbuf %s | %s %d %d %d | list holds %d\r\n" ,
+		st.wHour , st.wMinute , st.wSecond , lpPlayInfo , lpPlayInfo->lpsmSock , lpPlayInfo->szID , lpPlayInfo->szName ,
+		lpPlayInfo->lpRecordDataBuff ? "yes" : "no" , szWhat , a , b , c , used );
+	fclose( fp );
+	return TRUE;
+}
+
 //인벤 아이템 추가
 int	rsAddInvenItem( rsPLAYINFO *lpPlayInfo , DWORD dwCode , DWORD dwHead , DWORD dwChkSum )
 {
 	int	cnt;
+
+	rsInvenTrace( lpPlayInfo , "add item" , (int)dwCode , (int)dwHead , (int)dwChkSum );
 	int	Empty;
 
 
@@ -13093,6 +13145,12 @@ int rsProcessQuest( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , int QuestCode , in
 			smTransCommand.WParam = QuestCode;
 			smTransCommand.LParam = QuestParam;
 			break;
+
+		case SIN_QUEST_CODE_CHANGEJOB5:		// tier 5: Hestian beaten - the Gem of Hestian, from the server
+			smTransCommand.WParam = QuestCode;
+			smTransCommand.LParam = QuestParam;
+			rsPutItem( lpPlayInfo , sinQT1|sin26 );
+			break;
 	}
 
 	lpPlayInfo->lpsmSock->Send2( (char *)&smTransCommand , smTransCommand.size , TRUE );
@@ -13119,10 +13177,19 @@ int rsGetQuestCommand( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand 
 				rsPutItem( lpPlayInfo , sinQT1|sin07 );
 			break;
 
-		case SIN_QUEST_CODE_CHANGEJOB4:		
+		case SIN_QUEST_CODE_CHANGEJOB4:
 			if ( lpPlayInfo->smCharInfo.Level>=49 && lpTransCommand->LParam==QUEST_ARENA_FIELD ) {
 				//퀘스트용 마스터 대전방 호출
 				OpenMonster_QuestArena( lpPlayInfo , SIN_QUEST_CODE_CHANGEJOB4 );
+			}
+			break;
+
+		case SIN_QUEST_CODE_CHANGEJOB5:		// tier 5: the fifth rank-up quest
+			if ( lpPlayInfo->smCharInfo.Level>=80 ) {
+				if ( lpTransCommand->LParam==QUEST_ARENA_FIELD )
+					OpenMonster_QuestArena( lpPlayInfo , SIN_QUEST_CODE_CHANGEJOB5 );		// Hestian
+				else if ( lpTransCommand->LParam==1 )
+					rsPutItem( lpPlayInfo , sinQT1|sin25 );									// a hunt's Moon Stone
 			}
 			break;
 
@@ -14501,10 +14568,10 @@ int rsRecvMixtureResetItem( rsPLAYINFO *lpPlayInfo, sMIXTURE_RESET_ITEM_SERVER *
 	JOB_DATA_CODE *pJobDataCode = 0;
 
 	// 아이템의 특화정보를 얻기위한 코드 - GetJobDataCode() 함수를 써서 만들었다.
-	for( i=1; i<9; i++)		// 직업 8가지
-	{	
+	for( i=1; i<=JOBCODE_MAX; i++)		// 직업 8가지 (+ the Assassin, the Shaman and the Martial Artist)
+	{
 		pJobDataCode = GetJobDataCode( i, 0 );
-		if( pJobDataCode->JobBitCode == dwSpecialJob )
+		if( pJobDataCode && pJobDataCode->JobBitCode == dwSpecialJob )
 		{
 			dwJobCode = pJobDataCode->JobCode;
 			break;
@@ -14512,7 +14579,7 @@ int rsRecvMixtureResetItem( rsPLAYINFO *lpPlayInfo, sMIXTURE_RESET_ITEM_SERVER *
 	}
 
 	// for 루프를 전부 돌았다면...
-	if( i == 9 )
+	if( i > JOBCODE_MAX )
 	{
 		dwJobCode = 0;		
 		NotItemSpecial = 1;
@@ -15969,6 +16036,12 @@ int	rsCheck_ItemSecCode( rsPLAYINFO *lpPlayInfo , DWORD dwCode , DWORD dwHead , 
 int rsRecvBuyShopItem( rsPLAYINFO *lpPlayInfo  , TRANS_BUY_SHOPITEM *lpTransBuyShopItem )
 {
 	int money;
+
+	rsInvenTrace( lpPlayInfo , "BUY layout: sITEM size / info at / header at" , (int)sizeof(sITEM) ,
+		(int)((char *)&lpTransBuyShopItem->sItem.sItemInfo - (char *)&lpTransBuyShopItem->sItem) ,
+		(int)((char *)&lpTransBuyShopItem->sItem.sItemInfo.ItemHeader - (char *)&lpTransBuyShopItem->sItem.sItemInfo) );
+	rsInvenTrace( lpPlayInfo , "BUY request: code / serial the game sent" , (int)lpTransBuyShopItem->sItem.sItemInfo.CODE ,
+		(int)lpTransBuyShopItem->sItem.sItemInfo.ItemHeader.Head , (int)lpTransBuyShopItem->sItem.sItemInfo.ItemHeader.dwChkSum );
 
 	if ( !rsServerConfig.ServerInventoryMode ) {
 		lpPlayInfo->ServerMoney = 90000000;
@@ -18441,6 +18514,226 @@ int InitAdminCommand()
 }
 
 
+// *GM_CHEATS (test server only): any GM may make items with /@get and /@put, as a
+// level 4 GM could. The GM level is raised only for this one call.
+static int GmCheats_Whisper( rsPLAYINFO *lpPlayInfo , char *szMsg )
+{
+	TRANS_CHATMESSAGE	TransChatMessage;
+
+	if ( !lpPlayInfo->lpsmSock ) return FALSE;
+	lstrcpyn( TransChatMessage.szMessage , szMsg , 200 );
+	TransChatMessage.code = smTRANSCODE_WHISPERMESSAGE;
+	TransChatMessage.size = 32+lstrlen(TransChatMessage.szMessage);
+	TransChatMessage.dwIP = 0;
+	TransChatMessage.dwObjectSerial = 0;
+	return lpPlayInfo->lpsmSock->Send( (char *)&TransChatMessage , TransChatMessage.size , TRUE );
+}
+
+static int GmCheats_CreateItem( rsPLAYINFO *lpPlayInfo , rsPLAYINFO *lpPlayInfo2, char *szItem )
+{
+	int AdminMode = lpPlayInfo->AdminMode;
+	int val, cnt;
+	DWORD dwCode = 0;
+	char szMsg[256];
+
+	if ( rsServerConfig.GmCheats && AdminMode>0 && AdminMode<4 ) lpPlayInfo->AdminMode = 4;
+	val = CreateCommandItem( lpPlayInfo , lpPlayInfo2 , szItem );
+	lpPlayInfo->AdminMode = AdminMode;
+
+	if ( val!=TRUE && rsServerConfig.GmCheats ) {
+		// say why, so a GM is not left guessing
+		for(cnt=0;cnt<MAX_ITEM;cnt++) {
+			if ( lstrcmpi( szItem , sItem[cnt].LastCategory )==0 ) { dwCode = sItem[cnt].CODE; break; }
+		}
+		if ( !dwCode )
+			wsprintf( szMsg , "> No item has the code '%s'." , szItem );
+		else {
+			for(cnt=0;cnt<DefaultItemCount;cnt++) {
+				if ( DefaultItems[cnt].Item.CODE==dwCode ) break;
+			}
+			if ( cnt>=DefaultItemCount )
+				wsprintf( szMsg , "> '%s' is not in the server's item files (GameServer\\OpenItem)." , szItem );
+			else if ( DefaultItems[cnt].Item.UniqueItem )
+				wsprintf( szMsg , "> '%s' is a unique item: it can't be made with /@get." , szItem );
+			else if ( !FindStageField( lpPlayInfo->Position.x, lpPlayInfo->Position.z ) )
+				wsprintf( szMsg , "> No map under you to drop '%s' on." , szItem );
+			else
+				wsprintf( szMsg , "> '%s' could not be made." , szItem );
+		}
+		GmCheats_Whisper( lpPlayInfo , szMsg );
+	}
+
+	return val;
+}
+
+/*----------------------------------------------------------------------------*
+*	GM /DeckMeOut! [aging]: the best item the player can wear in every slot, for
+*	their level and stats, rolled at its best with their class's specialisation,
+*	optionally aged (keeping its level requirement so it still goes on). The client
+*	first empties those slots (smTRANSCODE_GM_DECKOUT), then gets the items the
+*	usual way (smTRANSCODE_PUTITEM), which it puts straight on.
+*-----------------------------------------------------------------------------*/
+extern int Random_MaxMode;
+
+static DWORD DeckItemClass( DWORD dwCode )
+{
+	for ( int cnt=0; cnt<MAX_ITEM; cnt++ )
+		if ( sItem[cnt].CODE==dwCode ) return sItem[cnt].Class;
+	return 0;
+}
+
+// the item's number in its family (WA129 -> 29); 0 when unknown
+static int DeckItemOrdinal( DWORD dwCode )
+{
+	for ( int cnt=0; cnt<MAX_ITEM; cnt++ ) {
+		if ( sItem[cnt].CODE==dwCode ) {
+			const char *szKey = sItem[cnt].LastCategory;
+			return lstrlen(szKey)==5 ? atoi( szKey+3 ) : 0;
+		}
+	}
+	return 0;
+}
+
+static DWORD DeckWeaponFamily( int JobCode )
+{
+	switch( JobCode ) {
+		case JOBCODE_FIGHTER:		return sinWA1;
+		case JOBCODE_MECHANICIAN:	return sinWC1;
+		case JOBCODE_ARCHER:		return sinWS1;
+		case JOBCODE_PIKEMAN:		return sinWP1;
+		case JOBCODE_ATALANTA:		return sinWT1;
+		case JOBCODE_KNIGHT:		return sinWS2;
+		case JOBCODE_MAGICIAN:
+		case JOBCODE_PRIESTESS:		return sinWM1;
+		case JOBCODE_ASSASSIN:		return sinWD1;
+		case JOBCODE_SHAMAN:		return sinWN1;
+		case JOBCODE_MARTIALARTIST:	return sinWV1;
+	}
+	return 0;
+}
+
+// the best item of a family the player can wear, made into *lpItem
+static int DeckPickItem( rsPLAYINFO *lpPlayInfo , DWORD dwFamily , int Aging , sITEMINFO *lpItem )
+{
+	smCHAR_INFO *lpChar = &lpPlayInfo->smCharInfo;
+	int JobCode = lpChar->JOB_CODE&0xFFFF;
+	int Tried[DEF_ITEM_MAX/8];
+	int TriedCount = 0;
+	int cnt, best, i;
+
+	while( TriedCount<DEF_ITEM_MAX/8 ) {
+		best = -1;
+		for ( cnt=0; cnt<DefaultItemCount; cnt++ ) {
+			sITEMINFO *lpDef = &DefaultItems[cnt].Item;
+			if ( (lpDef->CODE&sinITEM_MASK2)!=dwFamily || lpDef->UniqueItem ) continue;
+			if ( lpDef->Level>lpChar->Level ) continue;
+			if ( !CanClassUseWeapon( JobCode, lpDef->CODE ) ) continue;
+			int ord = DeckItemOrdinal( lpDef->CODE );
+			if ( ord<=0 || ord>30 ) continue;				// event, costume and premium items
+			for ( i=0; i<TriedCount; i++ ) if ( Tried[i]==cnt ) break;
+			if ( i<TriedCount ) continue;
+			if ( best<0 || lpDef->Level>DefaultItems[best].Item.Level ||
+				( lpDef->Level==DefaultItems[best].Item.Level && ord>DeckItemOrdinal(DefaultItems[best].Item.CODE) ) )
+				best = cnt;
+		}
+		if ( best<0 ) return FALSE;
+		Tried[TriedCount++] = best;
+
+		Random_MaxMode = 1;
+		CreateDefItem( lpItem , &DefaultItems[best] , JobCode );
+		Random_MaxMode = 0;
+
+		// by level only: a GM's stat points are often still unspent (/MakeMeLevel), and an item
+		// worn without the stats for it just waits (shown red) until they are spent
+		if ( lpItem->Level>lpChar->Level )
+			continue;				// its specialisation pushed the level past the player's: the next best
+
+		if ( Aging>0 ) {
+			DWORD dwFam = lpItem->CODE&sinITEM_MASK2;
+			if ( (dwFam>=sinWA1 && dwFam<=sinDA2) || dwFam==sinOA2 || dwFam==sinOM1 ) {
+				int Level = lpItem->Level;
+				SetAgingItem( lpItem , Aging );
+				lpItem->Level = Level;			// still wearable
+				ReformItem( lpItem );
+			}
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static int GmDeckOut( rsPLAYINFO *lpPlayInfo , int Aging )
+{
+	smCHAR_INFO *lpChar = &lpPlayInfo->smCharInfo;
+	int JobCode = lpChar->JOB_CODE&0xFFFF;
+	int Caster = ( JobCode==JOBCODE_MAGICIAN || JobCode==JOBCODE_PRIESTESS || JobCode==JOBCODE_SHAMAN );
+	sITEMINFO Items[12];
+	int Count = 0;
+	DWORD dwMask = 0;
+	smTRANS_COMMAND	smTransCommand;
+	char szMsg[256];
+	int cnt;
+
+	struct { DWORD dwFamily; DWORD dwSlots; } Slots[] = {
+		{ Caster ? sinDA2 : sinDA1 , INVENTORY_POS_ARMOR },
+		{ sinDB1 , INVENTORY_POS_BOOTS },
+		{ sinDG1 , INVENTORY_POS_GLOVES },
+		{ sinOA2 , INVENTORY_POS_ARMLET },
+		{ sinOA1 , INVENTORY_POS_AMULET },
+		{ sinOS1 , INVENTORY_POS_SHELTOM },
+		{ sinOR1 , INVENTORY_POS_LRING },
+		{ sinOR1 , INVENTORY_POS_RRING },
+	};
+
+	if ( !lpPlayInfo->lpsmSock ) return FALSE;
+
+	// the weapon, and the off hand if it leaves one free
+	DWORD dwWeapon = DeckWeaponFamily( JobCode );
+	if ( dwWeapon && DeckPickItem( lpPlayInfo , dwWeapon , Aging , &Items[Count] ) ) {
+		DWORD dwClass = DeckItemClass( Items[Count].CODE );
+		Count++;
+		dwMask |= INVENTORY_POS_RHAND;
+		if ( dwClass==ITEM_CLASS_WEAPON_TWO )
+			dwMask |= INVENTORY_POS_LHAND;
+		else if ( JobCode!=JOBCODE_ASSASSIN && JobCode!=JOBCODE_MARTIALARTIST && JobCode!=JOBCODE_ARCHER ) {
+			if ( DeckPickItem( lpPlayInfo , Caster ? sinOM1 : sinDS1 , Aging , &Items[Count] ) ) {
+				Count++;
+				dwMask |= INVENTORY_POS_LHAND;
+			}
+		}
+	}
+
+	for ( cnt=0; cnt<(int)(sizeof(Slots)/sizeof(Slots[0])); cnt++ ) {
+		if ( DeckPickItem( lpPlayInfo , Slots[cnt].dwFamily , Aging , &Items[Count] ) ) {
+			Count++;
+			dwMask |= Slots[cnt].dwSlots;
+		}
+	}
+
+	if ( !Count ) {
+		GmCheats_Whisper( lpPlayInfo , "> Nothing to wear was found for your level." );
+		return FALSE;
+	}
+
+	smTransCommand.size = sizeof( smTRANS_COMMAND );
+	smTransCommand.code = smTRANSCODE_GM_DECKOUT;
+	smTransCommand.WParam = dwMask;
+	smTransCommand.LParam = Count;
+	smTransCommand.SParam = 0;
+	smTransCommand.EParam = 0;
+	lpPlayInfo->lpsmSock->Send( (char *)&smTransCommand , smTransCommand.size , TRUE );
+
+	for ( cnt=0; cnt<Count; cnt++ )
+		rsPutItem2( lpPlayInfo , &Items[cnt] );
+
+	if ( Aging>0 )
+		wsprintf( szMsg , "> Decked out: %d items for level %d, aged +%d." , Count , lpChar->Level , Aging );
+	else
+		wsprintf( szMsg , "> Decked out: %d items for level %d." , Count , lpChar->Level );
+	GmCheats_Whisper( lpPlayInfo , szMsg );
+	return TRUE;
+}
+
 int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 {
 	int len,cnt;
@@ -19252,7 +19545,7 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 
 	//아이템 생기는 치트
 	len = rsCompString( "/@get" , szChatCommand );
-	if ( len && lpPlayInfo->AdminMode>=3 ) {
+	if ( len && ( lpPlayInfo->AdminMode>=3 || ( lpPlayInfo->AdminMode && rsServerConfig.GmCheats ) ) ) {
 		lpBuff = szChatCommand + len;
 
 		//p = rsGetWord( szCmdBuff , lpBuff );	//ID 읽어옴
@@ -19265,7 +19558,12 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 		}
 
 		//아이템 생성 명령
-		if ( CreateCommandItem( lpPlayInfo , 0 , lpBuff )==TRUE ) {
+		if ( GmCheats_CreateItem( lpPlayInfo , 0 , lpBuff )==TRUE ) {
+			if ( rsServerConfig.GmCheats ) {
+				char szDropMsg[128];
+				wsprintf( szDropMsg , "> Dropped %s at your feet." , lpBuff );
+				GmCheats_Whisper( lpPlayInfo , szDropMsg );
+			}
 			//wsprintf( TransChatMessage.szMessage , "아이템 %s를 생성했습니다" , lpBuff );
 			wsprintf( TransChatMessage.szMessage , srMsg_009 , lpBuff );
 			TransChatMessage.code = smTRANSCODE_WHISPERMESSAGE;
@@ -19281,7 +19579,7 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 
 	//아이템 생기는 치트
 	len = rsCompString( "/@put" , szChatCommand );
-	if ( len && lpPlayInfo->AdminMode>=3 ) {
+	if ( len && ( lpPlayInfo->AdminMode>=3 || ( lpPlayInfo->AdminMode && rsServerConfig.GmCheats ) ) ) {
 		lpBuff = szChatCommand + len;
 
 		lpBuff = rsGetWord( szCmdBuff , lpBuff );	//ID 읽어옴
@@ -19296,7 +19594,7 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 				else break;
 			}
 			//아이템 생성 명령
-			if ( CreateCommandItem( lpPlayInfo , lpPlayInfo2 , lpBuff )==TRUE ) {
+			if ( GmCheats_CreateItem( lpPlayInfo , lpPlayInfo2 , lpBuff )==TRUE ) {
 				//wsprintf( TransChatMessage.szMessage , "아이템 %s를 %s님께 보냈습니다" , lpBuff , lpPlayInfo2->smCharInfo.szName );
 				wsprintf( TransChatMessage.szMessage , srMsg_010 , lpBuff , lpPlayInfo2->smCharInfo.szName );
 				TransChatMessage.code = smTRANSCODE_WHISPERMESSAGE;
@@ -19959,7 +20257,9 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 	//len = rsCompString( "/내경험치내놔!" , szChatCommand );
 //해외
 	len = rsCompString( "/GiveMeExp!" , szChatCommand );
-	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || lpPlayInfo->AdminMode>=4 ) )
+	if ( !len )
+		len = rsCompString( "/ShowMeTheExp!" , szChatCommand );		// the name in the old GM notes
+	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.GmCheats || lpPlayInfo->AdminMode>=4 ) )
 	{
 		lpBuff = szChatCommand + len;
 
@@ -19984,11 +20284,79 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 		return TRUE;
 	}
 
+	// GM: /MakeMeLevel <level>. Moves the server's own level and start exp first, so the
+	// client's next save passes the level-jump (-12) and exp-gain (-9) checks, then tells
+	// the client to apply the same level (smTRANSCODE_GM_SETLEVEL).
+	len = rsCompString( "/MakeMeLevel" , szChatCommand );
+	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.GmCheats || lpPlayInfo->AdminMode>=4 ) )
+	{
+		lpBuff = szChatCommand + len;
+		lpBuff = rsGetWord( szCmdBuff , lpBuff );
+		cnt = atoi(szCmdBuff);
+
+		if ( cnt>=1 && cnt<=CHAR_LEVEL_MAX ) {
+			lpPlayInfo->spExp_Start = GetNextExp( cnt-1 );
+			SetExp64( &lpPlayInfo->smCharInfo , lpPlayInfo->spExp_Start );
+			lpPlayInfo->smCharInfo.Level = cnt;
+
+			smTransCommand.size = sizeof( smTRANS_COMMAND );
+			smTransCommand.code = smTRANSCODE_GM_SETLEVEL;
+			smTransCommand.WParam = cnt;
+			smTransCommand.LParam = 0;
+			smTransCommand.SParam = 0;
+			smTransCommand.EParam = 0;
+			lpPlayInfo->lpsmSock->Send( (char *)&smTransCommand , smTransCommand.size , TRUE );
+
+			wsprintf( TransChatMessage.szMessage , "> Level %d. Log out and back in if the level doesn't stick." , cnt );
+		}
+		else
+			wsprintf( TransChatMessage.szMessage , "> Usage: /MakeMeLevel 1-%d" , CHAR_LEVEL_MAX );
+
+		TransChatMessage.code = smTRANSCODE_WHISPERMESSAGE;
+		TransChatMessage.size = 32+lstrlen(TransChatMessage.szMessage);
+		TransChatMessage.dwIP = 0;
+		TransChatMessage.dwObjectSerial = 0;
+		lpPlayInfo->lpsmSock->Send( (char *)&TransChatMessage , TransChatMessage.size , TRUE );
+
+		rsRecordAdminCommand( lpPlayInfo , szChatCommand , 1 );
+		return TRUE;
+	}
+
+	// GM: /DeckMeOut! [aging] - the best gear for the player's level and class (GmDeckOut)
+	len = rsCompString( "/DeckMeOut!" , szChatCommand );
+	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.GmCheats || lpPlayInfo->AdminMode>=4 ) )
+	{
+		lpBuff = szChatCommand + len;
+		lpBuff = rsGetWord( szCmdBuff , lpBuff );
+		cnt = szCmdBuff[0] ? atoi(szCmdBuff) : 0;
+		if ( cnt<0 ) cnt = 0;
+		if ( cnt>20 ) cnt = 20;
+		GmDeckOut( lpPlayInfo , cnt );
+		rsRecordAdminCommand( lpPlayInfo , szChatCommand , 1 );
+		return TRUE;
+	}
+
+	// GM: /IDDQD - god mode on or off (the client keeps life, mana and stamina full)
+	len = rsCompString( "/IDDQD" , szChatCommand );
+	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.GmCheats || lpPlayInfo->AdminMode>=4 ) )
+	{
+		lpPlayInfo->GmGodMode = !lpPlayInfo->GmGodMode;
+		smTransCommand.size = sizeof( smTRANS_COMMAND );
+		smTransCommand.code = smTRANSCODE_GM_GODMODE;
+		smTransCommand.WParam = lpPlayInfo->GmGodMode;
+		smTransCommand.LParam = 0;
+		smTransCommand.SParam = 0;
+		smTransCommand.EParam = 0;
+		lpPlayInfo->lpsmSock->Send( (char *)&smTransCommand , smTransCommand.size , TRUE );
+		rsRecordAdminCommand( lpPlayInfo , szChatCommand , 1 );
+		return TRUE;
+	}
+
 	//돈 치트
 //	len = rsCompString( "/내돈다내놔!" , szChatCommand );
 //해외
 	len = rsCompString( "/GiveMeMoney!" , szChatCommand );
-	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || lpPlayInfo->AdminMode>=4 ) ) {
+	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.GmCheats || lpPlayInfo->AdminMode>=4 ) ) {
 		lpBuff = szChatCommand + len;
 
 		lpBuff = rsGetWord( szCmdBuff , lpBuff );	//레벨
@@ -21116,6 +21484,17 @@ pRetry:
 		lpPlayInfo->ChatMsgMode = 0;
 
 		if ( lpBuff[0]=='/' || lpBuff[0]=='`' ) {
+			if ( rsServerConfig.GmCheats ) {
+				// test server: every command line received, with the sender's GM level
+				FILE *fpCmd = fopen( "LogDebug\\Commands.log" , "ab" );
+				if ( fpCmd ) {
+					SYSTEMTIME stCmd;
+					GetLocalTime( &stCmd );
+					fprintf( fpCmd , "%d:%d:%d %s (GM %d): %s\r\n" , stCmd.wHour , stCmd.wMinute , stCmd.wSecond ,
+						lpPlayInfo->smCharInfo.szName , lpPlayInfo->AdminMode , lpBuff );
+					fclose( fpCmd );
+				}
+			}
 			if ( RecvCommand( lpPlayInfo , lpBuff )>=0 ) break;
 		}
 		else {
@@ -21744,6 +22123,18 @@ pRetry:
 
 		//val = lpPlayInfo->lpRecordBase->RecvRecordDataFromClient( (TRANS_RECORD_DATAS *)SockInfo->Buff , lpPlayInfo->smCharInfo.Level , lpPlayInfo->CrackWarning , lpPlayInfo->lpRecordDataBuff );
 		val = lpPlayInfo->lpRecordBase->RecvRecordDataFromClient( (TRANS_RECORD_DATAS *)SockInfo->Buff , lpPlayInfo ); //->smCharInfo.Level , lpPlayInfo->CrackWarning , lpPlayInfo->lpRecordDataBuff );
+		if ( val<0 ) {
+			// every refused save, with the levels on both sides (LogDebug\SaveRefused.log)
+			FILE *fpRefused = fopen( "LogDebug\\SaveRefused.log" , "ab" );
+			if ( fpRefused ) {
+				SYSTEMTIME stRefused;
+				GetLocalTime( &stRefused );
+				fprintf( fpRefused , "%d:%d:%d %s code %d - server level %d, saved level %d, start exp %I64d\r\n" ,
+					stRefused.wHour , stRefused.wMinute , stRefused.wSecond , lpPlayInfo->smCharInfo.szName , val ,
+					lpPlayInfo->smCharInfo.Level , lpPlayInfo->lpRecordBase->TransRecordData.smCharInfo.Level , lpPlayInfo->spExp_Start );
+				fclose( fpRefused );
+			}
+		}
 		if ( val==-1 ) {
 			//저장 첵크섬 오류
 			smTransCommand.WParam = 1600;
@@ -21849,7 +22240,7 @@ pRetry:
 
 		if ( val==-10 ) {
 			//스킬포인트 조작 오류
-			CheckSkillPoint( lpPlayInfo->lpRecordBase->TransRecordData.smCharInfo.Level , &lpPlayInfo->lpRecordBase->TransRecordData.GameSaveInfo.SkillInfo , &cnt , lpPlayInfo->lpRecordBase->TransRecordData.GameSaveInfo.dwLevelQuestLog );
+			CheckSkillPoint( lpPlayInfo->lpRecordBase->TransRecordData.smCharInfo.Level , &lpPlayInfo->lpRecordBase->TransRecordData.GameSaveInfo.SkillInfo , &cnt , lpPlayInfo->lpRecordBase->TransRecordData.GameSaveInfo.dwLevelQuestLog , &lpPlayInfo->lpRecordBase->TransRecordData.GameSaveInfo.Skill5Info );
 			smTransCommand.WParam = 6910;
 			smTransCommand.LParam = lpPlayInfo->lpRecordBase->TransRecordData.smCharInfo.Level;
 			smTransCommand.SParam = cnt;
@@ -31120,10 +31511,12 @@ int rsUpdateSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand )
 		case SKILL_PLAY_METAL_GOLEM:
 		case SKILL_PLAY_RECALL_WOLVERIN:
 		case SKILL_PLAY_FIRE_ELEMENTAL:
+		case SKILL_PLAY_SUMMON_ARCUDA:
 
 		case SKILL_METAL_GOLEM:
 		case SKILL_RECALL_WOLVERIN:
 		case SKILL_FIRE_ELEMENTAL:
+		case SKILL_SUMMON_ARCUDA:
 
 			if ( lpPlayInfo->lpLinkChar && lpPlayInfo->lpLinkChar->dwObjectSerial==lpPlayInfo->dwLinkCharCode && lpPlayInfo->lpLinkChar->HoSkillCode ) {
 				//소환몹 모드 변경
@@ -31250,6 +31643,31 @@ int rsCancelSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand )
 		case SKILL_PLAY_MAXIMIZE:
 			lpPlayInfo->dwSkill_Maximize_Time = 0;
 			lpPlayInfo->dwSkill_Maximize_Param = 0;
+			break;
+
+		case SKILL_PLAY_AMPLIFIED:
+			lpPlayInfo->dwSkill_Amplified_Time = 0;
+			lpPlayInfo->dwSkill_Amplified_Param = 0;
+			break;
+
+		case SKILL_PLAY_HOLY_BENEDIC:
+			lpPlayInfo->dwSkill_HolyBenedic_Time = 0;
+			lpPlayInfo->dwSkill_HolyBenedic_Param = 0;
+			break;
+
+		case SKILL_PLAY_BLESSING_KRISHNA:
+			lpPlayInfo->dwSkill_BlessingKrishna_Time = 0;
+			lpPlayInfo->dwSkill_BlessingKrishna_Param = 0;
+			break;
+
+		case SKILL_PLAY_THIRD_ANIMA:
+			lpPlayInfo->dwSkill_ThirdAnima_Time = 0;
+			lpPlayInfo->dwSkill_ThirdAnima_Param = 0;
+			break;
+
+		case SKILL_PLAY_POWER_ENHANCEMENT:
+			lpPlayInfo->dwSkill_PowerEnhance_Time = 0;
+			lpPlayInfo->dwSkill_PowerEnhance_Param = 0;
 			break;
 
 		case SKILL_PLAY_PHYSICAL_ABSORB:
@@ -31617,6 +32035,48 @@ int rsRecvProcessSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand
 			}
 			break;
 
+		case SKILL_PLAY_AMPLIFIED:		// tier 5
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_PIKEMAN && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpPlayInfo->dwSkill_Amplified_Time = dwPlayServTime+Amplified_Time[point]*1000;
+				lpPlayInfo->dwSkill_Amplified_Param = Amplified_Damage[point];
+			}
+			break;
+
+		case SKILL_PLAY_HOLY_BENEDIC:		// tier 5
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_KNIGHT && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpPlayInfo->dwSkill_HolyBenedic_Time = dwPlayServTime+Holy_Benedic_Time[point]*1000;
+				lpPlayInfo->dwSkill_HolyBenedic_Param = Holy_Benedic_Undead[point];
+			}
+			break;
+
+		case SKILL_PLAY_BLESSING_KRISHNA:		// tier 5
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_PRIESTESS && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpPlayInfo->dwSkill_BlessingKrishna_Time = dwPlayServTime+Blessing_Krishna_Time[point]*1000;
+				lpPlayInfo->dwSkill_BlessingKrishna_Param = point;
+			}
+			break;
+
+		case SKILL_PLAY_THIRD_ANIMA:		// tier 5
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_MAGICIAN && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpPlayInfo->dwSkill_ThirdAnima_Time = dwPlayServTime+Third_Anima_Time[point]*1000;
+				lpPlayInfo->dwSkill_ThirdAnima_Param = Third_Anima_Damage[point];
+			}
+			break;
+
+		case SKILL_PLAY_POWER_ENHANCEMENT:		// tier 5 Mechanician: attack power +%
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_MECHANICIAN && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpPlayInfo->dwSkill_PowerEnhance_Time = dwPlayServTime+Power_Enhancement_Time[point]*1000;
+				lpPlayInfo->dwSkill_PowerEnhance_Param = Power_Enhancement_Damage[point];
+			}
+			break;
+
+		case SKILL_PLAY_BLOODY_BERSERKER:		// tier 5: takes Berserker's slot (and replaces it)
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_FIGHTER && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpPlayInfo->dwSkill_Berserker_Time = dwPlayServTime+Bloody_Berserker_Time[point]*1000;
+				lpPlayInfo->dwSkill_Berserker_Param = point|BERSERKER_PARAM_BLOODY;
+			}
+			break;
+
 		case SKILL_PLAY_ASSASSIN_EYE:
 			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_PIKEMAN ) {
 				lpPlayInfo->dwSkill_AssassinEye_Time = dwPlayServTime+Assassin_Eye_Time[point]*1000;
@@ -31647,6 +32107,23 @@ int rsRecvProcessSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand
 					lpChar->sMoveStepCount[1] = 2;
 
 					lpChar->smCharInfo.wPlayClass[1] = (fONE/2)+point*12;		//크기 확대
+				}
+			}
+			break;
+
+		case SKILL_PLAY_SUMMON_ARCUDA:		// tier 5 Atalanta: Arcuda, like the Wolverine
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_ATALANTA && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpChar = OpenMonsterFromSkill( dwSkillCode , lpPlayInfo->Position.x,lpPlayInfo->Position.y,lpPlayInfo->Position.z, lpPlayInfo ,0);
+				if ( lpChar ) {
+					lpChar->dwUpdateCharInfoTime = dwPlayServTime+(Summon_Arcuda_Time[point]-5)*1000;
+					lpChar->smCharInfo.Attack_Damage[0] = Summon_Arcuda_Damage[point][0];
+					lpChar->smCharInfo.Attack_Damage[1] = Summon_Arcuda_Damage[point][1];
+					lpChar->smCharInfo.Attack_Rating = Summon_Arcuda_Hit[point];
+					lpChar->smCharInfo.Defence = Summon_Arcuda_Defense[point]+lpPlayInfo->smCharInfo.Dexterity*2;
+					lpChar->smCharInfo.Life[0] = Summon_Arcuda_Life[point];
+					lpChar->smCharInfo.Life[1] = Summon_Arcuda_Life[point];
+					lpChar->sMoveStepCount[0] = 1;
+					lpChar->sMoveStepCount[1] = 2;
 				}
 			}
 			break;
@@ -31758,6 +32235,13 @@ int rsRecvProcessSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand
 			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_PRIESTESS ) {
 				lpPlayInfo->dwSkill_SummonMuspell_Time = dwPlayServTime+Summon_Muspell_Time[point]*1000;
 				lpPlayInfo->dwSkill_SummonMuspell_Param = point;
+			}
+			break;
+
+		case SKILL_PLAY_SUMMON_RAMIEL:		// tier 5 Priestess: takes Summon Muspell's slot, with Ramiel's numbers
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_PRIESTESS && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpPlayInfo->dwSkill_SummonMuspell_Time = dwPlayServTime+Summon_Ramiel_Time[point]*1000;
+				lpPlayInfo->dwSkill_SummonMuspell_Param = point|MUSPELL_PARAM_RAMIEL;
 			}
 			break;
 

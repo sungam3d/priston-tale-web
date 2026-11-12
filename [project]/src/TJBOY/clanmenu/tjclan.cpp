@@ -334,7 +334,7 @@ void clanMENUinit()
 void InitHelp()
 {	
 	if(!g_GuideHelp.GetIsOn()) return; //레벨업 도움말이 꺼져있을 경우
-	//if((sinChar->Level == 20)&&(sinChar->JOB_CODE > 4)) return;
+	//if((sinChar->Level == 20)&&(!JOB_IS_TEMPSKRON(sinChar->JOB_CODE))) return;
 	g_Help.SetStartPos(0,0);
 	if(!g_Help.CheckLevel(sinChar->Level,sinChar->JOB_CODE)) return;
 	g_Help.SetHelpN(LEVELUP_HELP);

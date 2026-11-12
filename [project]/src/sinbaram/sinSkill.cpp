@@ -17,7 +17,7 @@ sUSESKILL sinSkill;
 sSKILL  *pUseSkill;			//사용하기전에 값을 셋팅해준다 
 sSKILL  ContinueSkill[10];	//지속적으로 사용되는 스킬 
 sSKILL  TempContinueSkill[10];	//지속적으로 사용되는 스킬 
-int SkillCountTime2[17] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+int SkillCountTime2[SIN_MAX_USE_SKILL] = {0};
 int ContinueSkillMouseIndex = 0;
 
 JOB_DATA_CODE *sinJobList;
@@ -313,7 +313,49 @@ sSKILL sSkill[SIN_MAX_SKILL] = {
 	{"\307\303\266\363\300\323 \277\376\300\314\272\352"    ,SKILL_FLAME_WAVE		,"MM63 F_Wave"},
 	{"\265\360\275\272\306\256\267\317\274\307"       ,SKILL_DISTORTION	    ,"MM66 Distortion","Mg4_DISTORTION.tga"},
 	{"\270\336\305\327\277\300"		    ,SKILL_M_METEO		    ,"MM70 Meteo"},
-		
+
+	// tier 5 (the fifth rank). Each must come after its class's fourth tier: SearchUseSkill
+	// fills the class's window slots in table order, so these land in slots 17..20.
+	{"Land Mining"		,SKILL_LAND_MINING		,"TM80 landminning"},
+	{"Hyper Sonic"		,SKILL_HYPER_SONIC		,"TM83 H_Sonic","Me5_H_Sonic.tga"},
+	{"Rolling Smash"	,SKILL_ROLLING_SMASH	,"TM86 R_Smash"},
+	{"Power Enhancement",SKILL_POWER_ENHANCEMENT,"TM90 P_Enhence","Me5_P_Enhence.tga"},
+
+	{"Down Hit"			,SKILL_DOWN_HIT			,"TF80 D_Hit"},
+	{"Power Dash"		,SKILL_POWER_DASH		,"TF83 P_Dash"},
+	{"Mortal Blow"		,SKILL_MORTAL_BLOW		,"TF86 M_Blow"},
+	{"Bloody Berserker"	,SKILL_BLOODY_BERSERKER	,"TF90 B_Berserker","Ft5_B_Berserker.tga"},
+
+	{"Dancing Reaper"	,SKILL_DANCING_REAPER	,"TP80 D_Reaper"},
+	{"Final Spear"		,SKILL_FINAL_SPEAR		,"TP83 F_Spear"},
+	{"Amplified"		,SKILL_AMPLIFIED		,"TP86 Amplified","Pk5_Amplified.tga"},
+	{"Side Spin Attack"	,SKILL_SIDE_SPIN_ATTACK	,"TP90 SS_Attack"},
+
+	{"Evade Shot"		,SKILL_EVADE_SHOT		,"TA80 E_Shot"},
+	{"Thunder Rope"		,SKILL_THUNDER_ROPE		,"TA83 S_Rope"},
+	{"Nature Splash"	,SKILL_NATURE_SPLASH	,"TA86 N_Splash"},
+	{"Circle Trap"		,SKILL_CIRCLE_TRAP		,"TA90 C_Trap"},
+
+	{"Soul Breaker"		,SKILL_SOUL_BREAKER		,"MN80 S_Breaker"},
+	{"Crescent Moon"	,SKILL_CRESCENT_MOON	,"MN83 C_Moon"},
+	{"Saint Blade"		,SKILL_SAINT_BLADE		,"MN86 S_Blade"},
+	{"Holy Benedic"		,SKILL_HOLY_BENEDIC		,"MN90 H_Benedic","Kn5_H_Benedic.tga"},
+
+	{"Talaria"			,SKILL_TALARIA			,"MA80 Talaria","At5_Talaria.tga"},
+	{"Galaxy Coup"		,SKILL_GALAXY_COUP		,"MA83 G_Coup"},
+	{"Summon Arcuda"	,SKILL_SUMMON_ARCUDA	,"MA86 S_Arcuda","At5_S_Arcuda.tga"},
+	{"Snippy Fear"		,SKILL_SNIPPY_FEAR		,"MA90 S_Fear"},
+
+	{"Spirit Impact"	,SKILL_SPIRIT_IMPACT	,"MP80 S_Impact"},
+	{"Piercing Ice"		,SKILL_PIERCING_ICE		,"MP83 P_Ice"},
+	{"Summon Ramiel"	,SKILL_SUMMON_RAMIEL	,"MP86 S_Ramiel","Pr5_S_Ramiel.tga"},
+	{"Blessing Krishna"	,SKILL_BLESSING_KRISHNA	,"MP90 B_Krishna","Pr5_B_Krishna.tga"},
+
+	{"Silraphim"		,SKILL_SILRAPHIM		,"MM80 Silraphim"},
+	{"Vis Tenus"		,SKILL_VIS_TENUS		,"MM83 V_Tenus"},
+	{"Prima Ignis"		,SKILL_PRIMA_IGNIS		,"MM86 P_Ignis"},
+	{"Third Anima"		,SKILL_THIRD_ANIMA		,"MM90 T_Anima","Ma5_T_Anima.tga"},
+
 	//공성전 클랜 스킬
 	{"\310\355\274\366\267\302 \273\363\275\302"	    ,CLANSKILL_ABSORB	 ,"","wa1-1.tga"},
 	{"\260\370\260\335\267\302 \273\363\275\302"      ,CLANSKILL_ATTACK	 ,"","wa1-3.tga"},
@@ -374,8 +416,20 @@ sSKILLBOX	sSkillBox[SIN_MAX_SKILLBOX] = {
 	{{681,461,681+49, 461+46},{681+47,461+5,681+47+5,461+40}},
 	{{722,511,722+49, 511+46},{722+47,511+5,722+47+5,511+40}},
 
-
+	// tier 5, on the second page (Skil25.bmp): its four slots sit where the first tier's do
+	{{27-10,502,27+49-10,502+46},{27+47-10,502+5,27+47+5-10,502+40}},
+	{{67-10,546,67+49-10,546+46},{67+47-10,546+5,67+47+5-10,546+40}},
+	{{77-10,466,77+49-10,466+46},{77+47-10,466+5,77+47+5-10,466+40}},
+	{{137-10,476,137+49-10,476+46},{137+47-10,476+5,137+47+5-10,476+40}},
 };
+
+// whether skill window slot i shows on the page that is open (page 2 = the tier 5 slots)
+extern int SkillMain2OpenFlag;
+static int SkillOnShownPage( int i )
+{
+	if ( i==0 ) return TRUE;			// normal attack: the fist box is on both pages
+	return SkillMain2OpenFlag ? ( i>=SIN_TIER5_FIRST ) : ( i<SIN_TIER5_FIRST );
+}
 
 sSKILLBOX sLeftRightSkill[2] = {
 	{{349,541,349+49,541+46},{349,558,349+5,558+35}},  //스킬 왼쪽 
@@ -556,14 +610,14 @@ void cSKILL::LoadUseSkillImage()
 
 	lpSkillButton[0] = LoadDibSurfaceOffscreen("Image\\SinImage\\Skill\\Skill_Normal.bmp"); //노멀 어택 
 	lpSkillButton_Gray[0] = LoadDibSurfaceOffscreen("Image\\SinImage\\Skill\\Skill_Normal.bmp"); //노멀 어택 
-	for(i = 0 ; i < 4 ; i++){
+	for(i = 0 ; i < 5 ; i++){		// 5: the fifth rank's title, drawn on the second page
 		wsprintf(TempTitleDirPath,"%s%s%d%s",TempDirPath,"JobTitle\\",i+1,".bmp");
 		lpSkillTitle[i] = LoadDibSurfaceOffscreen(TempTitleDirPath);
 
 	}
 
-	/////////////////버튼 이미지 로딩 
-	for(i = 1 ; i < 17 ; i++){ //노멀 어택 이미지를 뺀 나머지 스킬 이미지 
+	/////////////////버튼 이미지 로딩
+	for(i = 1 ; i < SIN_MAX_USE_SKILL ; i++){ //노멀 어택 이미지를 뺀 나머지 스킬 이미지
 		if(sinSkill.UseSkill[i].Flag){
 			if(sinSkill.UseSkill[i].FileName[0]){
 				wsprintf(ButtonImageDirPath,"%s%s%s%s",TempDirPath,"Button\\",sinSkill.UseSkill[i].FileName,".bmp");
@@ -597,21 +651,14 @@ void cSKILL::Release()
 		lpSelectSkill = 0;
 
 	}
-	for(i = 0 ; i < 4 ; i++){
+	for(i = 0 ; i < 5 ; i++){
 		if(lpSkillTitle[i]){
 			lpSkillTitle[i]->Release();
 			lpSkillTitle[i] = 0;
 
 		}
 	}
-	for(i = 0 ; i < 4 ; i ++){
-		if(lpSkillTitle[i]){
-			lpSkillTitle[i]->Release();
-			lpSkillTitle[i] = 0;
-
-		}
-	}
-	for(i = 0 ; i <17 ; i ++){
+	for(i = 0 ; i <SIN_MAX_USE_SKILL ; i ++){
 		if(lpSkillButton[i]){
 			lpSkillButton[i]->Release();
 			lpSkillButton[i] = 0;
@@ -717,12 +764,21 @@ void cSKILL::Draw()
 		}
 	}
 	//===========================================================================================
-	if(OpenFlag&&!SkillMain2OpenFlag){
-		for(i = 0 ; i < (int)sinChar->ChangeJob+1 ; i++){ //타이틀 
-			DrawSprite(SkillTitle[i][0],SkillTitle[i][1]+(256-sinMoveKindInter[SIN_SKILL]),lpSkillTitle[i],0,0,100,20);
+	if(OpenFlag){
+		if(SkillMain2OpenFlag){		// the second page: the fifth rank's title over its tier 5 column
+			if(sinChar->ChangeJob>=4 && lpSkillTitle[4])
+				DrawSprite(SkillTitle[0][0],SkillTitle[0][1]+(256-sinMoveKindInter[SIN_SKILL]),lpSkillTitle[4],0,0,100,20);
 		}
-		////////////////////스킬 버튼 
-		for(i = 1 ; i < ChangeJobSkillPlus ; i++){ //노멀 어택을 빼준다 
+		else {
+			int Titles = (int)sinChar->ChangeJob+1;
+			if(Titles > 4) Titles = 4;
+			for(i = 0 ; i < Titles ; i++){ //타이틀
+				DrawSprite(SkillTitle[i][0],SkillTitle[i][1]+(256-sinMoveKindInter[SIN_SKILL]),lpSkillTitle[i],0,0,100,20);
+			}
+		}
+		////////////////////스킬 버튼
+		for(i = 1 ; i < ChangeJobSkillPlus ; i++){ //노멀 어택을 빼준다
+			if(!SkillOnShownPage(i)) continue;
 			if(sinSkill.UseSkill[i].Flag && sinSkill.UseSkill[i].Use && SkillMasterFlag){//활성화
 				if(lpSkillButton[i]){  
 					DrawSprite(sinSkill.SkillBox[i].BoxRect.left , sinSkill.SkillBox[i].BoxRect.top +(256-sinMoveKindInter[SIN_SKILL]) ,
@@ -804,7 +860,8 @@ void cSKILL::Draw()
 		}
 
 		//////////////////// ShorKey 
-		for(i = 0 ; i < ChangeJobSkillPlus ; i++){   
+		for(i = 0 ; i < ChangeJobSkillPlus ; i++){
+			if(!SkillOnShownPage(i)) continue;
 			if(sinSkill.UseSkill[i].Flag){
 				if(sinSkill.UseSkill[i].ShortKey){
 					DrawSprite(sinSkill.SkillBox[i].BoxRect.left+9 , sinSkill.SkillBox[i].BoxRect.top-6+(256-sinMoveKindInter[SIN_SKILL]) ,
@@ -1050,8 +1107,9 @@ void cSKILL::Main()
 	if ( 269 < pCursorPos.x  && 287 > pCursorPos.x  &&  571 < pCursorPos.y  && 590 > pCursorPos.y  )
 		ShowSkillClose = 1;
 
-	if(OpenFlag&&!SkillMain2OpenFlag){ 
-		for(int i = 0; i < ChangeJobSkillPlus ; i++){ 
+	if(OpenFlag){
+		for(int i = 0; i < ChangeJobSkillPlus ; i++){
+			if(!SkillOnShownPage(i)) continue;
 			if(sinSkill.UseSkill[i].Flag){
 				if(sinSkill.SkillBox[i].BoxRect.left < pCursorPos.x && sinSkill.SkillBox[i].BoxRect.right > pCursorPos.x &&
 					sinSkill.SkillBox[i].BoxRect.top < pCursorPos.y && sinSkill.SkillBox[i].BoxRect.bottom > pCursorPos.y ){
@@ -1109,7 +1167,11 @@ void cSKILL::Main()
 		}
 
 	}
-	if(OpenFlag&&!SkillMain2OpenFlag){
+	if(SkillMain2OpenFlag && sinChar->ChangeJob<4){	// no fifth rank (any more): back to the first page
+		SkillMain2OpenFlag = 0;
+		SkillMain2ButtonFlag[0] = 0;
+	}
+	if(OpenFlag&&!SkillMain2OpenFlag&&sinChar->ChangeJob>=4){	// the second page holds the tier 5 skills
 		//오른쪽
 		if(765 < pCursorPos.x && 765+20 > pCursorPos.x &&
 		   482 < pCursorPos.y && 482+20 > pCursorPos.y ){
@@ -1340,7 +1402,7 @@ void cSKILL::KeyDown()
 
 				}
 				
-				for(int j=0; j < 17 ; j++){
+				for(int j=0; j < SIN_MAX_USE_SKILL ; j++){
 					if(j == SkillButtonIndex-1)continue;
 					if(sinSkill.UseSkill[SkillButtonIndex-1].ShortKey ==sinSkill.UseSkill[j].ShortKey){
 						sinSkill.UseSkill[j].ShortKey = 0;
@@ -1798,6 +1860,9 @@ void cSKILL::CheckingNowSkillState()
 	break;
 	case 3:
 		ChangeJobSkillPlus = 17;
+	break;
+	default:					// the fifth rank: + the four tier 5 skills
+		ChangeJobSkillPlus = 21;
 	break;
 
 	}
@@ -4461,11 +4526,217 @@ int cSKILL::ShowSkillInfo(sSKILL *pSkill , sSKILLBOX *pSkillBox ,  int Icon )
         break;
 		case SKILL_BOOST_HEALTH:
 			lstrcpy(szTempSkillDoc,LifeUp4); //생명력 추가량
-			lstrcat(szSkillInfoBuff,szTempSkillDoc); 
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
 			wsprintf(szTempSkillDoc2,"%d\r",Boost_Health_Life[pSkill->Point+i-1]);
 			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
 			LineCount++;
         break;
+// one tooltip line for a tier 5 skill: the label (ending in \r), then the value
+#define T5TIP(label, ...) { lstrcpy(szTempSkillDoc,label); lstrcat(szSkillInfoBuff,szTempSkillDoc); \
+	wsprintf(szTempSkillDoc2,__VA_ARGS__); lstrcat(szSkillInfoBuff2,szTempSkillDoc2); LineCount++; }
+#define T5P (pSkill->Point+i-1)
+		//[Mechanician] tier 5
+		case SKILL_LAND_MINING:
+			T5TIP(AddPercentDamage4, "%d%s\r", Land_Mining_DamagePercent[T5P], "%");
+			T5TIP(AreaDamage4, "%d-%d\r", Land_Mining_AreaDamage[T5P][0], Land_Mining_AreaDamage[T5P][1]);
+			T5TIP(MaxAttackNum4, "%d\r", Land_Mining_AttackNum[T5P]);
+			T5TIP(AttackAreaName, "%d\r", Land_Mining_Area[T5P]);
+		break;
+		case SKILL_HYPER_SONIC:
+			T5TIP("Attack Speed:\r", "%d%s\r", Hyper_Sonic_Speed[T5P], "%");
+			T5TIP(CountinueTime, "%d%s\r", Hyper_Sonic_Time[T5P], SecName);
+		break;
+		case SKILL_ROLLING_SMASH:
+			T5TIP(AddPercentDamage4, "%d%s\r", Rolling_Smash_DamagePercent[T5P], "%");
+			T5TIP("Attack Rating:\r", "+%d\r", Rolling_Smash_AddHit[T5P]);
+		break;
+		case SKILL_POWER_ENHANCEMENT:
+			T5TIP("Attack Power:\r", "+%d%s\r", Power_Enhancement_Damage[T5P], "%");
+			T5TIP(CountinueTime, "%d%s\r", Power_Enhancement_Time[T5P], SecName);
+		break;
+		//[Priestess] tier 5
+		case SKILL_SPIRIT_IMPACT:
+			T5TIP("Base Damage:\r", "%d-%d\r", Spirit_Impact_Damage[T5P][0], Spirit_Impact_Damage[T5P][1]);
+			T5TIP("Weapon Damage:\r", "x%d\r", Spirit_Impact_WeaponX[T5P]);
+			T5TIP("Range:\r", "%d\r", Spirit_Impact_Range[T5P]);
+		break;
+		case SKILL_PIERCING_ICE:
+			T5TIP("Base Damage:\r", "%d-%d\r", Piercing_Ice_Damage[T5P][0], Piercing_Ice_Damage[T5P][1]);
+		break;
+		case SKILL_SUMMON_RAMIEL:
+			T5TIP("Attack Power:\r", "%d-%d\r", Summon_Ramiel_Damage[T5P][0], Summon_Ramiel_Damage[T5P][1]);
+			T5TIP("Attack Delay:\r", "%d%s\r", Summon_Ramiel_Attack_Delay[T5P], SecName);
+			T5TIP("Block:\r", "+%d%s\r", Summon_Ramiel_BlockPercent[T5P], "%");
+			T5TIP("Undead Absorb:\r", "%d%s\r", Summon_Ramiel_UndeadAbsorbPercent[T5P], "%");
+			T5TIP(CountinueTime, "%d%s\r", Summon_Ramiel_Time[T5P], SecName);
+		break;
+		case SKILL_BLESSING_KRISHNA:
+			T5TIP("Defense:\r", "+%d%s\r", Blessing_Krishna_Defense[T5P], "%");
+			T5TIP("Absorption:\r", "+%d\r", Blessing_Krishna_Absorb[T5P]);
+			T5TIP(CountinueTime, "%d%s\r", Blessing_Krishna_Time[T5P], SecName);
+		break;
+		//[Magician] tier 5
+		case SKILL_SILRAPHIM:
+			T5TIP("Base Damage:\r", "%d-%d\r", Silraphim_Damage[T5P][0], Silraphim_Damage[T5P][1]);
+			T5TIP("Weapon Damage:\r", "x%d\r", Silraphim_WeaponX[T5P]);
+			T5TIP("Range:\r", "%d\r", Silraphim_Range[T5P]);
+		break;
+		case SKILL_VIS_TENUS:
+			T5TIP("Life:\r", "-%d%s\r", Vis_Tenus_LifeDown[T5P], "%");
+			T5TIP("Its Damage:\r", "-%d%s\r", Vis_Tenus_DamageDown[T5P], "%");
+			T5TIP(CountinueTime, "%d%s\r", Vis_Tenus_Time[T5P], SecName);
+		break;
+		case SKILL_PRIMA_IGNIS:
+			T5TIP("Base Damage:\r", "%d-%d\r", Prima_Ignis_Damage[T5P][0], Prima_Ignis_Damage[T5P][1]);
+			T5TIP("Weapon Damage:\r", "x%d\r", Prima_Ignis_WeaponX[T5P]);
+		break;
+		case SKILL_THIRD_ANIMA:
+			T5TIP("Magic Damage:\r", "+%d%s\r", Third_Anima_Damage[T5P], "%");
+			T5TIP("Max Mana:\r", "-%d%s\r", Third_Anima_ManaDown[T5P], "%");
+			T5TIP(CountinueTime, "%d%s\r", Third_Anima_Time[T5P], SecName);
+		break;
+		//[Atalanta] tier 5
+		case SKILL_TALARIA:
+			T5TIP("Move Speed:\r", "+%d\r", Talaria_Speed[T5P]);
+			T5TIP(CountinueTime, "%d%s\r", Talaria_Time[T5P], SecName);
+		break;
+		case SKILL_GALAXY_COUP:
+			T5TIP(AddPercentDamage4, "%d%s\r", Galaxy_Coup_DamagePercent[T5P], "%");
+			T5TIP(AttackAreaName, "%d\r", Galaxy_Coup_Area[T5P]);
+			T5TIP("Attack Rating:\r", "+%d%s\r", Galaxy_Coup_AddHit[T5P], "%");
+		break;
+		case SKILL_SUMMON_ARCUDA:
+			T5TIP("Attack Power:\r", "%d-%d\r", Summon_Arcuda_Damage[T5P][0], Summon_Arcuda_Damage[T5P][1]);
+			T5TIP("Attack Rating:\r", "%d\r", Summon_Arcuda_Hit[T5P]);
+			T5TIP("Defense:\r", "%d+\r", Summon_Arcuda_Defense[T5P]);
+			T5TIP("Life:\r", "%d\r", Summon_Arcuda_Life[T5P]);
+			T5TIP(CountinueTime, "%d%s\r", Summon_Arcuda_Time[T5P], SecName);
+		break;
+		case SKILL_SNIPPY_FEAR:
+			T5TIP(AddPercentDamage4, "%d%s\r", Snippy_Fear_DamagePercent[T5P], "%");
+			T5TIP("Critical:\r", "+%d%s\r", Snippy_Fear_Critical[T5P], "%");
+			T5TIP("Range:\r", "+%d\r", Snippy_Fear_Range[T5P]);
+		break;
+		//[Knight] tier 5
+		case SKILL_SOUL_BREAKER:
+			T5TIP(AddPercentDamage4, "%d%s\r", Soul_Breaker_DamagePercent[T5P], "%");
+			T5TIP("Attack Rating:\r", "+%d%s\r", Soul_Breaker_AddHit[T5P], "%");
+		break;
+		case SKILL_CRESCENT_MOON:
+			T5TIP(AddPercentDamage4, "%d%s\r", Crescent_Moon_DamagePercent[T5P], "%");
+			T5TIP("Reach:\r", "%d\r", Crescent_Moon_Range[T5P]);
+		break;
+		case SKILL_SAINT_BLADE:
+			T5TIP(AddPercentDamage4, "%d%s\r", Saint_Blade_DamagePercent[T5P], "%");
+			T5TIP("Undead Damage:\r", "+%d%s\r", Saint_Blade_Undead[T5P], "%");
+		break;
+		case SKILL_HOLY_BENEDIC:
+			T5TIP("Undead Damage:\r", "+%d%s\r", Holy_Benedic_Undead[T5P], "%");
+			T5TIP(CountinueTime, "%d%s\r", Holy_Benedic_Time[T5P], SecName);
+		break;
+		//[Archer] tier 5
+		case SKILL_EVADE_SHOT:
+			T5TIP(AddPercentDamage4, "%d%s\r", Evade_Shot_DamagePercent[T5P], "%");
+			T5TIP("Stun Time:\r", "%d%s\r", Evade_Shot_StunTime[T5P], SecName);
+		break;
+		case SKILL_THUNDER_ROPE:
+			T5TIP(AddPercentDamage4, "%d%s\r", Thunder_Rope_DamagePercent[T5P], "%");
+			T5TIP("Attack Rating:\r", "+%d%s\r", Thunder_Rope_AddHit[T5P], "%");
+			T5TIP("Shot Range:\r", "+%d\r", Thunder_Rope_Range[T5P]);
+		break;
+		case SKILL_NATURE_SPLASH:
+			T5TIP(AddPercentDamage4, "%d%s\r", Nature_Splash_DamagePercent[T5P], "%");
+			T5TIP(AttackAreaName, "%d\r", Nature_Splash_Area[T5P]);
+		break;
+		case SKILL_CIRCLE_TRAP:
+			T5TIP(AddPercentDamage4, "%d%s\r", Circle_Trap_DamagePercent[T5P], "%");
+			T5TIP(AttackAreaName, "%d\r", Circle_Trap_Area[T5P]);
+			T5TIP("Slow:\r", "%d%s\r", Circle_Trap_Slow[T5P], "%");
+			T5TIP("Slow Time:\r", "%d.%d%s\r", Circle_Trap_SlowTime10[T5P]/10, Circle_Trap_SlowTime10[T5P]%10, SecName);
+		break;
+		//[Pikeman] tier 5
+		case SKILL_DANCING_REAPER:
+			T5TIP(AddPercentDamage4, "%d%s\r", Dancing_Reaper_DamagePercent[T5P], "%");
+		break;
+		case SKILL_FINAL_SPEAR:
+			T5TIP(AreaDamage4, "%d-%d\r", Final_Spear_AreaDamage[T5P][0], Final_Spear_AreaDamage[T5P][1]);
+			T5TIP(AttackAreaName, "%d\r", Final_Spear_Area[T5P]);
+		break;
+		case SKILL_AMPLIFIED:
+			T5TIP("Attack Power:\r", "+%d%s\r", Amplified_Damage[T5P], "%");
+			T5TIP("Attack Rating:\r", "+%d%s\r", Amplified_AddHit[T5P], "%");
+			T5TIP("Absorption:\r", "%d\r", Amplified_SubAbsorb[T5P]);
+			T5TIP(CountinueTime, "%d%s\r", Amplified_Time[T5P], SecName);
+		break;
+		case SKILL_SIDE_SPIN_ATTACK:
+			T5TIP(AddPercentDamage4, "%d%s\r", Side_Spin_DamagePercent[T5P], "%");
+			T5TIP("Life Drain:\r", "%d%s\r", Side_Spin_LifeAbsorb[T5P], "%");
+		break;
+		//[Fighter] tier 5
+		case SKILL_DOWN_HIT:
+			lstrcpy(szTempSkillDoc,AddPercentDamage4);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d%s\r",Down_Hit_DamagePercent[pSkill->Point+i-1],"%");
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+		break;
+		case SKILL_POWER_DASH:
+			lstrcpy(szTempSkillDoc,AddPercentDamage4);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d%s\r",Power_Dash_DamagePercent[pSkill->Point+i-1],"%");
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+
+			lstrcpy(szTempSkillDoc,"Stun Time:\r");
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d%s\r",Power_Dash_StunTime[pSkill->Point+i-1],SecName);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+		break;
+		case SKILL_MORTAL_BLOW:
+			lstrcpy(szTempSkillDoc,AddPercentDamage4);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d%s\r",Mortal_Blow_DamagePercent[pSkill->Point+i-1],"%");
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+
+			lstrcpy(szTempSkillDoc,AreaDamage4);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d-%d\r",Mortal_Blow_AreaDamage[pSkill->Point+i-1][0],Mortal_Blow_AreaDamage[pSkill->Point+i-1][1]);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+
+			lstrcpy(szTempSkillDoc,MaxAttackNum4);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d\r",Mortal_Blow_AttackNum[pSkill->Point+i-1]);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+
+			lstrcpy(szTempSkillDoc,AttackAreaName);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d\r",Mortal_Blow_Area[pSkill->Point+i-1]);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+		break;
+		case SKILL_BLOODY_BERSERKER:
+			lstrcpy(szTempSkillDoc,PlusDamageName);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d\r",Bloody_Berserker_AddAttack[pSkill->Point+i-1]);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+
+			lstrcpy(szTempSkillDoc,SubAbsorb4);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d\r",Bloody_Berserker_SubAbsorb[pSkill->Point+i-1]);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+
+			lstrcpy(szTempSkillDoc,CountinueTime);
+			lstrcat(szSkillInfoBuff,szTempSkillDoc);
+			wsprintf(szTempSkillDoc2,"%d%s\r",Bloody_Berserker_Time[pSkill->Point+i-1],SecName);
+			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+			LineCount++;
+		break;
 		//[파이크맨]
 		case SKILL_ASSASSIN_EYE:
 			lstrcpy(szTempSkillDoc,CriticalAddDamage4);//크리티컬 공격력 증가
@@ -5912,7 +6183,8 @@ int cSKILL::CheckSkillData()
 	}
 
 	//스킬정보 테이블의 조작을 방지한다 
-	for(i=0;i< SIN_MAX_SKILL;i++){  
+	for(i=0;i< SIN_MAX_SKILL;i++){
+		if ( (sSkill_Info[i].CODE&sinSKILL_MASK1)!=GROUP_OTHERSKILL && (sSkill_Info[i].CODE&CHANGE_JOB5) ) continue;	// the tier 5 rows came later: the sum stays the original's
 		k = i+1;
 		SkillInfoDataCheckSum += k*sSkill_Info[i].RequireLevel;
 		SkillInfoDataCheckSum += k*sSkill_Info[i].UseStamina[0];

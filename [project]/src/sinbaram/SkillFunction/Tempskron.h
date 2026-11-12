@@ -67,6 +67,17 @@ int F_Berserker();          //버서커
 int F_Cyclone_Strike();     //싸이클론 스트라이크
 int F_Boost_Health();       //부스트 헬스
 
+//Tier 5
+int F_Down_Hit();
+int F_Power_Dash();
+int F_Mortal_Blow();
+int F_Bloody_Berserker();
+int F_Tier5_Pending();		// a tier 5 skill whose cast is not made yet: it can be learned, not used
+int F_Land_Mining();
+int F_Hyper_Sonic();
+int F_Rolling_Smash();
+int F_Power_Enhancement();
+
 //////////////// 파이크맨 
 int F_Pike_Wind();			//파이크윈드 
 int F_Ice_Attribute();		//아이스 어트리뷰트 
@@ -280,6 +291,150 @@ extern int Cyclone_Strike_UseMana[10];
 //붓트 헬스
 extern int Boost_Health_Life[10];//생명력 영구적 추가
 
+//**Tier 5 (all classes' mana per rank: sinSkill_Info.cpp)
+extern int Land_Mining_UseMana[10], Hyper_Sonic_UseMana[10], Rolling_Smash_UseMana[10], Power_Enhancement_UseMana[10];
+extern int Down_Hit_UseMana[10], Power_Dash_UseMana[10], Mortal_Blow_UseMana[10], Bloody_Berserker_UseMana[10];
+extern int Dancing_Reaper_UseMana[10], Final_Spear_UseMana[10], Amplified_UseMana[10], Side_Spin_Attack_UseMana[10];
+extern int Evade_Shot_UseMana[10], Thunder_Rope_UseMana[10], Nature_Splash_UseMana[10], Circle_Trap_UseMana[10];
+extern int Soul_Breaker_UseMana[10], Crescent_Moon_UseMana[10], Saint_Blade_UseMana[10], Holy_Benedic_UseMana[10];
+extern int Talaria_UseMana[10], Galaxy_Coup_UseMana[10], Summon_Arcuda_UseMana[10], Snippy_Fear_UseMana[10];
+extern int Spirit_Impact_UseMana[10], Piercing_Ice_UseMana[10], Summon_Ramiel_UseMana[10], Blessing_Krishna_UseMana[10];
+extern int Silraphim_UseMana[10], Vis_Tenus_UseMana[10], Prima_Ignis_UseMana[10], Third_Anima_UseMana[10];
+
+//Mechanician tier 5
+extern int Land_Mining_DamagePercent[10];
+extern int Land_Mining_AreaDamage[10][2];
+extern int Land_Mining_Area[10];
+extern int Land_Mining_AttackNum[10];
+extern int Hyper_Sonic_Speed[10];
+extern int Hyper_Sonic_Time[10];
+extern int Rolling_Smash_DamagePercent[10];
+extern int Rolling_Smash_AddHit[10];
+extern int Power_Enhancement_Damage[10];
+extern int Power_Enhancement_Area[10];
+extern int Power_Enhancement_Time[10];
+
+//Pikeman tier 5
+extern int Dancing_Reaper_DamagePercent[10];
+extern int Final_Spear_Area[10];
+extern int Final_Spear_AreaDamage[10][2];
+extern int Amplified_SubAbsorb[10];
+extern int Amplified_AddHit[10];
+extern int Amplified_Damage[10];
+extern int Amplified_Time[10];
+extern int Side_Spin_DamagePercent[10];
+extern int Side_Spin_LifeAbsorb[10];
+int F_Dancing_Reaper();
+int F_Final_Spear();
+int F_Amplified();
+int F_Side_Spin_Attack();
+
+//Archer tier 5
+extern int Evade_Shot_DamagePercent[10];
+extern int Evade_Shot_StunTime[10];
+extern int Thunder_Rope_Range[10];
+extern int Thunder_Rope_DamagePercent[10];
+extern int Thunder_Rope_AddHit[10];
+extern int Nature_Splash_DamagePercent[10];
+extern int Nature_Splash_Area[10];
+extern int Circle_Trap_DamagePercent[10];
+extern int Circle_Trap_Area[10];
+extern int Circle_Trap_Slow[10];
+extern int Circle_Trap_SlowTime10[10];
+int F_Evade_Shot();
+int F_Thunder_Rope();
+int F_Nature_Splash();
+int F_Circle_Trap();
+
+//Knight tier 5
+extern int Soul_Breaker_DamagePercent[10];
+extern int Soul_Breaker_AddHit[10];
+extern int Crescent_Moon_DamagePercent[10];
+extern int Crescent_Moon_Range[10];
+extern int Saint_Blade_DamagePercent[10];
+extern int Saint_Blade_Undead[10];
+extern int Holy_Benedic_Undead[10];
+extern int Holy_Benedic_Time[10];
+int F_Soul_Breaker();
+int F_Crescent_Moon();
+int F_Saint_Blade();
+int F_Holy_Benedic();
+
+//Atalanta tier 5
+extern int Talaria_Speed[10];
+extern int Talaria_Time[10];
+extern int Galaxy_Coup_DamagePercent[10];
+extern int Galaxy_Coup_Area[10];
+extern int Galaxy_Coup_AddHit[10];
+extern int Summon_Arcuda_Damage[10][2];
+extern int Summon_Arcuda_Hit[10];
+extern int Summon_Arcuda_Defense[10];
+extern int Summon_Arcuda_Life[10];
+extern int Summon_Arcuda_Time[10];
+extern int Snippy_Fear_DamagePercent[10];
+extern int Snippy_Fear_Critical[10];
+extern int Snippy_Fear_Range[10];
+int F_Talaria();
+int F_Galaxy_Coup();
+int F_Summon_Arcuda();
+int F_Snippy_Fear();
+
+//Priestess tier 5
+extern int Spirit_Impact_Damage[10][2];
+extern int Spirit_Impact_WeaponX[10];
+extern int Spirit_Impact_Range[10];
+extern int Piercing_Ice_Damage[10][2];
+extern int Summon_Ramiel_Damage[10][2];
+extern int Summon_Ramiel_Attack_Delay[10];
+extern int Summon_Ramiel_BlockPercent[10];
+extern int Summon_Ramiel_UndeadAbsorbPercent[10];
+extern int Summon_Ramiel_Time[10];
+extern int Blessing_Krishna_Defense[10];
+extern int Blessing_Krishna_Absorb[10];
+extern int Blessing_Krishna_Time[10];
+#define	MUSPELL_PARAM_RAMIEL	0x100
+int Muspell_BlockOf( int dwParam );			// the server's Summon Muspell param -> block %
+int Muspell_UndeadAbsorbOf( int dwParam );	// -> undead absorption %
+int Muspell_DamageOf( int dwParam , int i );	// -> attack power, min (0) or max (1)
+int F_Spirit_Impact();
+int F_Piercing_Ice();
+int F_Summon_Ramiel();
+int F_Blessing_Krishna();
+
+//Magician tier 5
+extern int Silraphim_Damage[10][2];
+extern int Silraphim_WeaponX[10];
+extern int Silraphim_Range[10];
+extern int Vis_Tenus_LifeDown[10];
+extern int Vis_Tenus_DamageDown[10];
+extern int Vis_Tenus_Time[10];
+extern int Prima_Ignis_Damage[10][2];
+extern int Prima_Ignis_WeaponX[10];
+extern int Third_Anima_Damage[10];
+extern int Third_Anima_ManaDown[10];
+extern int Third_Anima_Time[10];
+int F_Silraphim();
+int F_Vis_Tenus();
+int F_Prima_Ignis();
+int F_Third_Anima();
+
+//Fighter tier 5
+extern int Down_Hit_DamagePercent[10];
+extern int Down_Hit_AddHit[10];
+extern int Power_Dash_DamagePercent[10];
+extern int Power_Dash_StunTime[10];
+extern int Power_Dash_Range[10];
+extern int Mortal_Blow_DamagePercent[10];
+extern int Mortal_Blow_AreaDamage[10][2];
+extern int Mortal_Blow_Area[10];
+extern int Mortal_Blow_AttackNum[10];
+extern int Bloody_Berserker_AddAttack[10];
+extern int Bloody_Berserker_SubAbsorb[10];
+extern int Bloody_Berserker_Time[10];
+#define	BERSERKER_PARAM_BLOODY	0x100
+int Berserker_AddAttackOf( int dwParam );		// the server's Berserker param -> added attack
+int Berserker_SubAbsorbOf( int dwParam );		// -> absorption change (negative)
+
 
 ///////////////////////////파이크맨 스킬 전역변수
 //파이크 윈드 
@@ -458,8 +613,8 @@ extern int Force_Of_Nature_UseMana[10];
 
 
 //스킬 습득시 사용되는 돈 
-extern int sinMasterSkill_Money[16];
-extern int sinMasterSkill_PlusMoney[16];
+extern int sinMasterSkill_Money[SIN_MAX_USE_SKILL-1];
+extern int sinMasterSkill_PlusMoney[SIN_MAX_USE_SKILL-1];
 
 
 // 스킬 습득시 컬러 색을 바꾼다 
@@ -467,7 +622,7 @@ extern int SkillTextColor[10];
 
 //요구치를 충족못했을경우에는 효과를 준다 
 extern int NotUseSkillElement[3];	//요구치 충족 플렉 
-extern int sinMasteryIncreaIndex[16];
+extern int sinMasteryIncreaIndex[SIN_MAX_USE_SKILL-1];
 
 
 //공성전 클랜스킬 

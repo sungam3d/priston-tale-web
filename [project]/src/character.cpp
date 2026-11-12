@@ -702,8 +702,16 @@ smDPAT *smPATTERN::LoadCharactor( char *szFileName )
 
 	if ( Num<0 ) {
 
-		if ( smModelDecode( szFileName , &modelInfo )==NULL ) 
+		if ( smModelDecode( szFileName , &modelInfo )==NULL ) {
+#ifndef PT_SERVER_EXE
+			// say which model is missing (admin mode: in the chat; always in the browser console)
+			char	szErrorMsg[160];
+			wsprintf( szErrorMsg , "Loading Error , model info ( %s )" , szFileName );
+			if ( smConfig.DebugMode ) AddChatBuff( szErrorMsg );
+			printf( "[model] %s\n" , szErrorMsg );
+#endif
 			return NULL;
+		}
 
 		//AddChatBuff( szFileName );
 
@@ -746,6 +754,9 @@ smDPAT *smPATTERN::LoadCharactor( char *szFileName )
 				wsprintf( szErrorMsg , "Loading Error , ( %s )" , modelInfo.szModelFile );
 				AddChatBuff( szErrorMsg );
 			}
+#ifndef PT_SERVER_EXE
+			printf( "[model] Loading Error , mesh ( %s ) for ( %s )\n" , modelInfo.szModelFile , szFileName );
+#endif
 			return NULL;
 		}
 
@@ -1666,6 +1677,18 @@ DWORD	dwItemCodeFromVillage_Cross[] ={
 
 
 
+// tier 5: Hestian (the fifth rank-up quest's duel), told apart by her model file: her sound
+// family (HESTIAN) is not in the sound table and her name is the Korean *이름.
+int IsHestianModel( smCHAR_INFO *lpCharInfo )
+{
+	char szLow[sizeof(lpCharInfo->szModelName)+1];
+	int cnt;
+	for( cnt=0; cnt<(int)sizeof(lpCharInfo->szModelName) && lpCharInfo->szModelName[cnt]; cnt++ )
+		szLow[cnt] = (char)tolower( (unsigned char)lpCharInfo->szModelName[cnt] );
+	szLow[cnt] = 0;
+	return strstr( szLow , "hestian" )!=0;
+}
+
 // A weapon or shield model put in a hand needs its textures read. The original game read
 // every item's textures at start-up (LoadOftenItem); the web build skips that preload, so
 // without this the held item draws plain white. ReadTextures only reads ones not yet loaded.
@@ -1711,8 +1734,15 @@ int smCHAR::SetTool( DWORD dwItemCode , int hvPosi  )
 					HvRightHand.SizeMax = szX;
 					HvRightHand.SizeMin = szN;
 					HvRightHand.dwItemCode = dwItemCode;
-					//오른쪽 도구는 손에 붙임
-					HvRightHand.ObjBip = AnimPattern->GetObjectFromName(szBipName_RightHand) ;
+					//오른쪽 도구는 손에 붙임: a vambrace goes on the forearm, the Shaman's phantom
+					// hovers at the back; anything else in the weapon hand
+					HvRightHand.ObjBip = 0;
+					if ( (dwItemCode&sinITEM_MASK2)==sinWV1 )
+						HvRightHand.ObjBip = AnimPattern->GetObjectFromName("Bip01 R Forearm");
+					else if ( (dwItemCode&sinITEM_MASK2)==sinWN1 )
+						HvRightHand.ObjBip = AnimPattern->GetObjectFromName(szBipName_BackSpine);
+					if ( !HvRightHand.ObjBip )
+						HvRightHand.ObjBip = AnimPattern->GetObjectFromName(szBipName_RightHand) ;
 					dwActionItemCode = dwItemCode;
 
 					//wStickItems[smPLAYBUFF_ITEM_ACTION] = GetSinItemNumFromCode( dwActionItemCode );
@@ -1847,7 +1877,8 @@ int smCHAR::SetTool( DWORD dwItemCode , int hvPosi  )
 
 
 	if ( (dwActionItemCode&sinITEM_MASK2)==sinWS1 || (dwActionItemCode&sinITEM_MASK2)==sinWT1 ||
-		( (dwActionItemCode&sinITEM_MASK2)==sinWM1 && ( smCharInfo.JOB_CODE==7 || smCharInfo.JOB_CODE==8 ) ) ) {
+		( (dwActionItemCode&sinITEM_MASK2)==sinWM1 && ( smCharInfo.JOB_CODE==7 || smCharInfo.JOB_CODE==8 ) ) ||
+		( (dwActionItemCode&sinITEM_MASK2)==sinWN1 && smCharInfo.JOB_CODE==JOBCODE_SHAMAN ) ) {	// the Shaman casts with a phantom
 		//활 , 마법 지팡이
 		ShootingMode = TRUE;
 	}
@@ -2347,6 +2378,41 @@ int smCHAR::FindMotionCountFromCode( DWORD MotionCode )
 	return FindCnt;
 }
 
+// tier 5 skill -> its clip number in the class motion tables (each class has a
+// 20-number block there, tier 5 being its last 4: Fighter 37..40)
+int Tier5MotionSkillNum( int PlaySkillCode )
+{
+	// none any more: the class motion tables are read from their text (M?Bip.in), whose
+	// skill names SkillDataCode lists, so tier 5 clips match by name like the others
+	return 0;
+}
+
+// Motion clips name their weapons by our item table's index (sItem; 0xFFFF = bare hands):
+// the class motion tables are read from text (fileread.cpp AddModelDecode), so their item
+// keys resolve against our table.
+WORD GetMotionItemIndexOfSlot( int ItemSlot )
+{
+	return ( ItemSlot>=0 && ItemSlot<MAX_ITEM ) ? (WORD)ItemSlot : 0xFFFE;
+}
+
+// a held item's index in our item table (0xFFFF for none held, 0xFFFE unknown)
+WORD GetMotionItemIndexOfCode( DWORD dwItemCode )
+{
+	static DWORD dwLastCode = 0;
+	static WORD wLastIndex = 0xFFFE;
+
+	if ( !dwItemCode ) return 0xFFFF;
+	if ( dwItemCode==dwLastCode ) return wLastIndex;
+	for ( int cnt=0; cnt<MAX_ITEM; cnt++ ) {
+		if ( sItem[cnt].CODE==dwItemCode ) {
+			dwLastCode = dwItemCode;
+			wLastIndex = (WORD)cnt;
+			return wLastIndex;
+		}
+	}
+	return 0xFFFE;
+}
+
 //모션 분류 코드로 모션을 바꾼다
 int smCHAR::SetMotionFromCode( DWORD MotionCode )
 {
@@ -2415,11 +2481,12 @@ int smCHAR::SetMotionFromCode( DWORD MotionCode )
 				//스킬 모션일 경우
 				cnt2 = 0;
 				skillCode = atSkill&0xFF;
+				int t5Num = Tier5MotionSkillNum( skillCode );		// tier 5: the clip's own number
 				while(1) {
 					//스킬 코드 검색
 					bSkill = smMotionInfo->MotionInfo[ cnt ].SkillCodeList[cnt2];
 					if ( bSkill==0 ) break;
-					if ( SkillDataCode[bSkill].dwPlaySkillCode==skillCode ) {
+					if ( t5Num ? ( bSkill==t5Num ) : ( SkillDataCode[bSkill].dwPlaySkillCode==skillCode ) ) {
 						break;
 					}
 					cnt2++;
@@ -2454,28 +2521,20 @@ int smCHAR::SetMotionFromCode( DWORD MotionCode )
 		}
 	}
 
+	// the clips for the held weapon (by its motion item index), or for bare hands (0xFFFF)
+	WORD wActMotionIndex = GetMotionItemIndexOfCode( dwActItemCode );
 	for( cnt=0;cnt<FindCnt;cnt++) {
 		itcnt = lpMotionInfo->MotionInfo[ FoundNum[cnt] ].ItemCodeCount;
 		if ( itcnt==0 ) {
 			FoundNum2[ FindCnt2++ ] = FoundNum[cnt];
 		}
 		else {
-			if ( dwActItemCode ) {
-				for ( cnt2=0;cnt2<itcnt;cnt2++) {
-					dwFindCode = lpMotionInfo->MotionInfo[ FoundNum[cnt] ].ItemCodeList[cnt2];
-					if ( dwActItemCode==(int)sItem[ dwFindCode ].CODE ) {
-						FoundNum2[ FindCnt2++ ] = FoundNum[cnt];
-						break;
-					}
-				}
-			}
-			else {
-				for ( cnt2=0;cnt2<itcnt;cnt2++) {
-					dwFindCode = lpMotionInfo->MotionInfo[ FoundNum[cnt] ].ItemCodeList[cnt2];
-					if ( dwFindCode==0xFF ) {
-						FoundNum2[ FindCnt2++ ] = FoundNum[cnt];
-						break;
-					}
+			if ( itcnt>MOTION_TOOL_MAX/2 ) itcnt = MOTION_TOOL_MAX/2;
+			for ( cnt2=0;cnt2<itcnt;cnt2++) {
+				dwFindCode = lpMotionInfo->MotionInfo[ FoundNum[cnt] ].ItemCodeList[cnt2];
+				if ( dwFindCode==wActMotionIndex ) {
+					FoundNum2[ FindCnt2++ ] = FoundNum[cnt];
+					break;
 				}
 			}
 		}
@@ -3963,8 +4022,8 @@ int smCHAR::EventAttack( int Flag )
 
 						}
 
-						if ( wp==sinWM1 ) {
-							//마법 지팡이
+						if ( wp==sinWM1 || wp==sinWN1 ) {
+							//마법 지팡이 (a phantom casts as a staff does)
 
 							if ( WeaponEffect ) {
 								switch( WeaponEffect ) {
@@ -4488,7 +4547,7 @@ int CastleSoulFountain_Area[4] = {	37040*fONE , 37158*fONE , -30286*fONE, -30102
 
 				//프리스티스 공격속도 보정 ( 양손무기 공격동작 프레임이 적어서 느리게 설정 )
 				if ( smCharInfo.JOB_CODE==8 && 
-					MotionInfo->ItemCodeCount && sItem[MotionInfo->ItemCodeList[0]].CODE==(sinWM1|sin04) ) {
+					MotionInfo->ItemCodeCount && MotionInfo->ItemCodeList[0]==GetMotionItemIndexOfCode(sinWM1|sin04) ) {
 						FrameStep -= 16;
 					}
 			}
@@ -5052,6 +5111,12 @@ int WarpStartField( int FieldNum , int *mx, int *mz )
 							break;
 						}
 					}
+					if ( ContinueSkill[cnt].CODE==SKILL_HYPER_SONIC ) {
+						//tier 5 Mechanician: attack speed for any weapon
+						x = ContinueSkill[cnt].Point-1;
+						if ( x>=0 && x<10 )
+							AttackSpeed += (AttackSpeed*Hyper_Sonic_Speed[x])/100;
+					}
 				}
 			}
 			//////////////////////////////////////////////////////////////////
@@ -5519,6 +5584,14 @@ Skip_5:
 		}
 
 		if ( dwLinkObjectCode ) {
+			// tier 5: Hestian, the fifth rank-up quest's duel - her potions spent and her life gone
+			if ( IsHestianModel( &smCharInfo ) && smCharInfo.Life[0]<=0 && !smMonsterInfo.PotionCount && smCharInfo.Life[1]>1 ) {
+				if ( lpLinkPlayInfo && lpLinkPlayInfo->dwObjectSerial==dwLinkObjectCode && lpLinkPlayInfo->lpsmSock ) {
+					rsProcessQuest( lpLinkPlayInfo , this , SIN_QUEST_CODE_CHANGEJOB5 , dwObjectSerial );
+					smCharInfo.Life[1] = 1;			// reported once
+				}
+			}
+
 			switch( smCharInfo.dwCharSoundCode ) {
 				case snCHAR_SOUND_NPC_SKILLMASTER:
 				case snCHAR_SOUND_NPC_MAGICMASTER:
@@ -9273,7 +9346,12 @@ int smCHAR::PlayAttack( int EventFlag )
 							//임시 처리
 							if ( sinGetLife()<=0 ) {
 
-								if ( sinQuest_ChangeJob4.CODE==SIN_QUEST_CODE_CHANGEJOB4 && 
+								// tier 5: dying in Hestian's duel loses it (and is an ordinary death)
+								if ( sinQuest_ChangeJob5.CODE==SIN_QUEST_CODE_CHANGEJOB5 && sinQuest_ChangeJob5.State==8 &&
+									lpCurPlayer->OnStageField>=0 && StageField[ lpCurPlayer->OnStageField ]->FieldCode==QUEST_ARENA_FIELD )
+									sinBattleNpcResult5( 0 );
+
+								if ( sinQuest_ChangeJob4.CODE==SIN_QUEST_CODE_CHANGEJOB4 &&
 									lpCurPlayer->OnStageField>=0 && StageField[ lpCurPlayer->OnStageField ]->FieldCode==QUEST_ARENA_FIELD ) {
 										//퀘스트 대전장
 						 				OpenEachPlayer( this );
@@ -11902,6 +11980,111 @@ int smCHAR::BeginSkill( int SkilCode , int Level , smCHAR *lpTarChar , int x, in
 	case SKILL_PLAY_CYCLONE_STRIKE:
 		SkillWarriorCycloneStrikeBlade( this , 3 );
 		SkillPlaySound( SKILL_SOUND_SKILL_CYCLONE_STRIKE , pX,pY,pZ );
+		break;
+
+	//Fighter tier 5 (the older skills' effects for now)
+	case SKILL_PLAY_DOWN_HIT:
+		SkillWarriorDestroyerBlade( this, 3.0f );
+		break;
+	case SKILL_PLAY_POWER_DASH:
+		SkillWarriorDestroyerBlade( this, 2.0f );
+		SkillPlaySound( SKILL_SOUND_SKILL_AVANGING_CRASH , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_MORTAL_BLOW:
+		SkillWarriorCycloneStrikeBlade( this , 3 );
+		SkillPlaySound( SKILL_SOUND_SKILL_CYCLONE_STRIKE , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_BLOODY_BERSERKER:
+		SkillPlaySound( SKILL_SOUND_SKILL_BERSERKER	 , pX,pY,pZ );
+		break;
+
+	//Mechanician tier 5 (the older skills' effects for now)
+	case SKILL_PLAY_LAND_MINING:
+		SkillPlaySound( SKILL_SOUND_SKILL_MAXIMIZE2 , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_HYPER_SONIC:
+		if ( point ) AssaParticle_SwiftAxe( this , Hyper_Sonic_Time[point-1] );
+		SkillPlaySound( SKILL_SOUND_SKILL_SWIFT_AXE1 , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_ROLLING_SMASH:
+		break;
+	case SKILL_PLAY_POWER_ENHANCEMENT:
+		dwDispAppSkill |= SKILL_APPMASK_AUTOMATION;
+		StartSkill( pX,pY,pZ, Angle.x , Angle.y , Angle.z , SKILL_MAXIMIZE );
+		SkillPlaySound( SKILL_SOUND_SKILL_MAXIMIZE2 , pX,pY,pZ );
+		break;
+
+	//Priestess and Magician tier 5 (the older skills' effects for now)
+	case SKILL_PLAY_SPIRIT_IMPACT:
+	case SKILL_PLAY_PIERCING_ICE:
+		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_PRIEST , pX,pY,pZ );
+		pos.x = pX;	pos.y = pY;	pos.z = pZ;
+		sinEffect_StartMagic( &pos , 1 );
+		break;
+	case SKILL_PLAY_SILRAPHIM:
+	case SKILL_PLAY_PRIMA_IGNIS:
+		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_MAGICIAN , pX,pY,pZ );
+		pos.x = pX;	pos.y = pY;	pos.z = pZ;
+		sinEffect_StartMagic( &pos , 2 );
+		break;
+	case SKILL_PLAY_VIS_TENUS:
+		if ( lpTarChar && point ) AssaParticle_HolyMind_Attack( lpTarChar , Vis_Tenus_Time[point-1] );
+		SkillPlaySound( SKILL_SOUND_SKILL_HOLYMIND , pX,pY,pZ );
+		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_MAGICIAN , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_SUMMON_RAMIEL:
+	case SKILL_PLAY_BLESSING_KRISHNA:
+		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_PRIEST , pX,pY,pZ );
+		pos.x = pX;	pos.y = pY;	pos.z = pZ;
+		sinEffect_StartMagic( &pos , 1 );
+		break;
+	case SKILL_PLAY_THIRD_ANIMA:
+		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_MAGICIAN , pX,pY,pZ );
+		pos.x = pX;	pos.y = pY;	pos.z = pZ;
+		sinEffect_StartMagic( &pos , 2 );
+		break;
+
+	//Atalanta tier 5 (the older skills' effects for now)
+	case SKILL_PLAY_TALARIA:
+		SkillValhallaHallOfValhallaHandEffect( this , (float)(point ? Talaria_Time[point-1] : 120) );
+		SkillPlaySound( SKILL_SOUND_SKILL_HALL_OF_VALHALLA , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_SUMMON_ARCUDA:
+		SkillPlaySound( SKILL_SOUND_SKILL_RECALL_WOLVERIN , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_GALAXY_COUP:
+	case SKILL_PLAY_SNIPPY_FEAR:
+		SkillPlaySound( SKILL_SOUND_SKILL_FROST_JAVELIN , pX,pY,pZ );
+		break;
+
+	//Knight tier 5 (the older skills' effects for now)
+	case SKILL_PLAY_SOUL_BREAKER:
+	case SKILL_PLAY_CRESCENT_MOON:
+		SkillPlaySound( SKILL_SOUND_SKILL_SWING2 , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_SAINT_BLADE:
+		sinSkillEffect_Piercing( this );
+		SkillPlaySound( SKILL_SOUND_SKILL_PIERCING , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_HOLY_BENEDIC:
+		AssaParticle_HolyValor_Jang( this , point ? Holy_Benedic_Time[point-1] : 120 );
+		SkillPlaySound( SKILL_SOUND_SKILL_HOLY_VALOR1 , pX,pY,pZ );
+		break;
+
+	//Pikeman tier 5 (the older skills' effects for now)
+	case SKILL_PLAY_DANCING_REAPER:
+		AssaParticle_VeonmSpearPike( this );
+		SkillPlaySound( SKILL_SOUND_JUMPING_CRASH1 , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_FINAL_SPEAR:
+		SkillPlaySound( SKILL_SOUND_SKILL_EXPANSION1 , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_AMPLIFIED:
+		SkillWarriorBetserker( this , (float)(point ? Amplified_Time[point-1] : 120) );
+		SkillPlaySound( SKILL_SOUND_SKILL_BERSERKER , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_SIDE_SPIN_ATTACK:
+		SkillPlaySound( SKILL_SOUND_SKILL_EXPANSION1 , pX,pY,pZ );
 		break;
 
 	case SKILL_PLAY_ASSASSIN_EYE:
@@ -14534,6 +14717,214 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 		}
 		break;
 
+	//Fighter tier 5
+	case SKILL_PLAY_DOWN_HIT:
+		//three strikes: the cast's, then one on each of the clip's first two events
+		if ( chrAttackTarget ) {
+			if ( AttackCritcal>=0 ) {
+				GetAttackPoint( &Pos2.x,&Pos2.y,&Pos2.z );
+				SkillWarriorDestroyerHit(&Pos2);
+				SetDynLight( Pos2.x,Pos2.y,Pos2.z , 100, 0,0,0, 400 );
+				SkillPlaySound( MotionEvent<3 ? SKILL_SOUND_SKILL_AVANGING_CRASH : SKILL_SOUND_SKILL_EXPANSION2 , pX,pY,pZ );
+			}
+			else
+				PlayWaponSoundDirect( pX,pY,pZ , 13 );
+
+			if ( this==lpCurPlayer && MotionEvent<3 ) {
+				cnt = dm_SendTransDamage( chrAttackTarget , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+				lpCurPlayer->AttackCritcal = cnt ? 0 : -1;
+			}
+		}
+		break;
+
+	case SKILL_PLAY_POWER_DASH:
+		if ( chrAttackTarget && AttackCritcal>=0 ) {
+			GetAttackPoint( &Pos2.x,&Pos2.y,&Pos2.z );
+			SkillWarriorDestroyerHit(&Pos2);
+			SetDynLight( Pos2.x,Pos2.y,Pos2.z , 120, 0,0,0, 400 );
+			SkillPlaySound( SKILL_SOUND_SKILL_EXPANSION2 , pX,pY,pZ );
+		}
+		break;
+
+	case SKILL_PLAY_MORTAL_BLOW:
+		if ( lpCurPlayer!=this && point ) {
+			dm_SelectRange( pX, pY, pZ, Mortal_Blow_Area[point-1] , TRUE , Mortal_Blow_AttackNum[point-1] );
+			dm_AddRangeDamage( chrAttackTarget );
+		}
+		for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
+			StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
+		}
+		break;
+
+	//Mechanician tier 5
+	case SKILL_PLAY_LAND_MINING:
+		if ( chrAttackTarget ) {
+			if ( lpCurPlayer!=this && point ) {
+				dm_SelectRange( chrAttackTarget->pX, chrAttackTarget->pY, chrAttackTarget->pZ, Land_Mining_Area[point-1] , TRUE , Land_Mining_AttackNum[point-1] );
+				dm_AddRangeDamage( chrAttackTarget );
+			}
+			if ( MotionEvent==1 ) {
+				AssaParticle_GrandSmash( this );
+				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 150, 100,0,0, 500 );
+				SkillPlaySound( SKILL_SOUND_SKILL_SPARK2 , pX,pY,pZ );
+			}
+			for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
+				StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
+			}
+		}
+		break;
+
+	case SKILL_PLAY_ROLLING_SMASH:
+		//four strikes: the cast's, then one on each of the clip's first three events
+		if ( chrAttackTarget ) {
+			if ( AttackCritcal>=0 ) {
+				AssaParticle_GrandSmash( this );
+				GetAttackPoint( &Pos2.x,&Pos2.y,&Pos2.z );
+				SetDynLight( Pos2.x,Pos2.y,Pos2.z , 100, 0,0,0, 400 );
+				SkillPlaySound( SKILL_SOUND_SKILL_SWING2 , pX,pY,pZ );
+			}
+			else
+				PlayWaponSoundDirect( pX,pY,pZ , 13 );
+
+			if ( this==lpCurPlayer && MotionEvent<4 && point ) {
+				int t5rate = smCharInfo.Attack_Rating;
+				smCharInfo.Attack_Rating += Rolling_Smash_AddHit[point-1];
+				cnt = dm_SendTransDamage( chrAttackTarget , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+				smCharInfo.Attack_Rating = t5rate;
+				lpCurPlayer->AttackCritcal = cnt ? 0 : -1;
+			}
+		}
+		break;
+
+	//Priestess and Magician tier 5
+	case SKILL_PLAY_SPIRIT_IMPACT:
+	case SKILL_PLAY_PIERCING_ICE:
+	case SKILL_PLAY_SILRAPHIM:
+	case SKILL_PLAY_PRIMA_IGNIS:
+		if ( chrAttackTarget && MotionEvent==1 ) {
+			int t5code = AttackSkil&0xFF;
+			GetMoveLocation( 0 , 24*fONE, 24*fONE , 0, Angle.y , 0 );
+			StartEffectMonsterDest( pX+GeoResult_X,pY+GeoResult_Y,pZ+GeoResult_Z,
+				chrAttackTarget->pX , chrAttackTarget->pY+20*fONE , chrAttackTarget->pZ ,
+				(t5code==SKILL_PLAY_SILRAPHIM || t5code==SKILL_PLAY_PRIMA_IGNIS) ? MONSTER_IMP_SHOT2 : MONSTER_MEPHIT_SHOT2 );
+			if ( t5code==SKILL_PLAY_PRIMA_IGNIS )
+				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 200, 100,0,0, 500 );
+			else if ( t5code==SKILL_PLAY_PIERCING_ICE )
+				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 0, 100,200,0, 500 );
+			SkillPlaySound( (t5code==SKILL_PLAY_SILRAPHIM || t5code==SKILL_PLAY_PRIMA_IGNIS) ? SKILL_SOUND_SKILL_FIREBOLT1 : SKILL_SOUND_SKILL_HOLYBOLT , pX,pY,pZ );
+		}
+		break;
+
+	case SKILL_PLAY_SUMMON_RAMIEL:
+		if ( point ) {
+			SkillCelestialMusPel(this,(float)Summon_Ramiel_Time[point-1],(float)Summon_Ramiel_Attack_Delay[point-1]);
+			SkillPlaySound( SKILL_SOUND_SKILL_MUSPELL2 , pX,pY,pZ );
+		}
+		break;
+
+	//Atalanta tier 5
+	case SKILL_PLAY_SNIPPY_FEAR:
+		if ( chrAttackTarget && AttackCritcal>=0 && GetAttackPoint( &x,&y,&z )==TRUE ) {
+			StartSkill( chrAttackTarget->pX,chrAttackTarget->pY+(24*fONE),chrAttackTarget->pZ, 0,0,0, SKILL_TRIPLE_IMPACT );
+			SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 120, 0,0,0, 400 );
+		}
+		break;
+
+	case SKILL_PLAY_GALAXY_COUP:
+		if ( chrAttackTarget && point ) {
+			if ( lpCurPlayer!=this ) {
+				dm_SelectRange( chrAttackTarget->pX, chrAttackTarget->pY, chrAttackTarget->pZ, Galaxy_Coup_Area[point-1] , TRUE , 12 );
+				dm_AddRangeDamage( chrAttackTarget );
+			}
+			if ( MotionEvent==1 ) {
+				StartSkill( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ, 0,0,0, SKILL_GREAT_SMASH );
+				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 100, 100,200,0, 500 );
+			}
+			for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
+				StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
+			}
+		}
+		break;
+
+	//Knight tier 5
+	case SKILL_PLAY_SOUL_BREAKER:
+	case SKILL_PLAY_CRESCENT_MOON:
+	case SKILL_PLAY_SAINT_BLADE:
+		if ( chrAttackTarget && AttackCritcal>=0 && GetAttackPoint( &x,&y,&z )==TRUE ) {
+			Pos1.x = x;
+			Pos1.y = y;
+			Pos1.z = z;
+			if ( MotionEvent==1 ) AssaParticle_GrandCrossHorz( &Pos1 , Angle.y );
+			else AssaParticle_GrandCrossVert( &Pos1 , Angle.y );
+			SetDynLight( x,y,z , 100, 100,100,0, 400 );
+			SkillPlaySound( SKILL_SOUND_SKILL_SWING2 , pX,pY,pZ );
+		}
+		break;
+
+	//Archer tier 5 (the older shots' effects for now)
+	case SKILL_PLAY_EVADE_SHOT:
+	case SKILL_PLAY_THUNDER_ROPE:
+		if ( chrAttackTarget && MotionEvent==1 && GetAttackPoint( &x,&y,&z )==TRUE ) {
+			StartSkillDest( x,y,z , chrAttackTarget->pX,chrAttackTarget->pY+(24*fONE),chrAttackTarget->pZ , SKILL_PERFECT_AIM );
+			if ( (AttackSkil&0xFF)==SKILL_PLAY_THUNDER_ROPE )
+				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 60, 60,200,0, 500 );
+			SkillPlaySound( SKILL_SOUND_PERFECT_AIM , pX,pY,pZ );
+		}
+		break;
+
+	case SKILL_PLAY_NATURE_SPLASH:
+	case SKILL_PLAY_CIRCLE_TRAP:
+		if ( chrAttackTarget && point ) {
+			if ( lpCurPlayer!=this ) {
+				dm_SelectRange( chrAttackTarget->pX, chrAttackTarget->pY, chrAttackTarget->pZ,
+					(AttackSkil&0xFF)==SKILL_PLAY_NATURE_SPLASH ? Nature_Splash_Area[point-1] : Circle_Trap_Area[point-1] , TRUE , 12 );
+				dm_AddRangeDamage( chrAttackTarget );
+			}
+			if ( MotionEvent==1 && GetAttackPoint( &x,&y,&z )==TRUE ) {
+				StartSkillDest( x,y,z, chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ, SKILL_ARROW_OF_RAGE , point );
+				SkillPlaySound( SKILL_SOUND_WIND_ARROW , pX,pY,pZ );
+			}
+			for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
+				StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
+			}
+		}
+		break;
+
+	//Pikeman tier 5
+	case SKILL_PLAY_DANCING_REAPER:
+	case SKILL_PLAY_SIDE_SPIN_ATTACK:
+		if ( chrAttackTarget && AttackCritcal>=0 && GetAttackPoint( &x,&y,&z )==TRUE ) {
+			StartSkill( x,y,z, 0,0,0, SKILL_TRIPLE_IMPACT );
+			SetDynLight( x,y,z , 120, 0,0,0, 400 );
+			SkillPlaySound( SKILL_SOUND_SKILL_EXPANSION2 , pX,pY,pZ );
+		}
+		break;
+
+	case SKILL_PLAY_FINAL_SPEAR:
+		if ( point ) {
+			if ( lpCurPlayer!=this ) {
+				dm_SelectRange( pX, pY, pZ, Final_Spear_Area[point-1] , TRUE , 12 );
+				dm_AddRangeDamage( chrAttackTarget );
+			}
+			if ( MotionEvent==1 ) {
+				GetMoveLocation( 0 , 0, 32*fONE , 0, Angle.y , 0 );
+				StartSkill( pX+GeoResult_X,pY,pZ+GeoResult_Z, 0, Angle.y,0, SKILL_GROUND_PIKE , point );
+				SetDynLight( pX,pY,pZ, 0, 0,100,0, 700 );
+				SkillPlaySound( SKILL_SOUND_SKILL_GROUND_PIKE , pX,pY,pZ );
+			}
+			for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
+				StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
+			}
+		}
+		break;
+
+	case SKILL_PLAY_BLOODY_BERSERKER:
+ 		if ( point ) {
+			SkillWarriorBetserker( this , (float)Bloody_Berserker_Time[point-1] );
+			AttackAnger = 200;
+		}
+		break;
+
 	case SKILL_PLAY_CYCLONE_STRIKE:
 		if ( lpCurPlayer!=this ) {
 			dm_SelectRange( pX, pY, pZ, Cyclone_Strike_Area[point-1] , TRUE , Cyclone_Strike_AttackNum[point-1] );
@@ -15317,7 +15708,7 @@ int smCHAR::SendTransAttack( smCHAR *lpChar , smWINSOCK *lpsmsock , int AttackCo
 
 	if ( lpPlayInfo->dwSkill_Berserker_Time ) {	//버서커 흡수력 감소
 		if ( lpPlayInfo->dwSkill_Berserker_Time>dwPlayServTime ) {
-			TransAttackData.Power -= Berserker_SubAbsorb[lpPlayInfo->dwSkill_Berserker_Param];
+			TransAttackData.Power -= Berserker_SubAbsorbOf( (int)lpPlayInfo->dwSkill_Berserker_Param );	// or Bloody Berserker's
 			if ( TransAttackData.Power<0 ) return FALSE;
 		}
 		else {
@@ -15399,10 +15790,10 @@ int smCHAR::SendTransAttack( smCHAR *lpChar , smWINSOCK *lpsmsock , int AttackCo
 	if ( lpPlayInfo->dwSkill_SummonMuspell_Time ) {	//서몬 무스펠
 		if ( lpPlayInfo->dwSkill_SummonMuspell_Time>dwPlayServTime ) {
 
-			if ( (rand()%100)<Summon_Muspell_BlockPercent[ lpPlayInfo->dwSkill_SummonMuspell_Param ] ) {
+			if ( (rand()%100)<Muspell_BlockOf( lpPlayInfo->dwSkill_SummonMuspell_Param ) ) {
 #ifdef DISP_DAMAGE
 				if ( lpPlayInfo->AdminMode>2 ) {
-					wsprintf( szDispDamage , ">%s \260\370\260\335 \303\337\260\241 \310\270\307\307 ( Summon Muspell [%d] )" , smCharInfo.szName , Summon_Muspell_BlockPercent[ lpPlayInfo->dwSkill_SummonMuspell_Param ] );
+					wsprintf( szDispDamage , ">%s \260\370\260\335 \303\337\260\241 \310\270\307\307 ( Summon Muspell [%d] )" , smCharInfo.szName , Muspell_BlockOf( lpPlayInfo->dwSkill_SummonMuspell_Param ) );
 					rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 				}
 #endif
@@ -15419,7 +15810,7 @@ int smCHAR::SendTransAttack( smCHAR *lpChar , smWINSOCK *lpsmsock , int AttackCo
 			}
 			if ( smCharInfo.Brood==smCHAR_MONSTER_UNDEAD ) {
 				//언데드 공격력 흡수
-				temp = (TransAttackData.Power*Summon_Muspell_UndeadAbsorbPercent[lpPlayInfo->dwSkill_SummonMuspell_Param])/100;
+				temp = (TransAttackData.Power*Muspell_UndeadAbsorbOf( lpPlayInfo->dwSkill_SummonMuspell_Param ))/100;
 				TransAttackData.AttackState |= (temp<<16);
 				if ( TransAttackData.Power<0 ) return FALSE;
 			}

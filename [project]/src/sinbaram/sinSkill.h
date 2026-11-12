@@ -4,9 +4,10 @@
 *	작성일 :  최종업데이트 12월 
 *	적성자 :  박상열 
 *-----------------------------------------------------------------------------*/	
-#define SIN_MAX_SKILL			160			//넓게 잡아놓는다 
-#define SIN_MAX_USE_SKILL		17			//한캐릭에서 사용할수있는 최대 스킬치 (노말 어택포함)	
-#define SIN_MAX_SKILLBOX		17
+#define SIN_MAX_SKILL			200			//넓게 잡아놓는다 (200: room for the tier 5 skills)
+#define SIN_MAX_USE_SKILL		21			//한캐릭에서 사용할수있는 최대 스킬치 (노말 어택포함)	(1 + 4 tiers x 4 + tier 5's 4)
+#define SIN_MAX_SKILLBOX		21
+#define SIN_TIER5_FIRST			17			// UseSkill index of the first tier 5 skill (17..20, the skill window's second page)
 
 #define	sinSKILL_MASK1	0xFF000000			//마스크 
 #define	sinSKILL_MASK2	0xFFFF0000
@@ -36,7 +37,8 @@
 #define	CHANGE_JOB2				0x00020000
 #define	CHANGE_JOB3				0x00040000
 #define	CHANGE_JOB4				0x00080000
-	
+#define	CHANGE_JOB5				0x00100000		// the fifth rank's skills (tier 5)
+
 /////////////////////////////// 스킬 세부코드 
 #define SKILL_1					0x00000001
 #define SKILL_2					0x00000002
@@ -244,6 +246,50 @@
 #define SKILL_PHOENIX_SHOT   	(GROUP_ARCHER | CHANGE_JOB4 | SKILL_3)//피닉스 샷
 #define SKILL_FORCE_OF_NATURE  	(GROUP_ARCHER | CHANGE_JOB4 | SKILL_4)//포스 오브 내츄
 
+/*----------------------------------------------------------------------------*
+*	Tier 5 skills (the fifth rank, ChangeJob 4), learned at levels 80/83/86/90
+*	with the fourth tier's points; the skill window's second page shows them.
+*-----------------------------------------------------------------------------*/
+#define SKILL_LAND_MINING		(GROUP_MECHANICIAN | CHANGE_JOB5 | SKILL_1)
+#define SKILL_HYPER_SONIC		(GROUP_MECHANICIAN | CHANGE_JOB5 | SKILL_2)
+#define SKILL_ROLLING_SMASH		(GROUP_MECHANICIAN | CHANGE_JOB5 | SKILL_3)
+#define SKILL_POWER_ENHANCEMENT	(GROUP_MECHANICIAN | CHANGE_JOB5 | SKILL_4)
+
+#define SKILL_DOWN_HIT			(GROUP_FIGHTER | CHANGE_JOB5 | SKILL_1)
+#define SKILL_POWER_DASH		(GROUP_FIGHTER | CHANGE_JOB5 | SKILL_2)
+#define SKILL_MORTAL_BLOW		(GROUP_FIGHTER | CHANGE_JOB5 | SKILL_3)
+#define SKILL_BLOODY_BERSERKER	(GROUP_FIGHTER | CHANGE_JOB5 | SKILL_4)
+
+#define SKILL_DANCING_REAPER	(GROUP_PIKEMAN | CHANGE_JOB5 | SKILL_1)
+#define SKILL_FINAL_SPEAR		(GROUP_PIKEMAN | CHANGE_JOB5 | SKILL_2)
+#define SKILL_AMPLIFIED			(GROUP_PIKEMAN | CHANGE_JOB5 | SKILL_3)
+#define SKILL_SIDE_SPIN_ATTACK	(GROUP_PIKEMAN | CHANGE_JOB5 | SKILL_4)
+
+#define SKILL_EVADE_SHOT		(GROUP_ARCHER | CHANGE_JOB5 | SKILL_1)
+#define SKILL_THUNDER_ROPE		(GROUP_ARCHER | CHANGE_JOB5 | SKILL_2)
+#define SKILL_NATURE_SPLASH		(GROUP_ARCHER | CHANGE_JOB5 | SKILL_3)
+#define SKILL_CIRCLE_TRAP		(GROUP_ARCHER | CHANGE_JOB5 | SKILL_4)
+
+#define SKILL_SOUL_BREAKER		(GROUP_KNIGHT | CHANGE_JOB5 | SKILL_1)
+#define SKILL_CRESCENT_MOON		(GROUP_KNIGHT | CHANGE_JOB5 | SKILL_2)
+#define SKILL_SAINT_BLADE		(GROUP_KNIGHT | CHANGE_JOB5 | SKILL_3)
+#define SKILL_HOLY_BENEDIC		(GROUP_KNIGHT | CHANGE_JOB5 | SKILL_4)
+
+#define SKILL_TALARIA			(GROUP_ATALANTA | CHANGE_JOB5 | SKILL_1)
+#define SKILL_GALAXY_COUP		(GROUP_ATALANTA | CHANGE_JOB5 | SKILL_2)
+#define SKILL_SUMMON_ARCUDA		(GROUP_ATALANTA | CHANGE_JOB5 | SKILL_3)
+#define SKILL_SNIPPY_FEAR		(GROUP_ATALANTA | CHANGE_JOB5 | SKILL_4)
+
+#define SKILL_SPIRIT_IMPACT		(GROUP_PRIESTESS | CHANGE_JOB5 | SKILL_1)
+#define SKILL_PIERCING_ICE		(GROUP_PRIESTESS | CHANGE_JOB5 | SKILL_2)
+#define SKILL_SUMMON_RAMIEL		(GROUP_PRIESTESS | CHANGE_JOB5 | SKILL_3)
+#define SKILL_BLESSING_KRISHNA	(GROUP_PRIESTESS | CHANGE_JOB5 | SKILL_4)
+
+#define SKILL_SILRAPHIM			(GROUP_MAGICIAN | CHANGE_JOB5 | SKILL_1)
+#define SKILL_VIS_TENUS			(GROUP_MAGICIAN | CHANGE_JOB5 | SKILL_2)
+#define SKILL_PRIMA_IGNIS		(GROUP_MAGICIAN | CHANGE_JOB5 | SKILL_3)
+#define SKILL_THIRD_ANIMA		(GROUP_MAGICIAN | CHANGE_JOB5 | SKILL_4)
+
 
 
 ///////////////////////////////
@@ -419,9 +465,9 @@ public:
 	LPDIRECTDRAWSURFACE4	lpSkillGage3;		//
 	LPDIRECTDRAWSURFACE4	lpSkillGage4;		//
 	LPDIRECTDRAWSURFACE4	lpSkillGage5;		//
-	LPDIRECTDRAWSURFACE4	lpSkillTitle[4];	//직업 타이틀 
-	LPDIRECTDRAWSURFACE4    lpSkillButton_Gray[17];	//버튼 비활성화 이미지 
-	LPDIRECTDRAWSURFACE4    lpSkillButton[17];	//버튼 이미지 
+	LPDIRECTDRAWSURFACE4	lpSkillTitle[5];	//직업 타이틀 (5: the fifth rank's, on the second page)
+	LPDIRECTDRAWSURFACE4    lpSkillButton_Gray[SIN_MAX_USE_SKILL];	//버튼 비활성화 이미지
+	LPDIRECTDRAWSURFACE4    lpSkillButton[SIN_MAX_USE_SKILL];	//버튼 이미지
 	LPDIRECTDRAWSURFACE4    lpSelectSkill;		//버튼 선택 
 	LPDIRECTDRAWSURFACE4    lpShortKey[8];		//펑션키 
 	LPDIRECTDRAWSURFACE4    lpSkillBoxBack;		//스킬 이미지없을때 배경 

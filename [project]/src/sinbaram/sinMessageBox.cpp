@@ -519,7 +519,7 @@ void cMESSAGEBOX::LButtonDown(int x , int y)
 					chaQuest.showFuryQuestItem(1);
 				}
 				if( i == MESSAGE_CHANGE_JOB4_2){
-					if(sinChar->JOB_CODE <=4 ){
+					if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE) ){
 						WarpField2(START_FIELD_NUM); //돌아간다
 					}else
 					{
@@ -693,6 +693,7 @@ void cMESSAGEBOX::LButtonDown(int x , int y)
 							break;
 							//4차전업(임시)
 							case 3:
+							case 4:		// tier 5: the fifth rank
 								if( ( sinChar->Money + sMessageBox2[i].Count) > 100000000 ){
 									sMessageBox2[i].Count = 100000000 - sinChar->Money;
 									if(sMessageBox2[i].Count < 0 ) sMessageBox2[i].Count = 0;
@@ -995,6 +996,7 @@ void cMESSAGEBOX::KeyDown()
 								break;
 								//4차전업(임시)
 								case 3:
+								case 4:		// tier 5: the fifth rank
 									if( ( sinChar->Money + sMessageBox2[i].Count) > 100000000 ){
 										sMessageBox2[i].Count = 100000000 - sinChar->Money;
 										if(sMessageBox2[i].Count < 0 ) sMessageBox2[i].Count = 0;
@@ -2006,6 +2008,10 @@ int cMESSAGEBOX::CheckOkMessageBox2(int Kind)
 			ReformCharForm(); //재인증 
 		break;
 		case MESSAGE_CHANGE_JOB4: //퀘스트 시작
+			if(sinChar->ChangeJob == 3){		// tier 5: the fifth rank-up quest starts
+				sinChangeJob5Start();
+				break;
+			}
 			sinQuest_ChangeJob4.CODE  = SIN_QUEST_CODE_CHANGEJOB4;
 			sinQuest_ChangeJob4.State = 1; 
 			StartQuest_Code(sinQuest_ChangeJob4.CODE); 
@@ -2013,8 +2019,12 @@ int cMESSAGEBOX::CheckOkMessageBox2(int Kind)
 			SaveGameData();
 		break;
 		case MESSAGE_CHANGE_JOB4_2: //퀘스트 완료
-			///////////////// 이곳에 퀘스트 수행 메세지가 나온다 
-			sinChar->ChangeJob++; //전업을 한다 
+			if(sinChar->ChangeJob == 3){		// tier 5: the fifth rank
+				sinChangeJob5Promote();
+				break;
+			}
+			///////////////// 이곳에 퀘스트 수행 메세지가 나온다
+			sinChar->ChangeJob++; //전업을 한다
 			cSkill.OpenFlag = 1;
 			cInterFace.CheckAllBox(SIN_SKILL); //창을 하나만 띄운다 
 			SkillMasterFlag = 1;  //스킬을 할당할수있게 해준다
@@ -2032,7 +2042,7 @@ int cMESSAGEBOX::CheckOkMessageBox2(int Kind)
 			SaveGameData(); //전업후 저장한다
 
 			ChangeJobFace();
-			if(sinChar->JOB_CODE <=4 ){
+			if(JOB_IS_TEMPSKRON(sinChar->JOB_CODE) ){
 				WarpField2(START_FIELD_NUM); //돌아간다
 			}else
 			{
