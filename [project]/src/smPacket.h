@@ -1379,6 +1379,9 @@ public:
 	//맥시마이즈
 	DWORD	dwSkill_Maximize_Time;
 	int		dwSkill_Maximize_Param;
+	//tier 5 Mechanician: Power Enhancement (attack power +%)
+	DWORD	dwSkill_PowerEnhance_Time;
+	int		dwSkill_PowerEnhance_Param;
 	//피지컬
 	DWORD	dwSkill_PhysicalAbsorb_Time;
 	int		dwSkill_PhysicalAbsorb_Param;

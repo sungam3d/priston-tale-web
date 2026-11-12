@@ -11548,6 +11548,8 @@ int AddNewPlayInfo( smWINSOCK *lpsmSock )
 	rsPlayInfo[cnt].dwSkill_AutoMation_Param = 0;
 	rsPlayInfo[cnt].dwSkill_Maximize_Time = 0;
 	rsPlayInfo[cnt].dwSkill_Maximize_Param = 0;
+	rsPlayInfo[cnt].dwSkill_PowerEnhance_Time = 0;
+	rsPlayInfo[cnt].dwSkill_PowerEnhance_Param = 0;
 	rsPlayInfo[cnt].dwSkill_PhysicalAbsorb_Time = 0;
 	rsPlayInfo[cnt].dwSkill_PhysicalAbsorb_Param = 0;
 	rsPlayInfo[cnt].dwSkill_ExtreamShield_Time = 0;
@@ -31628,6 +31630,11 @@ int rsCancelSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand )
 			lpPlayInfo->dwSkill_Maximize_Param = 0;
 			break;
 
+		case SKILL_PLAY_POWER_ENHANCEMENT:
+			lpPlayInfo->dwSkill_PowerEnhance_Time = 0;
+			lpPlayInfo->dwSkill_PowerEnhance_Param = 0;
+			break;
+
 		case SKILL_PLAY_PHYSICAL_ABSORB:
 			lpPlayInfo->dwSkill_PhysicalAbsorb_Time = 0;
 			lpPlayInfo->dwSkill_PhysicalAbsorb_Param = 0;
@@ -31990,6 +31997,13 @@ int rsRecvProcessSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand
 			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_FIGHTER ) {
 				lpPlayInfo->dwSkill_Berserker_Time = dwPlayServTime+Berserker_Time[point]*1000;
 				lpPlayInfo->dwSkill_Berserker_Param = point;//Berserker_AddAttack[point];
+			}
+			break;
+
+		case SKILL_PLAY_POWER_ENHANCEMENT:		// tier 5 Mechanician: attack power +%
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_MECHANICIAN && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpPlayInfo->dwSkill_PowerEnhance_Time = dwPlayServTime+Power_Enhancement_Time[point]*1000;
+				lpPlayInfo->dwSkill_PowerEnhance_Param = Power_Enhancement_Damage[point];
 			}
 			break;
 

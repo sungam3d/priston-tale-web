@@ -756,6 +756,27 @@ int Vis_Tenus_UseMana[10]			= {135,139,143,147,151,155,159,163,167,171};
 int Prima_Ignis_UseMana[10]			= {152,156,160,164,168,172,176,180,184,188};
 int Third_Anima_UseMana[10]			= {166,170,174,178,182,186,190,194,198,202};
 
+//[Mechanician] tier 5
+//Land Mining: mines burst around the caster
+int Land_Mining_DamagePercent[10]	= {30,38,46,54,62,70,78,86,94,102};			//the target: attack power +%
+int Land_Mining_AreaDamage[10][2]	= {{300,350},{320,380},{340,410},{360,440},{380,470},
+									   {400,500},{420,530},{440,560},{460,590},{480,620}};	//around: damage
+int Land_Mining_Area[10]			= {80,90,100,110,120,130,140,150,160,170};		//radius
+int Land_Mining_AttackNum[10]		= {5,5,6,6,7,7,8,8,9,9};					//most enemies struck
+
+//Hyper Sonic: attack speed
+int Hyper_Sonic_Speed[10]			= {3,6,9,11,13,15,16,17,18,19};				//attack speed +%
+int Hyper_Sonic_Time[10]			= {120,140,160,180,200,220,240,260,280,300};	//seconds
+
+//Rolling Smash: four heavy blows
+int Rolling_Smash_DamagePercent[10]	= {50,70,90,110,130,150,170,190,210,230};	//attack power +%
+int Rolling_Smash_AddHit[10]		= {60,80,100,120,140,160,180,200,220,240};	//attack rating +
+
+//Power Enhancement: the caster's attack power
+int Power_Enhancement_Damage[10]	= {4,10,16,22,28,34,40,46,52,58};			//min and max attack power +%
+int Power_Enhancement_Area[10]		= {200,220,240,260,280,300,320,340,360,380};	//party reach
+int Power_Enhancement_Time[10]		= {120,140,160,180,200,220,240,260,280,300};	//seconds
+
 //[Fighter] tier 5
 //Down Hit: lifts the target and strikes it 3 times
 int Down_Hit_DamagePercent[10]		= {50,80,110,140,170,200,230,260,290,320};	//attack power +%

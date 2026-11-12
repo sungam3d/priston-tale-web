@@ -1398,6 +1398,7 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 
 							case SKILL_PLAY_CYCLONE_STRIKE:
 							case SKILL_PLAY_MORTAL_BLOW:
+							case SKILL_PLAY_LAND_MINING:
 								if ( (rand()%100)<GetCritical2( lpPlayInfo , lpCharInfo , dm_Critical_Temp ) ) {
 									pow = (pow*170)/100;						//크리티컬 공격가중
 #ifdef DISP_DAMAGE
@@ -1859,6 +1860,7 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 
 							case SKILL_PLAY_CYCLONE_STRIKE:
 							case SKILL_PLAY_MORTAL_BLOW:
+							case SKILL_PLAY_LAND_MINING:
 								if ( (rand()%100)<GetCritical( lpPlayInfo , lpChar , dm_Critical_Temp ) ) {
 									pow = (pow*170)/100;						//크리티컬 공격가중
 #ifdef DISP_DAMAGE
@@ -3666,6 +3668,12 @@ int rsSetSkillAttack( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA
 				lpChar->PlayStunCount = 16*Power_Dash_StunTime[Point];
 			}
 			break;
+
+		//Mechanician tier 5 (the fifth rank only)
+		case SKILL_PLAY_ROLLING_SMASH:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_MECHANICIAN || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Rolling_Smash_DamagePercent[Point])/100;
+			break;
 /*
 		case SKILL_PLAY_CYCLONE_STRIKE:
 			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_FIGHTER ) {
@@ -3753,6 +3761,19 @@ int rsSetSkillPlus( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA *
 	if ( !lpPlayInfo->AdminMode )
 		dwAttSkillCode = lpTransAttackData2->SkillCode;
 
+
+	if ( lpPlayInfo->dwSkill_PowerEnhance_Time ) {
+		//tier 5 Mechanician: Power Enhancement, attack power +%
+		if ( lpPlayInfo->dwSkill_PowerEnhance_Time<dwPlayServTime ) {
+			lpPlayInfo->dwSkill_PowerEnhance_Time = 0;
+			lpPlayInfo->dwSkill_PowerEnhance_Param = 0;
+		}
+		else {
+			lpTransAttackData2->Power[0] += (lpTransAttackData2->Power[0]*lpPlayInfo->dwSkill_PowerEnhance_Param)/100;
+			lpTransAttackData2->Power[1] += (lpTransAttackData2->Power[1]*lpPlayInfo->dwSkill_PowerEnhance_Param)/100;
+			lpTransAttackData->Power += (lpTransAttackData->Power*lpPlayInfo->dwSkill_PowerEnhance_Param)/100;
+		}
+	}
 
 	if ( lpPlayInfo->dwSkill_Maximize_Time && !dwAttSkillCode ) {
 		//맥시마이즈 적용 ( 최대 공격력 무기 최대치 만큼 추가 )
@@ -5154,6 +5175,18 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 			lpTransAttackData->Power+= (lpTransAttackData->Power*Mortal_Blow_DamagePercent[Point])/100;
 			lpTransSkillAttackData->AttackSize = Mortal_Blow_Area[Point];
 			lpTransSkillAttackData->Power = GetRandomPos( Mortal_Blow_AreaDamage[Point][0] , Mortal_Blow_AreaDamage[Point][1] );
+			lpTransSkillAttackData->AttackState = 0;
+			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
+			return TRUE;
+
+		case SKILL_PLAY_LAND_MINING:		//Mechanician tier 5: the target, plus those around it
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_MECHANICIAN || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			if ( lpTransSkillAttackData->TargetCount>Land_Mining_AttackNum[Point]+1 ) return FALSE;
+
+			lpTransAttackData->Power = GetRandomPos( lpTransRangeAttack->Power[0] , lpTransRangeAttack->Power[1] );
+			lpTransAttackData->Power+= (lpTransAttackData->Power*Land_Mining_DamagePercent[Point])/100;
+			lpTransSkillAttackData->AttackSize = Land_Mining_Area[Point];
+			lpTransSkillAttackData->Power = GetRandomPos( Land_Mining_AreaDamage[Point][0] , Land_Mining_AreaDamage[Point][1] );
 			lpTransSkillAttackData->AttackState = 0;
 			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
 			return TRUE;

@@ -4531,6 +4531,29 @@ int cSKILL::ShowSkillInfo(sSKILL *pSkill , sSKILLBOX *pSkillBox ,  int Icon )
 			lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
 			LineCount++;
         break;
+// one tooltip line for a tier 5 skill: the label (ending in \r), then the value
+#define T5TIP(label, ...) { lstrcpy(szTempSkillDoc,label); lstrcat(szSkillInfoBuff,szTempSkillDoc); \
+	wsprintf(szTempSkillDoc2,__VA_ARGS__); lstrcat(szSkillInfoBuff2,szTempSkillDoc2); LineCount++; }
+#define T5P (pSkill->Point+i-1)
+		//[Mechanician] tier 5
+		case SKILL_LAND_MINING:
+			T5TIP(AddPercentDamage4, "%d%s\r", Land_Mining_DamagePercent[T5P], "%");
+			T5TIP(AreaDamage4, "%d-%d\r", Land_Mining_AreaDamage[T5P][0], Land_Mining_AreaDamage[T5P][1]);
+			T5TIP(MaxAttackNum4, "%d\r", Land_Mining_AttackNum[T5P]);
+			T5TIP(AttackAreaName, "%d\r", Land_Mining_Area[T5P]);
+		break;
+		case SKILL_HYPER_SONIC:
+			T5TIP("Attack Speed:\r", "%d%s\r", Hyper_Sonic_Speed[T5P], "%");
+			T5TIP(CountinueTime, "%d%s\r", Hyper_Sonic_Time[T5P], SecName);
+		break;
+		case SKILL_ROLLING_SMASH:
+			T5TIP(AddPercentDamage4, "%d%s\r", Rolling_Smash_DamagePercent[T5P], "%");
+			T5TIP("Attack Rating:\r", "+%d\r", Rolling_Smash_AddHit[T5P]);
+		break;
+		case SKILL_POWER_ENHANCEMENT:
+			T5TIP("Attack Power:\r", "+%d%s\r", Power_Enhancement_Damage[T5P], "%");
+			T5TIP(CountinueTime, "%d%s\r", Power_Enhancement_Time[T5P], SecName);
+		break;
 		//[Fighter] tier 5
 		case SKILL_DOWN_HIT:
 			lstrcpy(szTempSkillDoc,AddPercentDamage4);

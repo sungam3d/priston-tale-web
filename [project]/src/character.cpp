@@ -5111,6 +5111,12 @@ int WarpStartField( int FieldNum , int *mx, int *mz )
 							break;
 						}
 					}
+					if ( ContinueSkill[cnt].CODE==SKILL_HYPER_SONIC ) {
+						//tier 5 Mechanician: attack speed for any weapon
+						x = ContinueSkill[cnt].Point-1;
+						if ( x>=0 && x<10 )
+							AttackSpeed += (AttackSpeed*Hyper_Sonic_Speed[x])/100;
+					}
 				}
 			}
 			//////////////////////////////////////////////////////////////////
@@ -11992,6 +11998,22 @@ int smCHAR::BeginSkill( int SkilCode , int Level , smCHAR *lpTarChar , int x, in
 		SkillPlaySound( SKILL_SOUND_SKILL_BERSERKER	 , pX,pY,pZ );
 		break;
 
+	//Mechanician tier 5 (the older skills' effects for now)
+	case SKILL_PLAY_LAND_MINING:
+		SkillPlaySound( SKILL_SOUND_SKILL_MAXIMIZE2 , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_HYPER_SONIC:
+		if ( point ) AssaParticle_SwiftAxe( this , Hyper_Sonic_Time[point-1] );
+		SkillPlaySound( SKILL_SOUND_SKILL_SWIFT_AXE1 , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_ROLLING_SMASH:
+		break;
+	case SKILL_PLAY_POWER_ENHANCEMENT:
+		dwDispAppSkill |= SKILL_APPMASK_AUTOMATION;
+		StartSkill( pX,pY,pZ, Angle.x , Angle.y , Angle.z , SKILL_MAXIMIZE );
+		SkillPlaySound( SKILL_SOUND_SKILL_MAXIMIZE2 , pX,pY,pZ );
+		break;
+
 	case SKILL_PLAY_ASSASSIN_EYE:
 		SkillPlaySound( SKILL_SOUND_SKILL_ASSASSIN_EYE	 , pX,pY,pZ );
 		break;
@@ -14658,6 +14680,46 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 		}
 		for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
 			StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
+		}
+		break;
+
+	//Mechanician tier 5
+	case SKILL_PLAY_LAND_MINING:
+		if ( chrAttackTarget ) {
+			if ( lpCurPlayer!=this && point ) {
+				dm_SelectRange( chrAttackTarget->pX, chrAttackTarget->pY, chrAttackTarget->pZ, Land_Mining_Area[point-1] , TRUE , Land_Mining_AttackNum[point-1] );
+				dm_AddRangeDamage( chrAttackTarget );
+			}
+			if ( MotionEvent==1 ) {
+				AssaParticle_GrandSmash( this );
+				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 150, 100,0,0, 500 );
+				SkillPlaySound( SKILL_SOUND_SKILL_SPARK2 , pX,pY,pZ );
+			}
+			for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
+				StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
+			}
+		}
+		break;
+
+	case SKILL_PLAY_ROLLING_SMASH:
+		//four strikes: the cast's, then one on each of the clip's first three events
+		if ( chrAttackTarget ) {
+			if ( AttackCritcal>=0 ) {
+				AssaParticle_GrandSmash( this );
+				GetAttackPoint( &Pos2.x,&Pos2.y,&Pos2.z );
+				SetDynLight( Pos2.x,Pos2.y,Pos2.z , 100, 0,0,0, 400 );
+				SkillPlaySound( SKILL_SOUND_SKILL_SWING2 , pX,pY,pZ );
+			}
+			else
+				PlayWaponSoundDirect( pX,pY,pZ , 13 );
+
+			if ( this==lpCurPlayer && MotionEvent<4 && point ) {
+				int t5rate = smCharInfo.Attack_Rating;
+				smCharInfo.Attack_Rating += Rolling_Smash_AddHit[point-1];
+				cnt = dm_SendTransDamage( chrAttackTarget , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+				smCharInfo.Attack_Rating = t5rate;
+				lpCurPlayer->AttackCritcal = cnt ? 0 : -1;
+			}
 		}
 		break;
 

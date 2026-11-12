@@ -1970,6 +1970,34 @@ int F_Tier5_Pending()
 	return FALSE;
 }
 
+//Mechanician tier 5
+int F_Land_Mining()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Hyper_Sonic()
+{
+	pUseSkill->UseTime = Hyper_Sonic_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();		// the attack speed (sinInvenTory.cpp SetItemToChar)
+	return TRUE;
+}
+int F_Rolling_Smash()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Power_Enhancement()
+{
+	pUseSkill->UseTime = Power_Enhancement_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();		// the shown attack power; the server adds it to each hit
+	return TRUE;
+}
+
 //파이크맨
 int F_Assassin_Eye()
 {

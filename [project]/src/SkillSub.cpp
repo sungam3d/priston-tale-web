@@ -928,6 +928,28 @@ int OpenPlaySkill( sSKILL *lpSkill )
 			}
 		}
 		break;
+
+	//Mechanician tier 5 buffs
+	case SKILL_HYPER_SONIC:			//attack speed, any weapon (the client counts it)
+	case SKILL_POWER_ENHANCEMENT:	//attack power, on the server
+		if ( lpCurPlayer->MotionInfo->State<0x100 ) {
+			if ( lpSkill->Skill_Info.FuncPointer()==TRUE && lpSkill->Point ) {
+				int t5play = (lpSkill->CODE==SKILL_HYPER_SONIC) ? SKILL_PLAY_HYPER_SONIC : SKILL_PLAY_POWER_ENHANCEMENT;
+				lpCurPlayer->AttackSkil = t5play;
+				lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+				lpCurPlayer->BeginSkill( lpCurPlayer->AttackSkil , 0 , 0 ,0,0,0 );
+
+				lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+				lpCurPlayer->MotionLoopSpeed = 70;
+				lpCurPlayer->MotionLoop = 1;
+
+				if ( t5play==SKILL_PLAY_POWER_ENHANCEMENT )
+					SendProcessSKillToServer( SKILL_PLAY_POWER_ENHANCEMENT , lpSkill->Point , 0, 0 );
+
+				flag++;
+			}
+		}
+		break;
 /*
 	case SKILL_CYCLONE_STRIKE:
 		//CYCLONE_STRIKE
@@ -3378,6 +3400,45 @@ int Avalanche_ArrowNum[10]	= {3,3,3,4,4,4,5,5,5,6};
 			dm_SendRangeDamage( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ,  lpChar , 0 , 0 ,0,0, lpCurPlayer->AttackSkil );
 
 			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	//Mechanician tier 5
+	case SKILL_LAND_MINING:
+		//mines burst around the target: the target, plus the enemies around it
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_LAND_MINING;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			dm_SelectRange( lpChar->pX, lpChar->pY, lpChar->pZ, Land_Mining_Area[lpSkill->Point-1] , TRUE , Land_Mining_AttackNum[lpSkill->Point-1] );
+			dm_AddRangeDamage( lpChar );
+			dm_SendRangeDamage( lpChar->pX, lpChar->pY, lpChar->pZ,  lpChar , 0 , 0 ,0,0, lpCurPlayer->AttackSkil );
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	case SKILL_ROLLING_SMASH:
+		//a spinning combo: the cast's strike, then one on each of the clip's first three events
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			RetryPlayAttack( lpChar );
+			lpCurPlayer->AttackSkil = SKILL_PLAY_ROLLING_SMASH;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			temp = lpCurPlayer->smCharInfo.Attack_Rating;
+			lpCurPlayer->smCharInfo.Attack_Rating += Rolling_Smash_AddHit[lpSkill->Point-1];
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			lpCurPlayer->smCharInfo.Attack_Rating = temp;
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+
+			lpCurPlayer->MotionLoopSpeed = GetAttackSpeedFrame( lpCurPlayer->smCharInfo.Attack_Speed , 1 );
 			lpCurPlayer->MotionLoop = 1;
 		}
 		return TRUE;

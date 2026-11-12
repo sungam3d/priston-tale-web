@@ -5477,6 +5477,14 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 				SkillTextColor[SIN2_DAMAGE] = SIN_TEXT_COLOR_GOLD;
 				SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_RED;
 			break;
+			case SKILL_HYPER_SONIC:			// tier 5 Mechanician: any weapon
+				sinSkillWeaponSpeed += (int)((Hyper_Sonic_Speed[ContinueSkill[i].Point-1]*TempWeaponSpeed)/100);
+			break;
+			case SKILL_POWER_ENHANCEMENT:	// tier 5 Mechanician: attack power +% (the server applies it)
+				sinTempDamage2[0] += (int)((Power_Enhancement_Damage[ContinueSkill[i].Point-1]*TempDamage[0])/100);
+				sinTempDamage2[1] += (int)((Power_Enhancement_Damage[ContinueSkill[i].Point-1]*TempDamage[1])/100);
+				SkillTextColor[SIN2_DAMAGE] = SIN_TEXT_COLOR_GOLD;
+			break;
 			case SKILL_ASSASSIN_EYE:
 				//sinCritical += Assassin_Eye_AddCritical[ContinueSkill[i].Point-1];
 			break;

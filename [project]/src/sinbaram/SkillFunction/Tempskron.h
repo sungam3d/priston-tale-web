@@ -73,6 +73,10 @@ int F_Power_Dash();
 int F_Mortal_Blow();
 int F_Bloody_Berserker();
 int F_Tier5_Pending();		// a tier 5 skill whose cast is not made yet: it can be learned, not used
+int F_Land_Mining();
+int F_Hyper_Sonic();
+int F_Rolling_Smash();
+int F_Power_Enhancement();
 
 //////////////// 파이크맨 
 int F_Pike_Wind();			//파이크윈드 
@@ -296,6 +300,19 @@ extern int Soul_Breaker_UseMana[10], Crescent_Moon_UseMana[10], Saint_Blade_UseM
 extern int Talaria_UseMana[10], Galaxy_Coup_UseMana[10], Summon_Arcuda_UseMana[10], Snippy_Fear_UseMana[10];
 extern int Spirit_Impact_UseMana[10], Piercing_Ice_UseMana[10], Summon_Ramiel_UseMana[10], Blessing_Krishna_UseMana[10];
 extern int Silraphim_UseMana[10], Vis_Tenus_UseMana[10], Prima_Ignis_UseMana[10], Third_Anima_UseMana[10];
+
+//Mechanician tier 5
+extern int Land_Mining_DamagePercent[10];
+extern int Land_Mining_AreaDamage[10][2];
+extern int Land_Mining_Area[10];
+extern int Land_Mining_AttackNum[10];
+extern int Hyper_Sonic_Speed[10];
+extern int Hyper_Sonic_Time[10];
+extern int Rolling_Smash_DamagePercent[10];
+extern int Rolling_Smash_AddHit[10];
+extern int Power_Enhancement_Damage[10];
+extern int Power_Enhancement_Area[10];
+extern int Power_Enhancement_Time[10];
 
 //Fighter tier 5
 extern int Down_Hit_DamagePercent[10];
