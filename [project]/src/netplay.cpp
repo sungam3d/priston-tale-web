@@ -5508,7 +5508,8 @@ int ChatBuffSort()
 *-----------------------------------------------------------------------------*/
 extern POINT pCursorPos;
 extern int MouseButton[3];
-int dsDrawColorBox( DWORD Color ,int x, int y, int sizeX, int sizeY );
+int dsDrawColorBoxFloat( DWORD Color ,float x, float y, float sizeX, float sizeY );
+int dsGetDrawOffset( int *sx , int *sy );
 static int ChatBarX = 0, ChatBarTop = 0, ChatBarBottom = 0, ChatBarTotal = 0, ChatBarVisible = 0, ChatBarDrag = 0;
 static DWORD ChatBarTime = 0;
 
@@ -5551,8 +5552,9 @@ void ChatBar_Draw()
 	if ( th>h ) th = h;
 	int sp = ChatScrollPoint<0 ? 0 : ( ChatScrollPoint>ms ? ms : ChatScrollPoint );
 	int pos = ms ? ( ( h-th )*sp )/ms : 0;		// from the bottom (the newest)
-	dsDrawColorBox( RGBA_MAKE( 0,0,0,110 ) , ChatBarX , ChatBarTop , 6 , h );
-	dsDrawColorBox( RGBA_MAKE( 222,190,120,215 ) , ChatBarX+1 , ChatBarBottom-pos-th , 4 , th );
+	// screen coordinates (no draw offset): ChatBarSet already applied the chat's
+	dsDrawColorBoxFloat( RGBA_MAKE( 0,0,0,110 ) , (float)ChatBarX , (float)ChatBarTop , 6.0f , (float)h );
+	dsDrawColorBoxFloat( RGBA_MAKE( 222,190,120,215 ) , (float)(ChatBarX+1) , (float)(ChatBarBottom-pos-th) , 4.0f , (float)th );
 }
 int ChatBar_LButtonDown()
 {
@@ -5812,7 +5814,11 @@ int DisplayChatMessage2( HDC hdc , int x, int y , int StrMax , int LineMax )
 
 	if ( LineMax>=8 ) {		// the main chat: where its scroll bar goes (ChatBar_Draw)
 		int total = ChatBuffCnt2[fl_Count]<CHATBUFF_MAX ? ChatBuffCnt2[fl_Count] : CHATBUFF_MAX;
-		ChatBarSet( x-11 , yBottom-(LineMax-1)*12-2 , yBottom+12 , total , DispChatMsgHeight );
+		// where it is on the screen: the chat is drawn shifted on windows bigger than 800x600
+		int bx = x-11, bt = yBottom-(LineMax-1)*12-2, bx2 = x-11, bb = yBottom+12;
+		dsGetDrawOffset( &bx , &bt );
+		dsGetDrawOffset( &bx2 , &bb );
+		ChatBarSet( bx , bt , bb , total , DispChatMsgHeight );
 	}
 
 	return TRUE;

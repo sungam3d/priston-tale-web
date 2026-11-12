@@ -341,22 +341,33 @@ static void PasteHook()
 				Module['_PtWeb_PasteChar']( c < 32 ? 32 : c );		/* line breaks and tabs: spaces */
 			}
 		};
-		var mine = function( e ) { var n = e.target && e.target.tagName; return n != 'INPUT' && n != 'TEXTAREA'; };
-		var got = 0;
-		document.addEventListener( 'paste', function( e ) {
-			if ( !mine( e ) ) return;
-			var t = e.clipboardData && e.clipboardData.getData( 'text' );
-			if ( t ) { got = Date.now(); send( t ); e.preventDefault(); }
-		}, true );
-		// SDL may swallow the key, so no paste event comes: read the clipboard ourselves
-		document.addEventListener( 'keydown', function( e ) {
+		/* An invisible text box takes the browser's own paste: no permission prompt, no
+		   paste button. On Ctrl+V the focus moves to it before the browser pastes, the key
+		   is kept from SDL (which would cancel the paste), and the focus goes back after. */
+		var box = document.createElement( 'textarea' );
+		box.setAttribute( 'aria-hidden', 'true' );
+		box.tabIndex = -1;
+		box.style.cssText = 'position:fixed;left:-2000px;top:0;width:20px;height:20px;opacity:0;pointer-events:none;';
+		document.body.appendChild( box );
+		var back = null;
+		var mine = function( e ) { var n = e.target && e.target.tagName; return e.target == box || ( n != 'INPUT' && n != 'TEXTAREA' ); };
+		window.addEventListener( 'keydown', function( e ) {
 			if ( !( e.ctrlKey || e.metaKey ) || ( e.key != 'v' && e.key != 'V' ) || !mine( e ) ) return;
-			var t0 = Date.now();
-			setTimeout( function() {
-				if ( got >= t0 || !navigator.clipboard || !navigator.clipboard.readText ) return;
-				navigator.clipboard.readText().then( function( t ) { if ( got < t0 ) { got = Date.now(); send( t ); } } ).catch( function() {} );
-			}, 80 );
+			back = document.activeElement == box ? back : document.activeElement;
+			box.value = '';
+			box.focus();
+			e.stopImmediatePropagation();
 		}, true );
+		box.addEventListener( 'paste', function( e ) {
+			var t = e.clipboardData && e.clipboardData.getData( 'text' );
+			e.preventDefault();
+			send( t );
+			setTimeout( function() {
+				box.value = '';
+				if ( back && back.focus && back != box ) back.focus(); else box.blur();
+				back = null;
+			}, 0 );
+		} );
 	} );
 }
 
