@@ -4,7 +4,7 @@
 *	작성일 :  최종업데이트 12월 
 *	적성자 :  박상열 
 *-----------------------------------------------------------------------------*/	
-#define SIN_MAX_SKILL			200			//넓게 잡아놓는다 (200: room for the tier 5 skills)
+#define SIN_MAX_SKILL			300			// 300: the new classes' 60 too //넓게 잡아놓는다 (200: room for the tier 5 skills)
 #define SIN_MAX_USE_SKILL		21			//한캐릭에서 사용할수있는 최대 스킬치 (노말 어택포함)	(1 + 4 tiers x 4 + tier 5's 4)
 #define SIN_MAX_SKILLBOX		21
 #define SIN_TIER5_FIRST			17			// UseSkill index of the first tier 5 skill (17..20, the skill window's second page)
@@ -716,3 +716,6 @@ extern int nMat_SkillDelayItem[];
 extern int sinAddSkillDelay;
 extern int sinSkillDelayTime; 
 extern int SkillDelayFlag;
+
+// the new classes' skills (generated: [project]/skilldata_3215/gen_newclass.py)
+#include "NewClassSkill.h"

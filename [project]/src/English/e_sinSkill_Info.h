@@ -933,3 +933,6 @@ F_Prima_Ignis,SKILL_PRIMA_IGNIS,SIN_SKILL_USE_RIGHT,Prima_Ignis_UseMana},
 90,		60,2,		150,1,
 {1,0,0},			{sinWM1,0,0,0,0,0,0,0},
 F_Third_Anima,SKILL_THIRD_ANIMA,SIN_SKILL_USE_RIGHT,Third_Anima_UseMana},
+
+// the new classes (generated; keep last)
+#include "..\\sinbaram\\NewClassSkill_Rows.h"

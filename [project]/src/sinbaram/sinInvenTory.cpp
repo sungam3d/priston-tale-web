@@ -5370,6 +5370,27 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 	//////////////////////// 스킬 플러스 수치 
 	for( i=0 ; i < 10 ; i++){
 		if(ContinueSkill[i].Flag){
+			{	// the new classes' buffs (NcSkills): stats from the item pass
+				sNCSKILL *nc = NC_FindCode( ContinueSkill[i].CODE );
+				if ( nc && nc->Kind==NCK_BUFF ) {
+					int st[3] = { nc->Stat, nc->Stat2, nc->Stat3 };
+					int *va[3] = { nc->Val, nc->Val2, nc->Val3 };
+					for( int s=0; s<3; s++ ) {
+						int v = NC_Rank( va[s] , ContinueSkill[i].Point );
+						switch( st[s] ) {
+						case NCS_ACC_FLAT:	sinAttack_Rating += v;	break;
+						case NCS_AGI_PCT:	sinAttack_Rating += (int)((v*TempAttack_Rating)/100);	break;
+						case NCS_ABSORB:	sinTempAbsorb += v;	SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_BLUE;	break;
+						case NCS_ASPD:		sinSkillWeaponSpeed += (int)((v*TempWeaponSpeed)/100);	break;
+						case NCS_STR_PCT:
+							sinTempDamage2[0] += (int)((v*TempDamage[0])/100);
+							sinTempDamage2[1] += (int)((v*TempDamage[1])/100);
+							SkillTextColor[SIN2_DAMAGE] = SIN_TEXT_COLOR_GOLD;
+							break;
+						}
+					}
+				}
+			}
 			switch(ContinueSkill[i].CODE){
 			case SKILL_EXTREME_SHIELD:
 				sinTempBlock += ContinueSkill[i].PlusState[0]; 
@@ -5671,6 +5692,31 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 
 			//}
 			//////////////같은 계열무기일경우에 해당 
+			{	// the new classes' passives (NcSkills): damage, critical and accuracy
+				sNCSKILL *nc = NC_FindCode( sinSkill.UseSkill[i].CODE );
+				if ( nc && nc->Kind==NCK_PASSIVE ) {
+					int wpok = 0, w;
+					if ( sInven[0].ItemIndex )
+						for( w=0; w<8; w++ )
+							if ( sinSkill.UseSkill[i].Skill_Info.UseWeaponCode[w] &&
+								sinSkill.UseSkill[i].Skill_Info.UseWeaponCode[w]==(cInvenTory.InvenItem[sInven[0].ItemIndex-1].CODE&sinITEM_MASK2) ) wpok = 1;
+					int st[2] = { nc->Stat, nc->Stat2 };
+					int *va[2] = { nc->Val, nc->Val2 };
+					for( int s=0; s<2; s++ ) {
+						int v = NC_Rank( va[s] , sinSkill.UseSkill[i].Point );
+						switch( st[s] ) {
+						case NCS_DMG_PCT:
+							if ( wpok ) {
+								sinSkillDamage[0] += (int)((v*TempDamage[0])/100);
+								sinSkillDamage[1] += (int)((v*TempDamage[1])/100);
+							}
+							break;
+						case NCS_CRIT:		if ( wpok ) sinCritical += v;	break;
+						case NCS_ACC_PCT:	sinAttack_Rating += (int)((v*TempAttack_Rating)/100);	break;
+						}
+					}
+				}
+			}
 			for(cnt = 0; cnt < 8 ; cnt++){
 				switch(sinSkill.UseSkill[i].CODE){
 					case SKILL_MELEE_MASTERY:       //데미지 증가 
@@ -6309,6 +6355,40 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 
 	int OrbDamageTemp2 = 0;
 	///////이쁘게 다시 잘만든 스킬 두둥!!!!!!////
+	{	// the new classes' passives and buffs on the final stats: defense, life, mana, stamina
+		int k, s;
+		for( k=0; k<MAX_CONTINUE_SKILL+SIN_MAX_USE_SKILL; k++ ) {
+			sNCSKILL *nc;
+			int pt;
+			if ( k<MAX_CONTINUE_SKILL ) {
+				if ( !ContinueSkill[k].Flag ) continue;
+				nc = NC_FindCode( ContinueSkill[k].CODE );
+				if ( !nc || nc->Kind!=NCK_BUFF ) continue;
+				pt = ContinueSkill[k].Point;
+			}
+			else {
+				int u = k-MAX_CONTINUE_SKILL;
+				if ( u<1 || !sinSkill.UseSkill[u].Flag || !sinSkill.UseSkill[u].Point ) continue;
+				nc = NC_FindCode( sinSkill.UseSkill[u].CODE );
+				if ( !nc || nc->Kind!=NCK_PASSIVE ) continue;
+				pt = sinSkill.UseSkill[u].Point;
+			}
+			int st[3] = { nc->Stat, nc->Stat2, nc->Stat3 };
+			int *va[3] = { nc->Val, nc->Val2, nc->Val3 };
+			for( s=0; s<3; s++ ) {
+				int v = NC_Rank( va[s] , pt );
+				switch( st[s] ) {
+				case NCS_DEF_PCT:	sinChar->Defence += (sinChar->Defence*v)/100;	SkillTextColor[SIN2_DEFENSE] = SIN_TEXT_COLOR_BLUE;	break;
+				case NCS_MANA_PCT:	sinChar->Mana[1] += (sinChar->Mana[1]*v)/100;	break;
+				case NCS_STAM_PCT:	sinChar->Stamina[1] += (sinChar->Stamina[1]*v)/100;	break;
+				case NCS_LIFE_PCT:	sinChar->Life[1] += (sinChar->Life[1]*v)/100;	break;
+				case NCS_VIT:		sinChar->Life[1] += v*2;	break;		// vitality: about 2 life a point
+				case NCS_SPI_PCT:	sinChar->Mana[1] += (sinChar->Mana[1]*v)/100;	break;
+				}
+			}
+		}
+	}
+
 	for(int i = 0 ; i < MAX_CONTINUE_SKILL ; i++){  
 		if(ContinueSkill[i].Flag){
 			switch(ContinueSkill[i].CODE){

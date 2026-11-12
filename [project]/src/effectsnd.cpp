@@ -9,6 +9,7 @@
 #include "drawsub.h"
 #include "netplay.h"
 #include "effectsnd.h"
+#include "sinbaram\\NewClassSkill.h"		// the new classes' sound codes
 #include "field.h"
 
 
@@ -734,6 +735,7 @@ sSKILL_SOUND_FILE	SkillSoundWav[] = {
 	{	"wav\\Effects\\Skill\\Morion\\Vengeance 01.wav",				SKILL_SOUND_SKILL_VENGEANCE1		},
 	{	"wav\\Effects\\Skill\\Morion\\Vengeance 02.wav",				SKILL_SOUND_SKILL_VENGEANCE2		},
 
+#include "sinbaram\\NewClassSkill_Sounds.h"
 	{	0,0 }
 };
 

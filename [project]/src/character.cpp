@@ -5117,6 +5117,11 @@ int WarpStartField( int FieldNum , int *mx, int *mz )
 						if ( x>=0 && x<10 )
 							AttackSpeed += (AttackSpeed*Hyper_Sonic_Speed[x])/100;
 					}
+					{	// the new classes' attack-speed buffs (Inpes, Rage, Advent Midranda)
+						sNCSKILL *nc = NC_FindCode( ContinueSkill[cnt].CODE );
+						if ( nc && nc->Kind==NCK_BUFF && nc->Stat==NCS_ASPD )
+							AttackSpeed += (AttackSpeed*NC_Rank( nc->Val , ContinueSkill[cnt].Point ))/100;
+					}
 				}
 			}
 			//////////////////////////////////////////////////////////////////
@@ -9025,6 +9030,15 @@ int smCHAR::PlayAttack( int EventFlag )
 
 
 
+					if ( !block ) {		// the new classes' evasion (Alas, Attack Mastery)
+						cnt = NC_GetEvasion();
+						if ( cnt>0 && (rand()%100)<cnt ) {
+							cInterFace.SetStringEffect(HA_EVASION);
+							block = 100;
+							Record_BlockCount++;
+						}
+					}
+
 					if ( lpCurPlayer->smCharInfo.Chance_Block ) {
 						ChanceBlock = sinGetBlockRating( lpChar->smCharInfo.Level );
 
@@ -11493,6 +11507,59 @@ int smCHAR::SendCharInfo( smWINSOCK *lpsmsock )
 }
 
 //스킬시작
+// The new classes' skills (NcSkills, NewClassSkill_Data.h): the cast's effect and sound.
+static void NC_StartFx( const char *name , int x, int y, int z )
+{
+	if ( !name ) return;
+	POINT3D pos;
+	pos.x = x; pos.y = y; pos.z = z;
+	g_NewParticleMgr.Start( (char *)name , pos );
+}
+static int NC_BeginSkill( smCHAR *ch , int SkilCode )
+{
+	sNCSKILL *nc = NC_FindPlay( SkilCode&0xFF );
+	if ( !nc ) return FALSE;
+	NC_StartFx( nc->CastFx , ch->pX, ch->pY+8*fONE, ch->pZ );
+	if ( nc->CastSound ) SkillPlaySound( nc->CastSound , ch->pX,ch->pY,ch->pZ );
+	return TRUE;
+}
+// ... and on the clip's events: the hit effect, and the extra strikes (one per event)
+static int NC_EventSkill( smCHAR *ch )
+{
+	sNCSKILL *nc = NC_FindPlay( ch->AttackSkil&0xFF );
+	if ( !nc ) return FALSE;
+	int point = (ch->AttackSkil>>8)&0xF;
+	smCHAR *tar = ch->chrAttackTarget;
+	int self = (nc->Kind==NCK_BUFF || nc->Kind==NCK_DEBUFF_SELF || nc->Kind==NCK_POISON_SELF || nc->Kind==NCK_MAGIC_AREA_SELF);
+
+	if ( ch->MotionEvent==1 && nc->HitSound ) SkillPlaySound( nc->HitSound , ch->pX,ch->pY,ch->pZ );
+	if ( self ) {
+		if ( ch->MotionEvent==1 ) NC_StartFx( nc->HitFx , ch->pX, ch->pY+8*fONE, ch->pZ );
+	}
+	else if ( tar && ch->AttackCritcal>=0 ) {
+		NC_StartFx( nc->HitFx , tar->pX, tar->pY+16*fONE, tar->pZ );
+		if ( ch==lpCurPlayer && ch->MotionEvent==1 ) {
+			for( int i=0; i<dmSelected_CharCnt; i++ )		// around the target: everyone struck
+				if ( lpSelected_Char[i]!=tar ) NC_StartFx( nc->HitFx , lpSelected_Char[i]->pX, lpSelected_Char[i]->pY+16*fONE, lpSelected_Char[i]->pZ );
+		}
+	}
+
+	// strikes after the first (sent at the cast): events 2..Hits
+	if ( ch==lpCurPlayer && tar && point && ch->MotionEvent>=2 && ch->MotionEvent<=nc->Hits &&
+		(nc->Kind==NCK_HIT || nc->Kind==NCK_MAGIC) && ch->AttackCritcal>=0 ) {
+		int cnt;
+		if ( nc->Kind==NCK_MAGIC ) {
+			int wp0 = cInvenTory.InvenItem[ sInven[0].ItemIndex-1 ].sItemInfo.Damage[0];
+			int wp1 = cInvenTory.InvenItem[ sInven[0].ItemIndex-1 ].sItemInfo.Damage[1];
+			cnt = dm_SendTransDamage( tar , wp0,wp1 , 0, 0, ch->AttackSkil , FALSE );
+		}
+		else
+			cnt = dm_SendTransDamage( tar , 0,0 , 0, 0, ch->AttackSkil , TRUE );
+		if ( cnt ) DamageExp( tar , cnt );
+	}
+	return TRUE;
+}
+
 int smCHAR::BeginSkill( int SkilCode , int Level , smCHAR *lpTarChar , int x, int y, int z )
 {
 	int point;
@@ -11509,6 +11576,8 @@ int smCHAR::BeginSkill( int SkilCode , int Level , smCHAR *lpTarChar , int x, in
 	//point = SkilCode>>8;
 	point = (SkilCode>>8)&0xF;
 	param = (SkilCode>>12)&0xF;
+
+	NC_BeginSkill( this , SkilCode );		// the new classes: cast effect and sound
 
 	switch( SkilCode&0xFF )
 	{
@@ -13408,6 +13477,8 @@ int smCHAR::EventSkill()
 
 	point = (AttackSkil>>8)&0xF;
 	param = (AttackSkil>>12)&0xF;
+
+	if ( NC_EventSkill( this ) ) return TRUE;		// the new classes' skills
 
 
 	switch( AttackSkil&0xFF )

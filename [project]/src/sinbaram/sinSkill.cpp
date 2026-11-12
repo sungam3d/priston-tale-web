@@ -356,6 +356,9 @@ sSKILL sSkill[SIN_MAX_SKILL] = {
 	{"Prima Ignis"		,SKILL_PRIMA_IGNIS		,"MM86 P_Ignis"},
 	{"Third Anima"		,SKILL_THIRD_ANIMA		,"MM90 T_Anima","Ma5_T_Anima.tga"},
 
+	// the new classes (generated: [project]/skilldata_3215/gen_newclass.py)
+#include "NewClassSkill_Buttons.h"
+
 	//공성전 클랜 스킬
 	{"\310\355\274\366\267\302 \273\363\275\302"	    ,CLANSKILL_ABSORB	 ,"","wa1-1.tga"},
 	{"\260\370\260\335\267\302 \273\363\275\302"      ,CLANSKILL_ATTACK	 ,"","wa1-3.tga"},
@@ -599,6 +602,15 @@ void cSKILL::LoadUseSkillImage()
 		break;
 		case GROUP_PRIESTESS:
 			lstrcpy(TempDirPath,"Image\\SinImage\\Skill\\Priestess\\" );
+		break;
+		case GROUP_ASSASSIN:
+			lstrcpy(TempDirPath,"Image\\SinImage\\Skill\\Assassin\\" );
+		break;
+		case GROUP_SHAMAN:
+			lstrcpy(TempDirPath,"Image\\SinImage\\Skill\\Shaman\\" );
+		break;
+		case GROUP_MARTIALARTIST:
+			lstrcpy(TempDirPath,"Image\\SinImage\\Skill\\Martial\\" );
 			
 		break;
 
@@ -1477,6 +1489,15 @@ int cSKILL::SearchUseSkill()
 		break;
 		case 8:
 			UseSkillBox = GROUP_PRIESTESS;
+		break;
+		case 9:		// the new classes (JOBCODE_ASSASSIN, _SHAMAN, _MARTIALARTIST)
+			UseSkillBox = GROUP_ASSASSIN;
+		break;
+		case 10:
+			UseSkillBox = GROUP_SHAMAN;
+		break;
+		case 11:
+			UseSkillBox = GROUP_MARTIALARTIST;
 		break;
 
 	}
@@ -2418,6 +2439,24 @@ int cSKILL::ShowSkillInfo(sSKILL *pSkill , sSKILLBOX *pSkillBox ,  int Icon )
 		}
 
 		// 장별 - 초 -> 한국어 들어가 있는 것 수정
+		{	// the new classes: the tooltip lines come from the engine table (NewClassSkill_Data.h)
+			sNCSKILL *nc = NC_FindCode( pSkill->CODE );
+			if ( nc ) {
+				int rk = pSkill->Point+i;		// the rank shown (1..10)
+				for( int t=0; t<NC_TIP_MAX; t++ ) {
+					sNCTIP *tp = &nc->Tip[t];
+					if ( !tp->Label || !tp->Arr || rk<1 || rk>10 ) continue;
+					lstrcpy(szTempSkillDoc,tp->Label);
+					lstrcat(szSkillInfoBuff,szTempSkillDoc);
+					if ( tp->Pair ) wsprintf(szTempSkillDoc2,"%d-%d\r",tp->Arr[(rk-1)*2],tp->Arr[(rk-1)*2+1]);
+					else wsprintf(szTempSkillDoc2,"%d%s\r",tp->Arr[rk-1],tp->Suffix ? tp->Suffix : "");
+					lstrcat(szSkillInfoBuff2,szTempSkillDoc2);
+					LineCount++;
+				}
+				continue;
+			}
+		}
+
 		switch(pSkill->CODE){
 		/////////////////////메카니션 
 		case SKILL_EXTREME_SHIELD:	
@@ -6184,7 +6223,9 @@ int cSKILL::CheckSkillData()
 
 	//스킬정보 테이블의 조작을 방지한다 
 	for(i=0;i< SIN_MAX_SKILL;i++){
-		if ( (sSkill_Info[i].CODE&sinSKILL_MASK1)!=GROUP_OTHERSKILL && (sSkill_Info[i].CODE&CHANGE_JOB5) ) continue;	// the tier 5 rows came later: the sum stays the original's
+		if ( (sSkill_Info[i].CODE&sinSKILL_MASK1)!=GROUP_OTHERSKILL && (sSkill_Info[i].CODE&CHANGE_JOB5) ) continue;
+		if ( (sSkill_Info[i].CODE&sinSKILL_MASK1)==GROUP_ASSASSIN || (sSkill_Info[i].CODE&sinSKILL_MASK1)==GROUP_SHAMAN ||
+			(sSkill_Info[i].CODE&sinSKILL_MASK1)==GROUP_MARTIALARTIST ) continue;	// and so did the new classes'	// the tier 5 rows came later: the sum stays the original's
 		k = i+1;
 		SkillInfoDataCheckSum += k*sSkill_Info[i].RequireLevel;
 		SkillInfoDataCheckSum += k*sSkill_Info[i].UseStamina[0];

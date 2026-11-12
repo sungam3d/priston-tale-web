@@ -968,3 +968,6 @@ int Berserker_SubAbsorbOf( int dwParam )
 	if ( pt>9 ) pt = 9;
 	return (dwParam&BERSERKER_PARAM_BLOODY) ? Bloody_Berserker_SubAbsorb[pt] : Berserker_SubAbsorb[pt];
 }
+
+// the new classes' per-rank data and the engine table (generated)
+#include "NewClassSkill_Data.h"

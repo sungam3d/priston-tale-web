@@ -6326,6 +6326,7 @@ JOB_DATA_CODE	*GetJobDataCode(	DWORD BaseJob	, int	JobCnt )
 #endif
 
 
+#include "sinbaram\\NewClassSkill.h"		// the new classes' cast codes
 SKILL_DATA_CODE	SkillDataCode[] = {
 	{	"xxxxxxxxxxxxx"			,	0								},		//NULL Code
 	//1단계 메카니션
@@ -6538,6 +6539,7 @@ SKILL_DATA_CODE	SkillDataCode[] = {
 	{	"VisTenus"				,	SKILL_PLAY_VIS_TENUS			},
 	{	"Primaignis"			,	SKILL_PLAY_PRIMA_IGNIS			},
 	{	"ThirdAnima"			,	SKILL_PLAY_THIRD_ANIMA			},
+#include "sinbaram\\NewClassSkill_Clips.h"
 
 	{	"",0 }
 };

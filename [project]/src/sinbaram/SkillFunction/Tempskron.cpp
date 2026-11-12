@@ -2023,6 +2023,22 @@ int F_Side_Spin_Attack()
 	return TRUE;
 }
 
+//the new classes (Assassin, Shaman, Martial Artist): every skill's FuncPointer. The engine
+//table (NcSkills, NewClassSkill_Data.h) says what kind of skill it is.
+int F_NC_Skill()
+{
+	sNCSKILL *nc = NC_FindCode( pUseSkill->CODE );
+	if ( !nc || nc->Kind==NCK_PENDING || nc->Kind==NCK_PASSIVE ) return FALSE;
+	if ( nc->Kind==NCK_BUFF ) {
+		int t = NC_Rank( nc->Time , pUseSkill->Point );
+		pUseSkill->UseTime = t ? t : (nc->ConstTime ? nc->ConstTime : 60);
+		sinContinueSkillSet(pUseSkill);
+	}
+	sinUseManaStamina(pUseSkill);
+	if ( nc->Kind==NCK_BUFF ) cInvenTory.SetItemToChar();
+	return TRUE;
+}
+
 //Archer tier 5 (all four are shots)
 int F_Evade_Shot()		{ sinUseManaStamina(pUseSkill); return TRUE; }
 int F_Thunder_Rope()	{ sinUseManaStamina(pUseSkill); return TRUE; }

@@ -38,6 +38,127 @@ static sSKILL Skill_ScoutHawk;
 
 
 //스킬을 오픈한다
+/*----------------------------------------------------------------------------*
+*	The new classes' skills (Assassin, Shaman, Martial Artist): one engine driven by
+*	the NcSkills table (sinbaram/NewClassSkill_Data.h, generated from the 3215 client).
+*	Self casts here, target casts in NC_PlaySkillAttack, the motion events' extra hits
+*	and the effects in character.cpp (NC_BeginSkill / NC_EventSkill).
+*-----------------------------------------------------------------------------*/
+int RetryPlayAttack( smCHAR *lpChar );
+static int NC_AreaOf( sNCSKILL *nc , int point )
+{
+	int a = NC_Rank( nc->Area , point );
+	return a ? a : (nc->ConstArea ? nc->ConstArea : 80);
+}
+static int NC_HitsOf( sNCSKILL *nc , int point )
+{
+	int h = NC_Rank( nc->MaxHits , point );
+	return h ? h : (nc->ConstHits ? nc->ConstHits : 12);
+}
+
+// a self cast (buffs, and attacks around the caster): 0 when it is not one
+static int NC_OpenPlaySkill( sSKILL *lpSkill )
+{
+	sNCSKILL *nc = NC_FindCode( lpSkill->Skill_Info.CODE );
+	if ( !nc || !nc->Play || !lpSkill->Point ) return 0;
+	if ( nc->Kind!=NCK_BUFF && nc->Kind!=NCK_DEBUFF_SELF && nc->Kind!=NCK_POISON_SELF && nc->Kind!=NCK_MAGIC_AREA_SELF ) return 0;
+	if ( lpCurPlayer->MotionInfo->State>=0x100 ) return 0;
+	if ( lpSkill->Skill_Info.FuncPointer()!=TRUE ) return 0;
+
+	lpCurPlayer->AttackSkil = nc->Play | (lpSkill->Point<<8);
+	lpCurPlayer->BeginSkill( lpCurPlayer->AttackSkil , 0 , 0 ,0,0,0 );
+	lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+	lpCurPlayer->MotionLoopSpeed = 70;
+	lpCurPlayer->MotionLoop = 1;
+
+	if ( nc->Kind!=NCK_BUFF ) {
+		dm_SelectRange( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ, NC_AreaOf(nc,lpSkill->Point) , TRUE , NC_HitsOf(nc,lpSkill->Point) );
+		dm_SendRangeDamage( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ, 0 ,
+			cInvenTory.InvenItem[ sInven[0].ItemIndex-1 ].sItemInfo.Damage[0],
+			cInvenTory.InvenItem[ sInven[0].ItemIndex-1 ].sItemInfo.Damage[1], 0, 0, lpCurPlayer->AttackSkil );
+	}
+	return 1;
+}
+
+// a target cast: strikes, attacks around the target, magic and debuffs. -1 when it is not one
+static int NC_PlaySkillAttack( sSKILL *lpSkill , smCHAR *lpChar , short *wpDamage )
+{
+	sNCSKILL *nc = NC_FindCode( lpSkill->CODE );
+	if ( !nc ) return -1;
+	if ( !nc->Play || !lpSkill->Point ) return TRUE;
+	switch( nc->Kind ) {
+	case NCK_BUFF: case NCK_DEBUFF_SELF: case NCK_POISON_SELF: case NCK_MAGIC_AREA_SELF: case NCK_PASSIVE: case NCK_PENDING:
+		return TRUE;		// not a target cast
+	}
+	if ( lpSkill->Skill_Info.FuncPointer()!=TRUE ) return TRUE;
+
+	int magic = (nc->Kind==NCK_MAGIC || nc->Kind==NCK_MAGIC_AREA);
+	if ( !magic ) RetryPlayAttack( lpChar );
+	lpCurPlayer->AttackSkil = nc->Play | (lpSkill->Point<<8);
+	lpCurPlayer->BeginSkill( lpCurPlayer->AttackSkil , 0 , lpChar ,0,0,0 );
+	lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+	if ( nc->Kind==NCK_HIT || nc->Kind==NCK_MAGIC ) {
+		int rate = lpCurPlayer->smCharInfo.Attack_Rating;
+		int add = NC_Rank( nc->AddHit , lpSkill->Point );
+		if ( add ) lpCurPlayer->smCharInfo.Attack_Rating += (rate*add)/100;
+		int cnt = magic ? dm_SendTransDamage( lpChar , wpDamage[0],wpDamage[1] , 0, 0, lpCurPlayer->AttackSkil , FALSE )
+						: dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+		lpCurPlayer->smCharInfo.Attack_Rating = rate;
+		if ( !cnt ) lpCurPlayer->AttackCritcal = -1;
+		else {
+			lpCurPlayer->AttackCritcal = 0;
+			DamageExp( lpChar , cnt );
+			int drain = NC_Rank( nc->Drain , lpSkill->Point );		// Haunt: life back
+			if ( drain && sinGetLife()>0 ) {
+				int life = sinGetLife() + (cnt*drain)/100;
+				if ( life>lpCurPlayer->smCharInfo.Life[1] ) life = lpCurPlayer->smCharInfo.Life[1];
+				sinSetLife( life );
+			}
+		}
+	}
+	else {	// around the target
+		dm_SelectRange( lpChar->pX, lpChar->pY, lpChar->pZ, NC_AreaOf(nc,lpSkill->Point) , TRUE , NC_HitsOf(nc,lpSkill->Point) );
+		dm_AddRangeDamage( lpChar );
+		dm_SendRangeDamage( lpChar->pX, lpChar->pY, lpChar->pZ, lpChar , wpDamage[0], wpDamage[1], 0, 0, lpCurPlayer->AttackSkil );
+	}
+	lpCurPlayer->MotionLoopSpeed = magic ? GetAttackSpeedFrame( 8 ) : 70;
+	lpCurPlayer->MotionLoop = 1;
+	return TRUE;
+}
+
+// the cast range of a new-class skill (0 = the weapon's)
+static int NC_SkillDistRange( sSKILL *lpSkill , int AttackRange )
+{
+	sNCSKILL *nc = NC_FindCode( lpSkill->CODE );
+	if ( !nc || !lpSkill->Point ) return 0;
+	int r = NC_Rank( nc->Range , lpSkill->Point );
+	if ( !r ) r = nc->ConstRange;
+	if ( !r && (nc->Kind==NCK_MAGIC || nc->Kind==NCK_MAGIC_AREA) ) r = 180;
+	if ( !r && nc->Kind==NCK_DEBUFF_TGT ) r = 160;
+	if ( !r ) return 0;
+	return r*fONE > AttackRange ? r*fONE : AttackRange;
+}
+
+// extra evasion from the new classes' buffs and passives (character.cpp, when a hit comes in)
+int NC_GetEvasion()
+{
+	int ev = 0, i;
+	for( i=0; i<MAX_CONTINUE_SKILL; i++ ) {
+		if ( !ContinueSkill[i].Flag ) continue;
+		sNCSKILL *nc = NC_FindCode( ContinueSkill[i].CODE );
+		if ( nc && nc->Kind==NCK_BUFF && nc->Stat==NCS_EVADE ) ev += NC_Rank( nc->Val , ContinueSkill[i].Point );
+	}
+	for( i=1; i<SIN_MAX_USE_SKILL; i++ ) {
+		if ( !sinSkill.UseSkill[i].Flag || !sinSkill.UseSkill[i].Point ) continue;
+		sNCSKILL *nc = NC_FindCode( sinSkill.UseSkill[i].CODE );
+		if ( !nc || nc->Kind!=NCK_PASSIVE ) continue;
+		if ( nc->Stat==NCS_EVADE ) ev += NC_Rank( nc->Val , sinSkill.UseSkill[i].Point );
+		if ( nc->Stat2==NCS_EVADE ) ev += NC_Rank( nc->Val2 , sinSkill.UseSkill[i].Point );
+	}
+	return ev;
+}
+
 int OpenPlaySkill( sSKILL *lpSkill )
 {
 	int flag;
@@ -60,6 +181,9 @@ int OpenPlaySkill( sSKILL *lpSkill )
 	wpDamage[1] = cInvenTory.InvenItem[ sInven[0].ItemIndex-1 ].sItemInfo.Damage[1];
 
 	lpSkill->SkillTaget_CODE = 0;
+
+	cnt = NC_OpenPlaySkill( lpSkill );		// the new classes' self casts
+	if ( cnt ) return cnt;
 
 	switch( lpSkill->Skill_Info.CODE ) {
 				
@@ -1263,6 +1387,12 @@ int GetSkillDistRange( sSKILL *lpSkill , int AttackRange , int AttackMode )
 	NormalAttackRange = AttackRange;
 	NormalAttackMode = AttackMode;
 
+	cnt = NC_SkillDistRange( lpSkill , AttackRange );		// the new classes' magic and debuffs
+	if ( cnt ) {
+		LastAttackRange = cnt;
+		return cnt;
+	}
+
 	switch( lpSkill->CODE ) {
 	case SKILL_MECHANIC_BOMB:
 		if ( lpSkill->Point ) {
@@ -1494,6 +1624,9 @@ int PlaySkillAttack( sSKILL *lpSkill , smCHAR *lpChar )
 	wpDamage[1] = cInvenTory.InvenItem[ sInven[0].ItemIndex-1 ].sItemInfo.Damage[1];
 
 	lpSkill->SkillTaget_CODE = lpChar->dwObjectSerial;
+
+	cnt = NC_PlaySkillAttack( lpSkill , lpChar , wpDamage );		// the new classes' target casts
+	if ( cnt>=0 ) return cnt;
 
 	switch( lpSkill->CODE ) {
 	case SKILL_EXTREME_SHIELD:

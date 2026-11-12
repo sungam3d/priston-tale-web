@@ -230,6 +230,14 @@ int HoNewParticleMgr::Start(char *fileName, POINT3D pos, float startDelay)
 {
 	
     HoNewParticleScriptRes *scriptRes = g_NewParticleResMgr.FindScript(fileName);
+    if(scriptRes == NULL && fileName && fileName[0])
+    {
+        // not preloaded (the newer skills' scripts): load it from Effect\Particle\Script now
+        char path[256];
+        wsprintf(path, "Effect\\Particle\\Script\\%s.part", fileName);
+        if(g_NewParticleResMgr.LoadScript(path))
+            scriptRes = g_NewParticleResMgr.FindScript(fileName);
+    }
     if(scriptRes != NULL)
     {
         return Start(scriptRes, pos, startDelay);

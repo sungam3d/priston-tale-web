@@ -1891,6 +1891,7 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 							lpChar->PlaySlowCount = (16*Circle_Trap_SlowTime10[SkillPoint])/10;
 							lpChar->PlaySlowSpeed = 256-(256*Circle_Trap_Slow[SkillPoint])/100;
 						}
+						NC_ServerRangeHit( SkillCode , SkillPoint+1 , lpChar );		// the new classes: stun, weaken, slow, poison
 
 						Dmg3 = pow;
 
@@ -2946,6 +2947,121 @@ int rsCheckSkillLevel( rsPLAYINFO *lpPlayInfo , DWORD dwSkillCode )
 
 
 //스킬 공격 변환
+/*----------------------------------------------------------------------------*
+*	The new classes' skills (Assassin, Shaman, Martial Artist) on the server: the
+*	engine table NcSkills (sinbaram/NewClassSkill_Data.h, from the 3215 client) gives
+*	each skill's kind and per-rank numbers. pt = the rank, 1..10.
+*-----------------------------------------------------------------------------*/
+// magic damage: base min/max + level x (FLv/2) + spirit / divisor + weapon x multiplier
+static int NC_MagicPower( sNCSKILL *nc , int pt , int level , int spirit , int wmin , int wmax , int *mn , int *mx )
+{
+	if ( nc->Base ) {
+		*mn = nc->Base[(pt-1)*2];
+		*mx = nc->Base[(pt-1)*2+1];
+		if ( nc->FLv ) {
+			int l2 = NC_Rank( nc->FLv , pt ), d;
+			*mn += (level*l2)/2;
+			*mx += (level*l2)/2;
+			d = NC_Rank( nc->FSpiMin , pt ); if ( d ) *mn += spirit/d;
+			d = NC_Rank( nc->FSpiMax , pt ); if ( d ) *mx += spirit/d;
+			*mn += wmin*NC_Rank( nc->FWMin , pt );
+			*mx += wmax*NC_Rank( nc->FWMax , pt );
+		}
+		return TRUE;
+	}
+	if ( nc->Flat ) {
+		*mn = nc->Flat[(pt-1)*2];
+		*mx = nc->Flat[(pt-1)*2+1];
+		return TRUE;
+	}
+	return FALSE;
+}
+
+// a strike or single-target magic
+static int NC_ServerSkillAttack( sNCSKILL *nc , rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA *ad , TRANS_ATTACKDATA2 *ad2 , int pt )
+{
+	if ( lpPlayInfo->smCharInfo.JOB_CODE!=nc->Job ) return FALSE;
+	if ( nc->Kind==NCK_HIT ) {
+		int pct = NC_Rank( nc->Pct , pt );
+		if ( pct ) ad->Power += (ad->Power*pct)/100;
+		if ( nc->Flat ) ad->Power += GetRandomPos( nc->Flat[(pt-1)*2] , nc->Flat[(pt-1)*2+1] );
+		int crit = NC_Rank( nc->Crit , pt );
+		if ( crit ) ad2->Critical[0] += crit;
+		return TRUE;
+	}
+	if ( nc->Kind==NCK_MAGIC ) {
+		int mn, mx;
+		if ( !NC_MagicPower( nc , pt , lpPlayInfo->smCharInfo.Level , ad2->Critical[1] , ad2->Power2[0] , ad2->Power2[1] , &mn , &mx ) ) return FALSE;
+		ad->Power = GetRandomPos( mn , mx );
+		ad2->Critical[0] = 0;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+// an area skill (around the target or the caster), area magic, debuffs and poison
+static int NC_ServerRangeAttack( sNCSKILL *nc , rsPLAYINFO *lpPlayInfo , TRANS_ATTACKDATA *ad , TRANS_SKIL_ATTACKDATA *sd , TRANS_SKIL_ATTACKDATA2 *ra , int pt )
+{
+	if ( lpPlayInfo->smCharInfo.JOB_CODE!=nc->Job ) return FALSE;
+	int hits = NC_Rank( nc->MaxHits , pt );
+	if ( !hits ) hits = nc->ConstHits ? nc->ConstHits : 12;
+	if ( sd->TargetCount>hits+1 ) return FALSE;
+	int area = NC_Rank( nc->Area , pt );
+	if ( !area ) area = nc->ConstArea ? nc->ConstArea : 80;
+
+	int pow = 1, crit = 0, mn, mx;
+	switch( nc->Kind ) {
+	case NCK_AREA_TGT: case NCK_AREA_SELF:
+		pow = GetRandomPos( ra->Power[0] , ra->Power[1] );
+		pow += (pow*NC_Rank( nc->Pct , pt ))/100;
+		if ( nc->Flat ) pow += GetRandomPos( nc->Flat[(pt-1)*2] , nc->Flat[(pt-1)*2+1] );
+		crit = ra->Critical[0];
+		break;
+	case NCK_MAGIC_AREA: case NCK_MAGIC_AREA_SELF:
+		if ( !NC_MagicPower( nc , pt , lpPlayInfo->smCharInfo.Level , ra->Critical[1] , ra->Power2[0] , ra->Power2[1] , &mn , &mx ) ) return FALSE;
+		pow = GetRandomPos( mn , mx );
+		break;
+	case NCK_DEBUFF_SELF: case NCK_DEBUFF_TGT: case NCK_POISON_SELF:
+		pow = 1;		// the effect is the debuff (NC_ServerRangeHit)
+		break;
+	default:
+		return FALSE;
+	}
+	ad->Power = pow;
+	sd->AttackSize = area;
+	sd->Power = pow;
+	sd->AttackState = 0;
+	dm_Critical_Temp = crit;
+	return TRUE;
+}
+
+// each monster an area skill reached: stun, weaken, slow, poison
+void NC_ServerRangeHit( int play , int pt , smCHAR *lpChar )
+{
+	sNCSKILL *nc = NC_FindPlay( play );
+	if ( !nc || !lpChar ) return;
+	int boss = (lpChar->smCharInfo.wPlayClass[0]==MONSTER_CLASS_BOSS);
+	int t = NC_Rank( nc->Time , pt );
+	if ( !t ) t = nc->ConstTime ? nc->ConstTime : 5;
+	int v = NC_Rank( nc->Val , pt );
+	if ( nc->Kind==NCK_POISON_SELF && nc->Flat ) {
+		lpChar->PlayPoison[0] = GetRandomPos( nc->Flat[(pt-1)*2] , nc->Flat[(pt-1)*2+1] );
+		lpChar->PlayPoison[1] = t*17;
+		return;
+	}
+	if ( nc->Kind!=NCK_DEBUFF_SELF && nc->Kind!=NCK_DEBUFF_TGT ) return;
+	switch( nc->Stat ) {
+	case NCS_STUN:		if ( !boss ) lpChar->PlayStunCount = 16*t;	break;
+	case NCS_WEAKEN:	lpChar->PlayHolyMind[0] = v; lpChar->PlayHolyMind[1] = 16*t;	break;
+	case NCS_SLOW:
+		if ( !boss ) {
+			lpChar->PlaySlowCount = 16*t;
+			lpChar->PlaySlowSpeed = 256-(256*(v<90 ? v : 90))/100;
+		}
+		break;
+	}
+}
+
 int rsSetSkillAttack( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA *lpTransAttackData , TRANS_ATTACKDATA2 *lpTransAttackData2 ) 
 {
 	DWORD	dwSkillCode;
@@ -2980,6 +3096,11 @@ int rsSetSkillAttack( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA
 			lpPlayInfo->WarningCount++;
 		}
 		return FALSE;
+	}
+
+	{	// the new classes' strikes and magic
+		sNCSKILL *nc = NC_FindPlay( dwSkillCode );
+		if ( nc ) return NC_ServerSkillAttack( nc , lpPlayInfo , lpChar , lpTransAttackData , lpTransAttackData2 , Point+1 );
 	}
 
 	switch( dwSkillCode ) {
@@ -4779,6 +4900,11 @@ int rsSetSkillRangeAttack( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTAC
 			lpPlayInfo->WarningCount++;
 		}
 		return FALSE;
+	}
+
+	{	// the new classes' area skills
+		sNCSKILL *nc = NC_FindPlay( dwSkillCode );
+		if ( nc ) return NC_ServerRangeAttack( nc , lpPlayInfo , lpTransAttackData , lpTransSkillAttackData , lpTransRangeAttack , Point+1 );
 	}
 
 	switch( dwSkillCode ) {
