@@ -4554,6 +4554,24 @@ int cSKILL::ShowSkillInfo(sSKILL *pSkill , sSKILLBOX *pSkillBox ,  int Icon )
 			T5TIP("Attack Power:\r", "+%d%s\r", Power_Enhancement_Damage[T5P], "%");
 			T5TIP(CountinueTime, "%d%s\r", Power_Enhancement_Time[T5P], SecName);
 		break;
+		//[Pikeman] tier 5
+		case SKILL_DANCING_REAPER:
+			T5TIP(AddPercentDamage4, "%d%s\r", Dancing_Reaper_DamagePercent[T5P], "%");
+		break;
+		case SKILL_FINAL_SPEAR:
+			T5TIP(AreaDamage4, "%d-%d\r", Final_Spear_AreaDamage[T5P][0], Final_Spear_AreaDamage[T5P][1]);
+			T5TIP(AttackAreaName, "%d\r", Final_Spear_Area[T5P]);
+		break;
+		case SKILL_AMPLIFIED:
+			T5TIP("Attack Power:\r", "+%d%s\r", Amplified_Damage[T5P], "%");
+			T5TIP("Attack Rating:\r", "+%d%s\r", Amplified_AddHit[T5P], "%");
+			T5TIP("Absorption:\r", "%d\r", Amplified_SubAbsorb[T5P]);
+			T5TIP(CountinueTime, "%d%s\r", Amplified_Time[T5P], SecName);
+		break;
+		case SKILL_SIDE_SPIN_ATTACK:
+			T5TIP(AddPercentDamage4, "%d%s\r", Side_Spin_DamagePercent[T5P], "%");
+			T5TIP("Life Drain:\r", "%d%s\r", Side_Spin_LifeAbsorb[T5P], "%");
+		break;
 		//[Fighter] tier 5
 		case SKILL_DOWN_HIT:
 			lstrcpy(szTempSkillDoc,AddPercentDamage4);

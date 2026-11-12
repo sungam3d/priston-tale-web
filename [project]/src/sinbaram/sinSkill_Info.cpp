@@ -777,6 +777,25 @@ int Power_Enhancement_Damage[10]	= {4,10,16,22,28,34,40,46,52,58};			//min and m
 int Power_Enhancement_Area[10]		= {200,220,240,260,280,300,320,340,360,380};	//party reach
 int Power_Enhancement_Time[10]		= {120,140,160,180,200,220,240,260,280,300};	//seconds
 
+//[Pikeman] tier 5
+//Dancing Reaper: leaps and lands one heavy strike
+int Dancing_Reaper_DamagePercent[10]	= {60,80,100,120,140,160,180,200,220,240};	//attack power +%
+
+//Final Spear: spears burst from the ground around the caster
+int Final_Spear_Area[10]			= {120,130,140,150,160,170,180,190,200,210};	//radius
+int Final_Spear_AreaDamage[10][2]	= {{250,300},{270,350},{290,400},{310,450},{330,500},
+									   {350,550},{370,600},{390,650},{410,700},{430,750}};	//added damage
+
+//Amplified: less absorption for more damage and attack rating
+int Amplified_SubAbsorb[10]			= {-5,-7,-9,-11,-13,-15,-17,-19,-21,-23};		//absorption
+int Amplified_AddHit[10]			= {30,35,40,45,50,55,60,65,70,75};			//attack rating +%
+int Amplified_Damage[10]			= {30,40,50,60,70,80,90,100,110,120};		//attack power +%
+int Amplified_Time[10]				= {120,140,160,180,200,220,240,260,280,300};	//seconds
+
+//Side Spin Attack: a sliding strike that drains life
+int Side_Spin_DamagePercent[10]		= {40,60,80,100,120,140,160,180,200,220};	//attack power +%
+int Side_Spin_LifeAbsorb[10]		= {10,13,16,19,22,25,28,31,34,37};			//% of the hit back as life
+
 //[Fighter] tier 5
 //Down Hit: lifts the target and strikes it 3 times
 int Down_Hit_DamagePercent[10]		= {50,80,110,140,170,200,230,260,290,320};	//attack power +%

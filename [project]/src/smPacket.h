@@ -1382,6 +1382,9 @@ public:
 	//tier 5 Mechanician: Power Enhancement (attack power +%)
 	DWORD	dwSkill_PowerEnhance_Time;
 	int		dwSkill_PowerEnhance_Param;
+	//tier 5 Pikeman: Amplified (attack power +%)
+	DWORD	dwSkill_Amplified_Time;
+	int		dwSkill_Amplified_Param;
 	//피지컬
 	DWORD	dwSkill_PhysicalAbsorb_Time;
 	int		dwSkill_PhysicalAbsorb_Param;

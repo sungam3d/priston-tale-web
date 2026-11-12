@@ -5485,6 +5485,13 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 				sinTempDamage2[1] += (int)((Power_Enhancement_Damage[ContinueSkill[i].Point-1]*TempDamage[1])/100);
 				SkillTextColor[SIN2_DAMAGE] = SIN_TEXT_COLOR_GOLD;
 			break;
+			case SKILL_AMPLIFIED:			// tier 5 Pikeman: attack power +% (the server applies it), less absorption
+				sinTempDamage2[0] += (int)((Amplified_Damage[ContinueSkill[i].Point-1]*TempDamage[0])/100);
+				sinTempDamage2[1] += (int)((Amplified_Damage[ContinueSkill[i].Point-1]*TempDamage[1])/100);
+				sinTempAbsorb += Amplified_SubAbsorb[ContinueSkill[i].Point-1];
+				SkillTextColor[SIN2_DAMAGE] = SIN_TEXT_COLOR_GOLD;
+				SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_RED;
+			break;
 			case SKILL_ASSASSIN_EYE:
 				//sinCritical += Assassin_Eye_AddCritical[ContinueSkill[i].Point-1];
 			break;
@@ -6308,7 +6315,12 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 				case SKILL_DRASTIC_SPIRIT:
 					TempSkillData = ((float)Drastic_Spirit_Defense[ContinueSkill[i].Point-1]/100.0f);
 					sinChar->Defence += (int)((float)sinChar->Defence * TempSkillData);
-					SkillTextColor[SIN2_DEFENSE] = SIN_TEXT_COLOR_BLUE; 
+					SkillTextColor[SIN2_DEFENSE] = SIN_TEXT_COLOR_BLUE;
+				break;
+				case SKILL_AMPLIFIED:		// tier 5 Pikeman: attack rating +%
+					sinChar->Attack_Rating += (sinChar->Attack_Rating*Amplified_AddHit[ContinueSkill[i].Point-1])/100;
+					SkillTextColor[SIN2_ATTACK_RATE] = SIN_TEXT_COLOR_ORANGE;
+					SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_RED;
 				break;
 				case SKILL_SPARK_SHIELD: //계산은 위에서하고 글자 색만 보정해준다
 				case SKILL_METAL_ARMOR: 

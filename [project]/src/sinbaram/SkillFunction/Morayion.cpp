@@ -41,6 +41,7 @@ DWORD sinNotToggleSkill_CODE[][5] = {
 	{SKILL_BLOODY_BERSERKER,0},		// tier 5 (it replaces a running Berserker: F_Bloody_Berserker)
 	{SKILL_HYPER_SONIC,0},
 	{SKILL_POWER_ENHANCEMENT,0},
+	{SKILL_AMPLIFIED,0},
 	{SKILL_ASSASSIN_EYE,0},
 	{SKILL_VAGUE,0},
 	{SKILL_RECALL_WOLVERIN,0},

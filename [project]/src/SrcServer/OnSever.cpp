@@ -11550,6 +11550,8 @@ int AddNewPlayInfo( smWINSOCK *lpsmSock )
 	rsPlayInfo[cnt].dwSkill_Maximize_Param = 0;
 	rsPlayInfo[cnt].dwSkill_PowerEnhance_Time = 0;
 	rsPlayInfo[cnt].dwSkill_PowerEnhance_Param = 0;
+	rsPlayInfo[cnt].dwSkill_Amplified_Time = 0;
+	rsPlayInfo[cnt].dwSkill_Amplified_Param = 0;
 	rsPlayInfo[cnt].dwSkill_PhysicalAbsorb_Time = 0;
 	rsPlayInfo[cnt].dwSkill_PhysicalAbsorb_Param = 0;
 	rsPlayInfo[cnt].dwSkill_ExtreamShield_Time = 0;
@@ -31630,6 +31632,11 @@ int rsCancelSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand )
 			lpPlayInfo->dwSkill_Maximize_Param = 0;
 			break;
 
+		case SKILL_PLAY_AMPLIFIED:
+			lpPlayInfo->dwSkill_Amplified_Time = 0;
+			lpPlayInfo->dwSkill_Amplified_Param = 0;
+			break;
+
 		case SKILL_PLAY_POWER_ENHANCEMENT:
 			lpPlayInfo->dwSkill_PowerEnhance_Time = 0;
 			lpPlayInfo->dwSkill_PowerEnhance_Param = 0;
@@ -31997,6 +32004,13 @@ int rsRecvProcessSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand
 			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_FIGHTER ) {
 				lpPlayInfo->dwSkill_Berserker_Time = dwPlayServTime+Berserker_Time[point]*1000;
 				lpPlayInfo->dwSkill_Berserker_Param = point;//Berserker_AddAttack[point];
+			}
+			break;
+
+		case SKILL_PLAY_AMPLIFIED:		// tier 5
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_PIKEMAN && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpPlayInfo->dwSkill_Amplified_Time = dwPlayServTime+Amplified_Time[point]*1000;
+				lpPlayInfo->dwSkill_Amplified_Param = Amplified_Damage[point];
 			}
 			break;
 

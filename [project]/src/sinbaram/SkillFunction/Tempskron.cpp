@@ -1998,6 +1998,31 @@ int F_Power_Enhancement()
 	return TRUE;
 }
 
+//Pikeman tier 5
+int F_Dancing_Reaper()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Final_Spear()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Amplified()
+{
+	pUseSkill->UseTime = Amplified_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();		// absorption, attack rating, shown damage
+	return TRUE;
+}
+int F_Side_Spin_Attack()
+{
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+
 //파이크맨
 int F_Assassin_Eye()
 {

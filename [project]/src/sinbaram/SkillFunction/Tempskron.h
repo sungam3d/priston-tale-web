@@ -314,6 +314,21 @@ extern int Power_Enhancement_Damage[10];
 extern int Power_Enhancement_Area[10];
 extern int Power_Enhancement_Time[10];
 
+//Pikeman tier 5
+extern int Dancing_Reaper_DamagePercent[10];
+extern int Final_Spear_Area[10];
+extern int Final_Spear_AreaDamage[10][2];
+extern int Amplified_SubAbsorb[10];
+extern int Amplified_AddHit[10];
+extern int Amplified_Damage[10];
+extern int Amplified_Time[10];
+extern int Side_Spin_DamagePercent[10];
+extern int Side_Spin_LifeAbsorb[10];
+int F_Dancing_Reaper();
+int F_Final_Spear();
+int F_Amplified();
+int F_Side_Spin_Attack();
+
 //Fighter tier 5
 extern int Down_Hit_DamagePercent[10];
 extern int Down_Hit_AddHit[10];

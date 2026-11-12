@@ -12014,6 +12014,22 @@ int smCHAR::BeginSkill( int SkilCode , int Level , smCHAR *lpTarChar , int x, in
 		SkillPlaySound( SKILL_SOUND_SKILL_MAXIMIZE2 , pX,pY,pZ );
 		break;
 
+	//Pikeman tier 5 (the older skills' effects for now)
+	case SKILL_PLAY_DANCING_REAPER:
+		AssaParticle_VeonmSpearPike( this );
+		SkillPlaySound( SKILL_SOUND_JUMPING_CRASH1 , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_FINAL_SPEAR:
+		SkillPlaySound( SKILL_SOUND_SKILL_EXPANSION1 , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_AMPLIFIED:
+		SkillWarriorBetserker( this , (float)(point ? Amplified_Time[point-1] : 120) );
+		SkillPlaySound( SKILL_SOUND_SKILL_BERSERKER , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_SIDE_SPIN_ATTACK:
+		SkillPlaySound( SKILL_SOUND_SKILL_EXPANSION1 , pX,pY,pZ );
+		break;
+
 	case SKILL_PLAY_ASSASSIN_EYE:
 		SkillPlaySound( SKILL_SOUND_SKILL_ASSASSIN_EYE	 , pX,pY,pZ );
 		break;
@@ -14719,6 +14735,34 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 				cnt = dm_SendTransDamage( chrAttackTarget , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
 				smCharInfo.Attack_Rating = t5rate;
 				lpCurPlayer->AttackCritcal = cnt ? 0 : -1;
+			}
+		}
+		break;
+
+	//Pikeman tier 5
+	case SKILL_PLAY_DANCING_REAPER:
+	case SKILL_PLAY_SIDE_SPIN_ATTACK:
+		if ( chrAttackTarget && AttackCritcal>=0 && GetAttackPoint( &x,&y,&z )==TRUE ) {
+			StartSkill( x,y,z, 0,0,0, SKILL_TRIPLE_IMPACT );
+			SetDynLight( x,y,z , 120, 0,0,0, 400 );
+			SkillPlaySound( SKILL_SOUND_SKILL_EXPANSION2 , pX,pY,pZ );
+		}
+		break;
+
+	case SKILL_PLAY_FINAL_SPEAR:
+		if ( point ) {
+			if ( lpCurPlayer!=this ) {
+				dm_SelectRange( pX, pY, pZ, Final_Spear_Area[point-1] , TRUE , 12 );
+				dm_AddRangeDamage( chrAttackTarget );
+			}
+			if ( MotionEvent==1 ) {
+				GetMoveLocation( 0 , 0, 32*fONE , 0, Angle.y , 0 );
+				StartSkill( pX+GeoResult_X,pY,pZ+GeoResult_Z, 0, Angle.y,0, SKILL_GROUND_PIKE , point );
+				SetDynLight( pX,pY,pZ, 0, 0,100,0, 700 );
+				SkillPlaySound( SKILL_SOUND_SKILL_GROUND_PIKE , pX,pY,pZ );
+			}
+			for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
+				StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
 			}
 		}
 		break;

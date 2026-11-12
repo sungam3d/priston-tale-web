@@ -3669,6 +3669,16 @@ int rsSetSkillAttack( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA
 			}
 			break;
 
+		//Pikeman tier 5 (the fifth rank only)
+		case SKILL_PLAY_DANCING_REAPER:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_PIKEMAN || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Dancing_Reaper_DamagePercent[Point])/100;
+			break;
+		case SKILL_PLAY_SIDE_SPIN_ATTACK:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_PIKEMAN || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Side_Spin_DamagePercent[Point])/100;
+			break;
+
 		//Mechanician tier 5 (the fifth rank only)
 		case SKILL_PLAY_ROLLING_SMASH:
 			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_MECHANICIAN || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
@@ -3772,6 +3782,19 @@ int rsSetSkillPlus( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA *
 			lpTransAttackData2->Power[0] += (lpTransAttackData2->Power[0]*lpPlayInfo->dwSkill_PowerEnhance_Param)/100;
 			lpTransAttackData2->Power[1] += (lpTransAttackData2->Power[1]*lpPlayInfo->dwSkill_PowerEnhance_Param)/100;
 			lpTransAttackData->Power += (lpTransAttackData->Power*lpPlayInfo->dwSkill_PowerEnhance_Param)/100;
+		}
+	}
+
+	if ( lpPlayInfo->dwSkill_Amplified_Time ) {
+		//tier 5 Pikeman: Amplified, attack power +% (its absorption cost is the client's)
+		if ( lpPlayInfo->dwSkill_Amplified_Time<dwPlayServTime ) {
+			lpPlayInfo->dwSkill_Amplified_Time = 0;
+			lpPlayInfo->dwSkill_Amplified_Param = 0;
+		}
+		else {
+			lpTransAttackData2->Power[0] += (lpTransAttackData2->Power[0]*lpPlayInfo->dwSkill_Amplified_Param)/100;
+			lpTransAttackData2->Power[1] += (lpTransAttackData2->Power[1]*lpPlayInfo->dwSkill_Amplified_Param)/100;
+			lpTransAttackData->Power += (lpTransAttackData->Power*lpPlayInfo->dwSkill_Amplified_Param)/100;
 		}
 	}
 
@@ -5175,6 +5198,19 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 			lpTransAttackData->Power+= (lpTransAttackData->Power*Mortal_Blow_DamagePercent[Point])/100;
 			lpTransSkillAttackData->AttackSize = Mortal_Blow_Area[Point];
 			lpTransSkillAttackData->Power = GetRandomPos( Mortal_Blow_AreaDamage[Point][0] , Mortal_Blow_AreaDamage[Point][1] );
+			lpTransSkillAttackData->AttackState = 0;
+			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
+			return TRUE;
+
+		case SKILL_PLAY_FINAL_SPEAR:		//Pikeman tier 5: weapon damage plus the spears', around the caster
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_PIKEMAN || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			if ( lpTransSkillAttackData->TargetCount>13 ) return FALSE;
+
+			pow = GetRandomPos( lpTransRangeAttack->Power[0] , lpTransRangeAttack->Power[1] );
+			pow += GetRandomPos( Final_Spear_AreaDamage[Point][0] , Final_Spear_AreaDamage[Point][1] );
+			lpTransAttackData->Power = pow;
+			lpTransSkillAttackData->AttackSize = Final_Spear_Area[Point];
+			lpTransSkillAttackData->Power = pow;
 			lpTransSkillAttackData->AttackState = 0;
 			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
 			return TRUE;

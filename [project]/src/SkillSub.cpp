@@ -930,11 +930,18 @@ int OpenPlaySkill( sSKILL *lpSkill )
 		break;
 
 	//Mechanician tier 5 buffs
-	case SKILL_HYPER_SONIC:			//attack speed, any weapon (the client counts it)
-	case SKILL_POWER_ENHANCEMENT:	//attack power, on the server
+	//tier 5 self buffs: the client keeps the timer; those the server counts are sent to it
+	case SKILL_HYPER_SONIC:			//Mechanician: attack speed, any weapon (the client counts it)
+	case SKILL_POWER_ENHANCEMENT:	//Mechanician: attack power (the server)
+	case SKILL_AMPLIFIED:			//Pikeman: damage (the server), attack rating and absorption (the client)
 		if ( lpCurPlayer->MotionInfo->State<0x100 ) {
-			if ( lpSkill->Skill_Info.FuncPointer()==TRUE && lpSkill->Point ) {
-				int t5play = (lpSkill->CODE==SKILL_HYPER_SONIC) ? SKILL_PLAY_HYPER_SONIC : SKILL_PLAY_POWER_ENHANCEMENT;
+			int t5play = 0, t5server = 0;
+			switch( lpSkill->CODE ) {
+			case SKILL_HYPER_SONIC:			t5play = SKILL_PLAY_HYPER_SONIC;							break;
+			case SKILL_POWER_ENHANCEMENT:	t5play = SKILL_PLAY_POWER_ENHANCEMENT;	t5server = 1;	break;
+			case SKILL_AMPLIFIED:			t5play = SKILL_PLAY_AMPLIFIED;			t5server = 1;	break;
+			}
+			if ( t5play && lpSkill->Skill_Info.FuncPointer()==TRUE && lpSkill->Point ) {
 				lpCurPlayer->AttackSkil = t5play;
 				lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
 				lpCurPlayer->BeginSkill( lpCurPlayer->AttackSkil , 0 , 0 ,0,0,0 );
@@ -943,8 +950,8 @@ int OpenPlaySkill( sSKILL *lpSkill )
 				lpCurPlayer->MotionLoopSpeed = 70;
 				lpCurPlayer->MotionLoop = 1;
 
-				if ( t5play==SKILL_PLAY_POWER_ENHANCEMENT )
-					SendProcessSKillToServer( SKILL_PLAY_POWER_ENHANCEMENT , lpSkill->Point , 0, 0 );
+				if ( t5server )
+					SendProcessSKillToServer( t5play , lpSkill->Point , 0, 0 );
 
 				flag++;
 			}
@@ -3439,6 +3446,50 @@ int Avalanche_ArrowNum[10]	= {3,3,3,4,4,4,5,5,5,6};
 				lpCurPlayer->AttackCritcal = -1;
 
 			lpCurPlayer->MotionLoopSpeed = GetAttackSpeedFrame( lpCurPlayer->smCharInfo.Attack_Speed , 1 );
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	//Pikeman tier 5
+	case SKILL_DANCING_REAPER:
+	case SKILL_SIDE_SPIN_ATTACK:
+		//one heavy strike (Side Spin Attack also drains life: the share of an average hit)
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = (lpSkill->CODE==SKILL_DANCING_REAPER) ? SKILL_PLAY_DANCING_REAPER : SKILL_PLAY_SIDE_SPIN_ATTACK;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+			else if ( lpSkill->CODE==SKILL_SIDE_SPIN_ATTACK && lpSkill->Point ) {
+				int pt = lpSkill->Point-1;
+				int hit = (lpCurPlayer->smCharInfo.Attack_Damage[0]+lpCurPlayer->smCharInfo.Attack_Damage[1])/2;
+				hit += (hit*Side_Spin_DamagePercent[pt])/100;
+				int life = sinGetLife() + (hit*Side_Spin_LifeAbsorb[pt])/100;
+				if ( life>lpCurPlayer->smCharInfo.Life[1] ) life = lpCurPlayer->smCharInfo.Life[1];
+				if ( sinGetLife()>0 ) sinSetLife( life );
+			}
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	case SKILL_FINAL_SPEAR:
+		//spears burst from the ground: the target and the enemies around the caster
+		if ( lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_FINAL_SPEAR;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			dm_SelectRange( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ, Final_Spear_Area[lpSkill->Point-1] , TRUE , 12 );
+			dm_AddRangeDamage( lpChar );
+			dm_SendRangeDamage( lpCurPlayer->pX, lpCurPlayer->pY, lpCurPlayer->pZ,  lpChar , 0 , 0 ,0,0, lpCurPlayer->AttackSkil );
+
+			lpCurPlayer->MotionLoopSpeed = 70;
 			lpCurPlayer->MotionLoop = 1;
 		}
 		return TRUE;
