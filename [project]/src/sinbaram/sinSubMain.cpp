@@ -547,13 +547,16 @@ int sinSetInvenItem(sITEMINFO *sItemInfo ) //아이템을 집을때 함수가 �
 
 		if ( sinGM_DeckOutCount>0 ) {
 			// GM /DeckMeOut!: on into its (emptied) slot, else into the bag, else onto the ground
+			// (on even without the stats for it yet: it shows red and waits until they are spent)
 			sinGM_DeckOutCount--;
 			cInvenTory.CheckRequireItemToSet(&sinTempItem);
+			sinTempItem.sItemInfo.NotUseFlag = 0;
 			if(!cInvenTory.AutoSetInvenItem(&sinTempItem)){
 				if(sinThrowItemToFeild(&sinTempItem))
 					sinTempItem.Flag = 0;
 			}
 			else{
+				cInvenTory.CheckRequireItem();		// mark what the stats don't cover yet
 				cInvenTory.SetItemToChar();
 				cInvenTory.CheckWeight();
 			}

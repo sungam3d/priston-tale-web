@@ -18628,9 +18628,10 @@ static int DeckPickItem( rsPLAYINFO *lpPlayInfo , DWORD dwFamily , int Aging , s
 		CreateDefItem( lpItem , &DefaultItems[best] , JobCode );
 		Random_MaxMode = 0;
 
-		if ( lpItem->Level>lpChar->Level || lpItem->Strength>lpChar->Strength || lpItem->Spirit>lpChar->Spirit ||
-			lpItem->Talent>lpChar->Talent || lpItem->Dexterity>lpChar->Dexterity || lpItem->Health>lpChar->Health )
-			continue;				// the player can't wear it yet: the next best
+		// by level only: a GM's stat points are often still unspent (/MakeMeLevel), and an item
+		// worn without the stats for it just waits (shown red) until they are spent
+		if ( lpItem->Level>lpChar->Level )
+			continue;				// its specialisation pushed the level past the player's: the next best
 
 		if ( Aging>0 ) {
 			DWORD dwFam = lpItem->CODE&sinITEM_MASK2;
