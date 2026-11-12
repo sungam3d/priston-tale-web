@@ -346,6 +346,20 @@ int F_Thunder_Rope();
 int F_Nature_Splash();
 int F_Circle_Trap();
 
+//Knight tier 5
+extern int Soul_Breaker_DamagePercent[10];
+extern int Soul_Breaker_AddHit[10];
+extern int Crescent_Moon_DamagePercent[10];
+extern int Crescent_Moon_Range[10];
+extern int Saint_Blade_DamagePercent[10];
+extern int Saint_Blade_Undead[10];
+extern int Holy_Benedic_Undead[10];
+extern int Holy_Benedic_Time[10];
+int F_Soul_Breaker();
+int F_Crescent_Moon();
+int F_Saint_Blade();
+int F_Holy_Benedic();
+
 //Fighter tier 5
 extern int Down_Hit_DamagePercent[10];
 extern int Down_Hit_AddHit[10];

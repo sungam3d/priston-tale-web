@@ -934,9 +934,11 @@ int OpenPlaySkill( sSKILL *lpSkill )
 	case SKILL_HYPER_SONIC:			//Mechanician: attack speed, any weapon (the client counts it)
 	case SKILL_POWER_ENHANCEMENT:	//Mechanician: attack power (the server)
 	case SKILL_AMPLIFIED:			//Pikeman: damage (the server), attack rating and absorption (the client)
+	case SKILL_HOLY_BENEDIC:		//Knight: damage against the undead (the server)
 		if ( lpCurPlayer->MotionInfo->State<0x100 ) {
 			int t5play = 0, t5server = 0;
 			switch( lpSkill->CODE ) {
+			case SKILL_HOLY_BENEDIC:		t5play = SKILL_PLAY_HOLY_BENEDIC;		t5server = 1;	break;
 			case SKILL_HYPER_SONIC:			t5play = SKILL_PLAY_HYPER_SONIC;							break;
 			case SKILL_POWER_ENHANCEMENT:	t5play = SKILL_PLAY_POWER_ENHANCEMENT;	t5server = 1;	break;
 			case SKILL_AMPLIFIED:			t5play = SKILL_PLAY_AMPLIFIED;			t5server = 1;	break;
@@ -1371,6 +1373,15 @@ int GetSkillDistRange( sSKILL *lpSkill , int AttackRange , int AttackMode )
 		return 200*fONE;
 
 	//tier 5
+	case SKILL_CRESCENT_MOON:
+		if ( lpSkill->Point ) {
+			cnt = Crescent_Moon_Range[lpSkill->Point-1]*fONE;
+			if ( AttackRange>cnt ) break;
+			LastAttackRange = cnt;
+			return cnt;
+		}
+		break;
+
 	case SKILL_THUNDER_ROPE:
 		if ( lpSkill->Point ) {
 			cnt = AttackRange+Thunder_Rope_Range[lpSkill->Point-1]*fONE;
@@ -3480,6 +3491,34 @@ int Avalanche_ArrowNum[10]	= {3,3,3,4,4,4,5,5,5,6};
 				if ( life>lpCurPlayer->smCharInfo.Life[1] ) life = lpCurPlayer->smCharInfo.Life[1];
 				if ( sinGetLife()>0 ) sinSetLife( life );
 			}
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	//Knight tier 5: single strikes (Soul Breaker with more accuracy, Crescent Moon from afar,
+	//Saint Blade with more against the undead)
+	case SKILL_SOUL_BREAKER:
+	case SKILL_CRESCENT_MOON:
+	case SKILL_SAINT_BLADE:
+		if ( lpSkill->Point && lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			switch( lpSkill->CODE ) {
+			case SKILL_SOUL_BREAKER:	lpCurPlayer->AttackSkil = SKILL_PLAY_SOUL_BREAKER;	break;
+			case SKILL_CRESCENT_MOON:	lpCurPlayer->AttackSkil = SKILL_PLAY_CRESCENT_MOON;	break;
+			default:					lpCurPlayer->AttackSkil = SKILL_PLAY_SAINT_BLADE;	break;
+			}
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			temp = lpCurPlayer->smCharInfo.Attack_Rating;
+			if ( lpSkill->CODE==SKILL_SOUL_BREAKER )
+				lpCurPlayer->smCharInfo.Attack_Rating += (temp*Soul_Breaker_AddHit[lpSkill->Point-1])/100;
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			lpCurPlayer->smCharInfo.Attack_Rating = temp;
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
 
 			lpCurPlayer->MotionLoopSpeed = 70;
 			lpCurPlayer->MotionLoop = 1;

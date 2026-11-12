@@ -2029,6 +2029,18 @@ int F_Thunder_Rope()	{ sinUseManaStamina(pUseSkill); return TRUE; }
 int F_Nature_Splash()	{ sinUseManaStamina(pUseSkill); return TRUE; }
 int F_Circle_Trap()		{ sinUseManaStamina(pUseSkill); return TRUE; }
 
+//Knight tier 5
+int F_Soul_Breaker()	{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Crescent_Moon()	{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Saint_Blade()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Holy_Benedic()
+{
+	pUseSkill->UseTime = Holy_Benedic_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+
 //파이크맨
 int F_Assassin_Eye()
 {

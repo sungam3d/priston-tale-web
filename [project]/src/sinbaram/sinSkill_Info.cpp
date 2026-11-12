@@ -816,6 +816,23 @@ int Circle_Trap_Area[10]			= {95,100,105,110,115,120,125,130,135,140};	//radius
 int Circle_Trap_Slow[10]			= {10,12,14,16,18,20,22,24,26,28};			//slower by %
 int Circle_Trap_SlowTime10[10]		= {5,10,15,20,25,30,35,40,45,50};			//slow, tenths of a second
 
+//[Knight] tier 5
+//Soul Breaker: a heavy sword strike with more accuracy
+int Soul_Breaker_DamagePercent[10]	= {45,70,95,120,145,170,195,220,245,270};	//attack power +%
+int Soul_Breaker_AddHit[10]			= {40,45,50,55,60,65,70,75,80,85};			//attack rating +%
+
+//Crescent Moon: closes in from afar and strikes
+int Crescent_Moon_DamagePercent[10]	= {170,180,190,200,210,220,230,240,250,260};	//attack power +%
+int Crescent_Moon_Range[10]			= {150,155,160,165,170,175,180,185,190,195};	//reach
+
+//Saint Blade: holy strike, more against the undead
+int Saint_Blade_DamagePercent[10]	= {50,85,120,155,190,225,260,295,330,365};	//attack power +%
+int Saint_Blade_Undead[10]			= {5,10,15,20,25,30,35,40,45,50};			//undead: a further +%
+
+//Holy Benedic: more damage to the undead for a time
+int Holy_Benedic_Undead[10]			= {25,30,35,40,45,50,55,60,65,70};			//undead: attack power +%
+int Holy_Benedic_Time[10]			= {120,140,160,180,200,220,240,260,280,300};	//seconds
+
 //[Fighter] tier 5
 //Down Hit: lifts the target and strikes it 3 times
 int Down_Hit_DamagePercent[10]		= {50,80,110,140,170,200,230,260,290,320};	//attack power +%

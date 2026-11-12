@@ -1385,6 +1385,9 @@ public:
 	//tier 5 Pikeman: Amplified (attack power +%)
 	DWORD	dwSkill_Amplified_Time;
 	int		dwSkill_Amplified_Param;
+	//tier 5 Knight: Holy Benedic (undead: attack power +%)
+	DWORD	dwSkill_HolyBenedic_Time;
+	int		dwSkill_HolyBenedic_Param;
 	//피지컬
 	DWORD	dwSkill_PhysicalAbsorb_Time;
 	int		dwSkill_PhysicalAbsorb_Param;

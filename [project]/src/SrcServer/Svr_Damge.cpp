@@ -3675,6 +3675,22 @@ int rsSetSkillAttack( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA
 			}
 			break;
 
+		//Knight tier 5 (the fifth rank only)
+		case SKILL_PLAY_SOUL_BREAKER:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_KNIGHT || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Soul_Breaker_DamagePercent[Point])/100;
+			break;
+		case SKILL_PLAY_CRESCENT_MOON:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_KNIGHT || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Crescent_Moon_DamagePercent[Point])/100;
+			break;
+		case SKILL_PLAY_SAINT_BLADE:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_KNIGHT || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Saint_Blade_DamagePercent[Point])/100;
+			if ( lpChar && lpChar->smCharInfo.Brood==smCHAR_MONSTER_UNDEAD )
+				lpTransAttackData->Power += (lpTransAttackData->Power*Saint_Blade_Undead[Point])/100;
+			break;
+
 		//Archer tier 5 (the fifth rank only)
 		case SKILL_PLAY_EVADE_SHOT:
 			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ARCHER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
@@ -3816,6 +3832,17 @@ int rsSetSkillPlus( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA *
 			lpTransAttackData2->Power[0] += (lpTransAttackData2->Power[0]*lpPlayInfo->dwSkill_Amplified_Param)/100;
 			lpTransAttackData2->Power[1] += (lpTransAttackData2->Power[1]*lpPlayInfo->dwSkill_Amplified_Param)/100;
 			lpTransAttackData->Power += (lpTransAttackData->Power*lpPlayInfo->dwSkill_Amplified_Param)/100;
+		}
+	}
+
+	if ( lpPlayInfo->dwSkill_HolyBenedic_Time ) {
+		//tier 5 Knight: Holy Benedic, attack power +% against the undead
+		if ( lpPlayInfo->dwSkill_HolyBenedic_Time<dwPlayServTime ) {
+			lpPlayInfo->dwSkill_HolyBenedic_Time = 0;
+			lpPlayInfo->dwSkill_HolyBenedic_Param = 0;
+		}
+		else if ( lpChar && lpChar->smCharInfo.Brood==smCHAR_MONSTER_UNDEAD ) {
+			lpTransAttackData->Power += (lpTransAttackData->Power*lpPlayInfo->dwSkill_HolyBenedic_Param)/100;
 		}
 	}
 

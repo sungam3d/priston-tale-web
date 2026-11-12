@@ -4554,6 +4554,23 @@ int cSKILL::ShowSkillInfo(sSKILL *pSkill , sSKILLBOX *pSkillBox ,  int Icon )
 			T5TIP("Attack Power:\r", "+%d%s\r", Power_Enhancement_Damage[T5P], "%");
 			T5TIP(CountinueTime, "%d%s\r", Power_Enhancement_Time[T5P], SecName);
 		break;
+		//[Knight] tier 5
+		case SKILL_SOUL_BREAKER:
+			T5TIP(AddPercentDamage4, "%d%s\r", Soul_Breaker_DamagePercent[T5P], "%");
+			T5TIP("Attack Rating:\r", "+%d%s\r", Soul_Breaker_AddHit[T5P], "%");
+		break;
+		case SKILL_CRESCENT_MOON:
+			T5TIP(AddPercentDamage4, "%d%s\r", Crescent_Moon_DamagePercent[T5P], "%");
+			T5TIP("Reach:\r", "%d\r", Crescent_Moon_Range[T5P]);
+		break;
+		case SKILL_SAINT_BLADE:
+			T5TIP(AddPercentDamage4, "%d%s\r", Saint_Blade_DamagePercent[T5P], "%");
+			T5TIP("Undead Damage:\r", "+%d%s\r", Saint_Blade_Undead[T5P], "%");
+		break;
+		case SKILL_HOLY_BENEDIC:
+			T5TIP("Undead Damage:\r", "+%d%s\r", Holy_Benedic_Undead[T5P], "%");
+			T5TIP(CountinueTime, "%d%s\r", Holy_Benedic_Time[T5P], SecName);
+		break;
 		//[Archer] tier 5
 		case SKILL_EVADE_SHOT:
 			T5TIP(AddPercentDamage4, "%d%s\r", Evade_Shot_DamagePercent[T5P], "%");

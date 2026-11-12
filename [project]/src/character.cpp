@@ -12014,6 +12014,20 @@ int smCHAR::BeginSkill( int SkilCode , int Level , smCHAR *lpTarChar , int x, in
 		SkillPlaySound( SKILL_SOUND_SKILL_MAXIMIZE2 , pX,pY,pZ );
 		break;
 
+	//Knight tier 5 (the older skills' effects for now)
+	case SKILL_PLAY_SOUL_BREAKER:
+	case SKILL_PLAY_CRESCENT_MOON:
+		SkillPlaySound( SKILL_SOUND_SKILL_SWING2 , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_SAINT_BLADE:
+		sinSkillEffect_Piercing( this );
+		SkillPlaySound( SKILL_SOUND_SKILL_PIERCING , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_HOLY_BENEDIC:
+		AssaParticle_HolyValor_Jang( this , point ? Holy_Benedic_Time[point-1] : 120 );
+		SkillPlaySound( SKILL_SOUND_SKILL_HOLY_VALOR1 , pX,pY,pZ );
+		break;
+
 	//Pikeman tier 5 (the older skills' effects for now)
 	case SKILL_PLAY_DANCING_REAPER:
 		AssaParticle_VeonmSpearPike( this );
@@ -14736,6 +14750,21 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 				smCharInfo.Attack_Rating = t5rate;
 				lpCurPlayer->AttackCritcal = cnt ? 0 : -1;
 			}
+		}
+		break;
+
+	//Knight tier 5
+	case SKILL_PLAY_SOUL_BREAKER:
+	case SKILL_PLAY_CRESCENT_MOON:
+	case SKILL_PLAY_SAINT_BLADE:
+		if ( chrAttackTarget && AttackCritcal>=0 && GetAttackPoint( &x,&y,&z )==TRUE ) {
+			Pos1.x = x;
+			Pos1.y = y;
+			Pos1.z = z;
+			if ( MotionEvent==1 ) AssaParticle_GrandCrossHorz( &Pos1 , Angle.y );
+			else AssaParticle_GrandCrossVert( &Pos1 , Angle.y );
+			SetDynLight( x,y,z , 100, 100,100,0, 400 );
+			SkillPlaySound( SKILL_SOUND_SKILL_SWING2 , pX,pY,pZ );
 		}
 		break;
 
