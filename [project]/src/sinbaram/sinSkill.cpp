@@ -4554,6 +4554,47 @@ int cSKILL::ShowSkillInfo(sSKILL *pSkill , sSKILLBOX *pSkillBox ,  int Icon )
 			T5TIP("Attack Power:\r", "+%d%s\r", Power_Enhancement_Damage[T5P], "%");
 			T5TIP(CountinueTime, "%d%s\r", Power_Enhancement_Time[T5P], SecName);
 		break;
+		//[Priestess] tier 5
+		case SKILL_SPIRIT_IMPACT:
+			T5TIP("Base Damage:\r", "%d-%d\r", Spirit_Impact_Damage[T5P][0], Spirit_Impact_Damage[T5P][1]);
+			T5TIP("Weapon Damage:\r", "x%d\r", Spirit_Impact_WeaponX[T5P]);
+			T5TIP("Range:\r", "%d\r", Spirit_Impact_Range[T5P]);
+		break;
+		case SKILL_PIERCING_ICE:
+			T5TIP("Base Damage:\r", "%d-%d\r", Piercing_Ice_Damage[T5P][0], Piercing_Ice_Damage[T5P][1]);
+		break;
+		case SKILL_SUMMON_RAMIEL:
+			T5TIP("Attack Power:\r", "%d-%d\r", Summon_Ramiel_Damage[T5P][0], Summon_Ramiel_Damage[T5P][1]);
+			T5TIP("Attack Delay:\r", "%d%s\r", Summon_Ramiel_Attack_Delay[T5P], SecName);
+			T5TIP("Block:\r", "+%d%s\r", Summon_Ramiel_BlockPercent[T5P], "%");
+			T5TIP("Undead Absorb:\r", "%d%s\r", Summon_Ramiel_UndeadAbsorbPercent[T5P], "%");
+			T5TIP(CountinueTime, "%d%s\r", Summon_Ramiel_Time[T5P], SecName);
+		break;
+		case SKILL_BLESSING_KRISHNA:
+			T5TIP("Defense:\r", "+%d%s\r", Blessing_Krishna_Defense[T5P], "%");
+			T5TIP("Absorption:\r", "+%d\r", Blessing_Krishna_Absorb[T5P]);
+			T5TIP(CountinueTime, "%d%s\r", Blessing_Krishna_Time[T5P], SecName);
+		break;
+		//[Magician] tier 5
+		case SKILL_SILRAPHIM:
+			T5TIP("Base Damage:\r", "%d-%d\r", Silraphim_Damage[T5P][0], Silraphim_Damage[T5P][1]);
+			T5TIP("Weapon Damage:\r", "x%d\r", Silraphim_WeaponX[T5P]);
+			T5TIP("Range:\r", "%d\r", Silraphim_Range[T5P]);
+		break;
+		case SKILL_VIS_TENUS:
+			T5TIP("Life:\r", "-%d%s\r", Vis_Tenus_LifeDown[T5P], "%");
+			T5TIP("Its Damage:\r", "-%d%s\r", Vis_Tenus_DamageDown[T5P], "%");
+			T5TIP(CountinueTime, "%d%s\r", Vis_Tenus_Time[T5P], SecName);
+		break;
+		case SKILL_PRIMA_IGNIS:
+			T5TIP("Base Damage:\r", "%d-%d\r", Prima_Ignis_Damage[T5P][0], Prima_Ignis_Damage[T5P][1]);
+			T5TIP("Weapon Damage:\r", "x%d\r", Prima_Ignis_WeaponX[T5P]);
+		break;
+		case SKILL_THIRD_ANIMA:
+			T5TIP("Magic Damage:\r", "+%d%s\r", Third_Anima_Damage[T5P], "%");
+			T5TIP("Max Mana:\r", "-%d%s\r", Third_Anima_ManaDown[T5P], "%");
+			T5TIP(CountinueTime, "%d%s\r", Third_Anima_Time[T5P], SecName);
+		break;
 		//[Atalanta] tier 5
 		case SKILL_TALARIA:
 			T5TIP("Move Speed:\r", "+%d\r", Talaria_Speed[T5P]);

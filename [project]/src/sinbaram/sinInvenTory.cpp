@@ -5485,6 +5485,10 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 				sinTempDamage2[1] += (int)((Power_Enhancement_Damage[ContinueSkill[i].Point-1]*TempDamage[1])/100);
 				SkillTextColor[SIN2_DAMAGE] = SIN_TEXT_COLOR_GOLD;
 			break;
+			case SKILL_BLESSING_KRISHNA:	// tier 5 Priestess: absorption +
+				sinTempAbsorb += Blessing_Krishna_Absorb[ContinueSkill[i].Point-1];
+				SkillTextColor[SIN2_ABSORB] = SIN_TEXT_COLOR_BLUE;
+			break;
 			case SKILL_AMPLIFIED:			// tier 5 Pikeman: attack power +% (the server applies it), less absorption
 				sinTempDamage2[0] += (int)((Amplified_Damage[ContinueSkill[i].Point-1]*TempDamage[0])/100);
 				sinTempDamage2[1] += (int)((Amplified_Damage[ContinueSkill[i].Point-1]*TempDamage[1])/100);
@@ -6316,6 +6320,14 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 					TempSkillData = ((float)Drastic_Spirit_Defense[ContinueSkill[i].Point-1]/100.0f);
 					sinChar->Defence += (int)((float)sinChar->Defence * TempSkillData);
 					SkillTextColor[SIN2_DEFENSE] = SIN_TEXT_COLOR_BLUE;
+				break;
+				case SKILL_BLESSING_KRISHNA:	// tier 5 Priestess: defense +%
+					sinChar->Defence += (sinChar->Defence*Blessing_Krishna_Defense[ContinueSkill[i].Point-1])/100;
+					SkillTextColor[SIN2_DEFENSE] = SIN_TEXT_COLOR_BLUE;
+				break;
+				case SKILL_THIRD_ANIMA:		// tier 5 Magician: max mana -%
+					sinChar->Mana[1] -= (sinChar->Mana[1]*Third_Anima_ManaDown[ContinueSkill[i].Point-1])/100;
+					if ( sinChar->Mana[0]>sinChar->Mana[1] ) sinChar->Mana[0] = sinChar->Mana[1];
 				break;
 				case SKILL_TALARIA:			// tier 5 Atalanta: move speed +
 					sinChar->Move_Speed += Talaria_Speed[ContinueSkill[i].Point-1];

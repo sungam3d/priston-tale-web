@@ -1094,10 +1094,10 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 	if ( lpPlayInfo2->dwSkill_SummonMuspell_Time ) {	//서몬 무스펠
 		if ( lpPlayInfo2->dwSkill_SummonMuspell_Time>dwPlayServTime ) {
 
-			if ( (rand()%100)<Summon_Muspell_BlockPercent[ lpPlayInfo2->dwSkill_SummonMuspell_Param ] ) {
+			if ( (rand()%100)<Muspell_BlockOf( lpPlayInfo2->dwSkill_SummonMuspell_Param ) ) {
 #ifdef DISP_DAMAGE
 				if ( lpPlayInfo2->AdminMode>2 ) {
-					wsprintf( szDispDamage , ">%s \260\370\260\335 \303\337\260\241 \310\270\307\307 ( Summon Muspell [%d] )" , lpPlayInfo->smCharInfo.szName , Summon_Muspell_BlockPercent[ lpPlayInfo2->dwSkill_SummonMuspell_Param ] );
+					wsprintf( szDispDamage , ">%s \260\370\260\335 \303\337\260\241 \310\270\307\307 ( Summon Muspell [%d] )" , lpPlayInfo->smCharInfo.szName , Muspell_BlockOf( lpPlayInfo2->dwSkill_SummonMuspell_Param ) );
 					rsDisplayDamgeToClient( lpPlayInfo2 , szDispDamage );
 				}
 #endif
@@ -3675,6 +3675,46 @@ int rsSetSkillAttack( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA
 			}
 			break;
 
+		//Priestess and Magician tier 5 (the fifth rank only): magic, by PristonWorld's formula
+		//(Critical[1] is the spirit, Power2 the weapon's damage)
+		case SKILL_PLAY_SPIRIT_IMPACT:
+		case SKILL_PLAY_PIERCING_ICE:
+		case SKILL_PLAY_SILRAPHIM:
+		case SKILL_PLAY_PRIMA_IGNIS:
+			{
+				int job, a, b, m, lv;
+				switch( dwSkillCode ) {
+				case SKILL_PLAY_SPIRIT_IMPACT:	job = JOBCODE_PRIESTESS; a = Spirit_Impact_Damage[Point][0]; b = Spirit_Impact_Damage[Point][1]; m = Spirit_Impact_WeaponX[Point]; lv = lpPlayInfo->smCharInfo.Level/2;	break;
+				case SKILL_PLAY_PIERCING_ICE:	job = JOBCODE_PRIESTESS; a = Piercing_Ice_Damage[Point][0];  b = Piercing_Ice_Damage[Point][1];  m = 2;							lv = lpPlayInfo->smCharInfo.Level/2;	break;
+				case SKILL_PLAY_SILRAPHIM:		job = JOBCODE_MAGICIAN;  a = Silraphim_Damage[Point][0];     b = Silraphim_Damage[Point][1];     m = Silraphim_WeaponX[Point];		lv = lpPlayInfo->smCharInfo.Level;		break;
+				default:						job = JOBCODE_MAGICIAN;  a = Prima_Ignis_Damage[Point][0];   b = Prima_Ignis_Damage[Point][1];   m = Prima_Ignis_WeaponX[Point];	lv = lpPlayInfo->smCharInfo.Level;		break;
+				}
+				if ( lpPlayInfo->smCharInfo.JOB_CODE!=job || lpPlayInfo->smCharInfo.ChangeJob<4 || !lpChar ) return FALSE;
+
+				power[0] = a + lpTransAttackData2->Critical[1]/2 + lv + lpTransAttackData2->Power2[0]*m;
+				power[1] = b + lpTransAttackData2->Critical[1]   + lv + lpTransAttackData2->Power2[1]*m;
+				lpTransAttackData->Power = GetRandomPos( power[0] , power[1] );
+				if ( dwSkillCode!=SKILL_PLAY_PRIMA_IGNIS )
+					lpTransAttackData2->Critical[0] = 0;		// Prima Ignis keeps its critical
+			}
+			break;
+
+		case SKILL_PLAY_VIS_TENUS:			//Magician tier 5: less life now, less damage for a time
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_MAGICIAN || lpPlayInfo->smCharInfo.ChangeJob<4 || !lpChar ) return FALSE;
+			{
+				int pct = Vis_Tenus_LifeDown[Point];
+				if ( lpChar->smCharInfo.wPlayClass[0]==MONSTER_CLASS_BOSS ) pct /= 4;
+				pow = (lpChar->smCharInfo.Life[0]*pct)/100;
+				if ( pow<1 ) pow = 1;
+				lpTransAttackData->Power = pow;
+				lpTransAttackData2->Critical[0] = 0;
+				if ( lpChar->smCharInfo.State==smCHAR_STATE_ENEMY ) {
+					lpChar->PlayHolyMind[0] = Vis_Tenus_DamageDown[Point];
+					lpChar->PlayHolyMind[1] = 16*Vis_Tenus_Time[Point];
+				}
+			}
+			break;
+
 		//Atalanta tier 5 (the fifth rank only)
 		case SKILL_PLAY_SNIPPY_FEAR:
 			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ATALANTA || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
@@ -3788,8 +3828,8 @@ int rsSetSkillAttack( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA
 					return FALSE;
 				}
 
-				pow1 = Summon_Muspell_Damage[lpPlayInfo->dwSkill_SummonMuspell_Param][0];
-				pow2 = Summon_Muspell_Damage[lpPlayInfo->dwSkill_SummonMuspell_Param][1];
+				pow1 = Muspell_DamageOf( lpPlayInfo->dwSkill_SummonMuspell_Param , 0 );
+				pow2 = Muspell_DamageOf( lpPlayInfo->dwSkill_SummonMuspell_Param , 1 );
 
 				lpTransAttackData->Power = GetRandomPos( pow1, pow2 );
 				lpTransAttackData2->Critical[0] = 0;
@@ -3839,6 +3879,17 @@ int rsSetSkillPlus( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA *
 			lpTransAttackData2->Power[0] += (lpTransAttackData2->Power[0]*lpPlayInfo->dwSkill_Amplified_Param)/100;
 			lpTransAttackData2->Power[1] += (lpTransAttackData2->Power[1]*lpPlayInfo->dwSkill_Amplified_Param)/100;
 			lpTransAttackData->Power += (lpTransAttackData->Power*lpPlayInfo->dwSkill_Amplified_Param)/100;
+		}
+	}
+
+	if ( lpPlayInfo->dwSkill_ThirdAnima_Time ) {
+		//tier 5 Magician: Third Anima, magic damage +%
+		if ( lpPlayInfo->dwSkill_ThirdAnima_Time<dwPlayServTime ) {
+			lpPlayInfo->dwSkill_ThirdAnima_Time = 0;
+			lpPlayInfo->dwSkill_ThirdAnima_Param = 0;
+		}
+		else if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_MAGICIAN && dwSkillCode ) {
+			lpTransAttackData->Power += (lpTransAttackData->Power*lpPlayInfo->dwSkill_ThirdAnima_Param)/100;
 		}
 	}
 

@@ -856,6 +856,78 @@ int Snippy_Fear_DamagePercent[10]	= {115,135,155,175,195,215,235,255,275,295};	/
 int Snippy_Fear_Critical[10]		= {5,8,11,14,17,20,23,26,29,32};			//critical +%
 int Snippy_Fear_Range[10]			= {20,25,30,35,40,45,50,55,60,65};			//throwing range +
 
+//[Priestess] tier 5. Magic damage, per PristonWorld:
+//  min = A + spirit/2 + level/2 + weapon min x M, max = B + spirit + level/2 + weapon max x M
+//Spirit Impact: a shockwave at the target's spirit
+int Spirit_Impact_Damage[10][2]		= {{350,410},{390,450},{430,490},{470,530},{510,570},
+									   {550,610},{590,650},{630,690},{670,730},{710,770}};	//A, B
+int Spirit_Impact_WeaponX[10]		= {2,2,2,3,3,3,4,4,4,5};					//M
+int Spirit_Impact_Range[10]			= {170,175,180,185,190,195,200,205,210,215};	//casting range
+
+//Piercing Ice: ice spears (the page hides the formula: Spirit Impact's, M = 2)
+int Piercing_Ice_Damage[10][2]		= {{420,530},{470,580},{520,630},{570,680},{620,730},
+									   {670,780},{720,830},{770,880},{820,930},{870,980}};	//A, B
+
+//Summon Ramiel: an angel striking with lightning (shares Summon Muspell's server slot)
+int Summon_Ramiel_Damage[10][2]		= {{170,210},{190,230},{210,250},{230,270},{250,290},
+									   {270,310},{290,330},{310,350},{330,370},{350,390}};	//its attack power
+int Summon_Ramiel_Attack_Delay[10]	= {7,7,7,6,6,6,5,5,5,4};					//seconds between strikes
+int Summon_Ramiel_BlockPercent[10]	= {5,6,7,8,9,10,11,12,13,14};				//your block +%
+int Summon_Ramiel_UndeadAbsorbPercent[10] = {25,35,45,55,65,75,85,95,105,115};	//undead attacks absorbed %
+int Summon_Ramiel_Time[10]			= {120,140,160,180,200,220,240,260,280,300};	//seconds
+
+//Blessing Krishna: your defense and absorption
+int Blessing_Krishna_Defense[10]	= {10,15,20,25,30,35,40,45,50,55};			//defense +%
+int Blessing_Krishna_Absorb[10]		= {2,2,2,5,5,5,8,8,8,10};					//absorption +
+int Blessing_Krishna_Time[10]		= {120,130,140,150,160,170,180,190,200,210};	//seconds
+
+//[Magician] tier 5. Magic damage, per PristonWorld:
+//  min = A + spirit/2 + level + weapon min x M, max = B + spirit + level + weapon max x M
+//Silraphim: summons Silraphim to strike the target
+int Silraphim_Damage[10][2]			= {{350,410},{390,450},{430,490},{470,530},{510,570},
+									   {550,610},{590,650},{630,690},{670,730},{710,770}};	//A, B
+int Silraphim_WeaponX[10]			= {2,2,2,3,3,3,4,4,4,5};					//M
+int Silraphim_Range[10]				= {110,120,130,140,150,160,170,180,190,200};	//casting range
+
+//Vis Tenus: shrinks the target: less life, less damage for a time
+int Vis_Tenus_LifeDown[10]			= {10,15,20,25,30,35,40,45,50,55};			//life -% (a quarter on bosses)
+int Vis_Tenus_DamageDown[10]		= {10,13,16,19,22,25,28,31,34,37};			//its damage -%
+int Vis_Tenus_Time[10]				= {10,15,20,25,30,35,40,45,50,55};			//seconds
+
+//Prima Ignis: a critical fire strike
+int Prima_Ignis_Damage[10][2]		= {{400,500},{450,550},{500,600},{550,650},{600,700},
+									   {650,750},{700,800},{750,850},{800,900},{850,950}};	//A, B
+int Prima_Ignis_WeaponX[10]			= {2,2,3,3,4,4,5,5,6,6};					//M
+
+//Third Anima: more magic damage for less mana
+int Third_Anima_Damage[10]			= {15,30,45,60,75,90,105,120,135,150};		//magic damage +%
+int Third_Anima_ManaDown[10]		= {5,10,15,20,25,30,35,40,45,50};			//max mana -%
+int Third_Anima_Time[10]			= {120,130,140,150,160,170,180,190,200,210};	//seconds
+
+// the server's Summon Muspell param -> Muspell's or Ramiel's numbers (the rank, with
+// MUSPELL_PARAM_RAMIEL set for Summon Ramiel; Tempskron.h has the same define)
+#ifndef MUSPELL_PARAM_RAMIEL
+#define	MUSPELL_PARAM_RAMIEL	0x100
+#endif
+int Muspell_BlockOf( int dwParam )
+{
+	int pt = dwParam&0xFF;
+	if ( pt>9 ) pt = 9;
+	return (dwParam&MUSPELL_PARAM_RAMIEL) ? Summon_Ramiel_BlockPercent[pt] : Summon_Muspell_BlockPercent[pt];
+}
+int Muspell_UndeadAbsorbOf( int dwParam )
+{
+	int pt = dwParam&0xFF;
+	if ( pt>9 ) pt = 9;
+	return (dwParam&MUSPELL_PARAM_RAMIEL) ? Summon_Ramiel_UndeadAbsorbPercent[pt] : Summon_Muspell_UndeadAbsorbPercent[pt];
+}
+int Muspell_DamageOf( int dwParam , int i )
+{
+	int pt = dwParam&0xFF;
+	if ( pt>9 ) pt = 9;
+	return (dwParam&MUSPELL_PARAM_RAMIEL) ? Summon_Ramiel_Damage[pt][i&1] : Summon_Muspell_Damage[pt][i&1];
+}
+
 //[Fighter] tier 5
 //Down Hit: lifts the target and strikes it 3 times
 int Down_Hit_DamagePercent[10]		= {50,80,110,140,170,200,230,260,290,320};	//attack power +%

@@ -2062,6 +2062,38 @@ int F_Summon_Arcuda()
 }
 int F_Snippy_Fear()		{ sinUseManaStamina(pUseSkill); return TRUE; }
 
+//Priestess tier 5
+int F_Spirit_Impact()	{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Piercing_Ice()	{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Summon_Ramiel()
+{
+	pUseSkill->UseTime = Summon_Ramiel_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	return TRUE;
+}
+int F_Blessing_Krishna()
+{
+	pUseSkill->UseTime = Blessing_Krishna_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();		// defense and absorption
+	return TRUE;
+}
+
+//Magician tier 5
+int F_Silraphim()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Vis_Tenus()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Prima_Ignis()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Third_Anima()
+{
+	pUseSkill->UseTime = Third_Anima_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();		// the lower max mana
+	return TRUE;
+}
+
 //파이크맨
 int F_Assassin_Eye()
 {

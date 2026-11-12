@@ -12014,6 +12014,36 @@ int smCHAR::BeginSkill( int SkilCode , int Level , smCHAR *lpTarChar , int x, in
 		SkillPlaySound( SKILL_SOUND_SKILL_MAXIMIZE2 , pX,pY,pZ );
 		break;
 
+	//Priestess and Magician tier 5 (the older skills' effects for now)
+	case SKILL_PLAY_SPIRIT_IMPACT:
+	case SKILL_PLAY_PIERCING_ICE:
+		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_PRIEST , pX,pY,pZ );
+		pos.x = pX;	pos.y = pY;	pos.z = pZ;
+		sinEffect_StartMagic( &pos , 1 );
+		break;
+	case SKILL_PLAY_SILRAPHIM:
+	case SKILL_PLAY_PRIMA_IGNIS:
+		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_MAGICIAN , pX,pY,pZ );
+		pos.x = pX;	pos.y = pY;	pos.z = pZ;
+		sinEffect_StartMagic( &pos , 2 );
+		break;
+	case SKILL_PLAY_VIS_TENUS:
+		if ( lpTarChar && point ) AssaParticle_HolyMind_Attack( lpTarChar , Vis_Tenus_Time[point-1] );
+		SkillPlaySound( SKILL_SOUND_SKILL_HOLYMIND , pX,pY,pZ );
+		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_MAGICIAN , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_SUMMON_RAMIEL:
+	case SKILL_PLAY_BLESSING_KRISHNA:
+		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_PRIEST , pX,pY,pZ );
+		pos.x = pX;	pos.y = pY;	pos.z = pZ;
+		sinEffect_StartMagic( &pos , 1 );
+		break;
+	case SKILL_PLAY_THIRD_ANIMA:
+		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_MAGICIAN , pX,pY,pZ );
+		pos.x = pX;	pos.y = pY;	pos.z = pZ;
+		sinEffect_StartMagic( &pos , 2 );
+		break;
+
 	//Atalanta tier 5 (the older skills' effects for now)
 	case SKILL_PLAY_TALARIA:
 		SkillValhallaHallOfValhallaHandEffect( this , (float)(point ? Talaria_Time[point-1] : 120) );
@@ -14766,6 +14796,32 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 		}
 		break;
 
+	//Priestess and Magician tier 5
+	case SKILL_PLAY_SPIRIT_IMPACT:
+	case SKILL_PLAY_PIERCING_ICE:
+	case SKILL_PLAY_SILRAPHIM:
+	case SKILL_PLAY_PRIMA_IGNIS:
+		if ( chrAttackTarget && MotionEvent==1 ) {
+			int t5code = AttackSkil&0xFF;
+			GetMoveLocation( 0 , 24*fONE, 24*fONE , 0, Angle.y , 0 );
+			StartEffectMonsterDest( pX+GeoResult_X,pY+GeoResult_Y,pZ+GeoResult_Z,
+				chrAttackTarget->pX , chrAttackTarget->pY+20*fONE , chrAttackTarget->pZ ,
+				(t5code==SKILL_PLAY_SILRAPHIM || t5code==SKILL_PLAY_PRIMA_IGNIS) ? MONSTER_IMP_SHOT2 : MONSTER_MEPHIT_SHOT2 );
+			if ( t5code==SKILL_PLAY_PRIMA_IGNIS )
+				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 200, 100,0,0, 500 );
+			else if ( t5code==SKILL_PLAY_PIERCING_ICE )
+				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 0, 100,200,0, 500 );
+			SkillPlaySound( (t5code==SKILL_PLAY_SILRAPHIM || t5code==SKILL_PLAY_PRIMA_IGNIS) ? SKILL_SOUND_SKILL_FIREBOLT1 : SKILL_SOUND_SKILL_HOLYBOLT , pX,pY,pZ );
+		}
+		break;
+
+	case SKILL_PLAY_SUMMON_RAMIEL:
+		if ( point ) {
+			SkillCelestialMusPel(this,(float)Summon_Ramiel_Time[point-1],(float)Summon_Ramiel_Attack_Delay[point-1]);
+			SkillPlaySound( SKILL_SOUND_SKILL_MUSPELL2 , pX,pY,pZ );
+		}
+		break;
+
 	//Atalanta tier 5
 	case SKILL_PLAY_SNIPPY_FEAR:
 		if ( chrAttackTarget && AttackCritcal>=0 && GetAttackPoint( &x,&y,&z )==TRUE ) {
@@ -15734,10 +15790,10 @@ int smCHAR::SendTransAttack( smCHAR *lpChar , smWINSOCK *lpsmsock , int AttackCo
 	if ( lpPlayInfo->dwSkill_SummonMuspell_Time ) {	//서몬 무스펠
 		if ( lpPlayInfo->dwSkill_SummonMuspell_Time>dwPlayServTime ) {
 
-			if ( (rand()%100)<Summon_Muspell_BlockPercent[ lpPlayInfo->dwSkill_SummonMuspell_Param ] ) {
+			if ( (rand()%100)<Muspell_BlockOf( lpPlayInfo->dwSkill_SummonMuspell_Param ) ) {
 #ifdef DISP_DAMAGE
 				if ( lpPlayInfo->AdminMode>2 ) {
-					wsprintf( szDispDamage , ">%s \260\370\260\335 \303\337\260\241 \310\270\307\307 ( Summon Muspell [%d] )" , smCharInfo.szName , Summon_Muspell_BlockPercent[ lpPlayInfo->dwSkill_SummonMuspell_Param ] );
+					wsprintf( szDispDamage , ">%s \260\370\260\335 \303\337\260\241 \310\270\307\307 ( Summon Muspell [%d] )" , smCharInfo.szName , Muspell_BlockOf( lpPlayInfo->dwSkill_SummonMuspell_Param ) );
 					rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 				}
 #endif
@@ -15754,7 +15810,7 @@ int smCHAR::SendTransAttack( smCHAR *lpChar , smWINSOCK *lpsmsock , int AttackCo
 			}
 			if ( smCharInfo.Brood==smCHAR_MONSTER_UNDEAD ) {
 				//언데드 공격력 흡수
-				temp = (TransAttackData.Power*Summon_Muspell_UndeadAbsorbPercent[lpPlayInfo->dwSkill_SummonMuspell_Param])/100;
+				temp = (TransAttackData.Power*Muspell_UndeadAbsorbOf( lpPlayInfo->dwSkill_SummonMuspell_Param ))/100;
 				TransAttackData.AttackState |= (temp<<16);
 				if ( TransAttackData.Power<0 ) return FALSE;
 			}

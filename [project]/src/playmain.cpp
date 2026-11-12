@@ -3505,6 +3505,7 @@ int DrawPat3D( int x, int y, int z, int ax, int ay, int az )
 			case SKILL_GODLY_SHIELD:		//가들리 쉴드
 			case SKILL_FROST_JAVELIN:		//프로스트 제블린 과 겸용
 			case SKILL_SUMMON_MUSPELL:		//서몬부스펠 과 겸용
+			case SKILL_SUMMON_RAMIEL:		// tier 5
 				lpCurPlayer->dwDispAppSkill |=  SKILL_APPMASK_GODLY_SHIELD;
 				break;
 			}

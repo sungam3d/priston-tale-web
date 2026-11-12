@@ -11555,6 +11555,10 @@ int AddNewPlayInfo( smWINSOCK *lpsmSock )
 	rsPlayInfo[cnt].dwSkill_Maximize_Param = 0;
 	rsPlayInfo[cnt].dwSkill_PowerEnhance_Time = 0;
 	rsPlayInfo[cnt].dwSkill_PowerEnhance_Param = 0;
+	rsPlayInfo[cnt].dwSkill_ThirdAnima_Time = 0;
+	rsPlayInfo[cnt].dwSkill_ThirdAnima_Param = 0;
+	rsPlayInfo[cnt].dwSkill_BlessingKrishna_Time = 0;
+	rsPlayInfo[cnt].dwSkill_BlessingKrishna_Param = 0;
 	rsPlayInfo[cnt].dwSkill_HolyBenedic_Time = 0;
 	rsPlayInfo[cnt].dwSkill_HolyBenedic_Param = 0;
 	rsPlayInfo[cnt].dwSkill_Amplified_Time = 0;
@@ -31651,6 +31655,16 @@ int rsCancelSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand )
 			lpPlayInfo->dwSkill_HolyBenedic_Param = 0;
 			break;
 
+		case SKILL_PLAY_BLESSING_KRISHNA:
+			lpPlayInfo->dwSkill_BlessingKrishna_Time = 0;
+			lpPlayInfo->dwSkill_BlessingKrishna_Param = 0;
+			break;
+
+		case SKILL_PLAY_THIRD_ANIMA:
+			lpPlayInfo->dwSkill_ThirdAnima_Time = 0;
+			lpPlayInfo->dwSkill_ThirdAnima_Param = 0;
+			break;
+
 		case SKILL_PLAY_POWER_ENHANCEMENT:
 			lpPlayInfo->dwSkill_PowerEnhance_Time = 0;
 			lpPlayInfo->dwSkill_PowerEnhance_Param = 0;
@@ -32035,6 +32049,20 @@ int rsRecvProcessSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand
 			}
 			break;
 
+		case SKILL_PLAY_BLESSING_KRISHNA:		// tier 5
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_PRIESTESS && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpPlayInfo->dwSkill_BlessingKrishna_Time = dwPlayServTime+Blessing_Krishna_Time[point]*1000;
+				lpPlayInfo->dwSkill_BlessingKrishna_Param = point;
+			}
+			break;
+
+		case SKILL_PLAY_THIRD_ANIMA:		// tier 5
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_MAGICIAN && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpPlayInfo->dwSkill_ThirdAnima_Time = dwPlayServTime+Third_Anima_Time[point]*1000;
+				lpPlayInfo->dwSkill_ThirdAnima_Param = Third_Anima_Damage[point];
+			}
+			break;
+
 		case SKILL_PLAY_POWER_ENHANCEMENT:		// tier 5 Mechanician: attack power +%
 			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_MECHANICIAN && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
 				lpPlayInfo->dwSkill_PowerEnhance_Time = dwPlayServTime+Power_Enhancement_Time[point]*1000;
@@ -32207,6 +32235,13 @@ int rsRecvProcessSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand
 			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_PRIESTESS ) {
 				lpPlayInfo->dwSkill_SummonMuspell_Time = dwPlayServTime+Summon_Muspell_Time[point]*1000;
 				lpPlayInfo->dwSkill_SummonMuspell_Param = point;
+			}
+			break;
+
+		case SKILL_PLAY_SUMMON_RAMIEL:		// tier 5 Priestess: takes Summon Muspell's slot, with Ramiel's numbers
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_PRIESTESS && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpPlayInfo->dwSkill_SummonMuspell_Time = dwPlayServTime+Summon_Ramiel_Time[point]*1000;
+				lpPlayInfo->dwSkill_SummonMuspell_Param = point|MUSPELL_PARAM_RAMIEL;
 			}
 			break;
 

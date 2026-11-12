@@ -937,9 +937,15 @@ int OpenPlaySkill( sSKILL *lpSkill )
 	case SKILL_HOLY_BENEDIC:		//Knight: damage against the undead (the server)
 	case SKILL_TALARIA:				//Atalanta: move speed (the client)
 	case SKILL_SUMMON_ARCUDA:		//Atalanta: the server summons Arcuda
+	case SKILL_SUMMON_RAMIEL:		//Priestess: an angel striking on a timer (Summon Muspell's slot)
+	case SKILL_BLESSING_KRISHNA:	//Priestess: defense and absorption (the client)
+	case SKILL_THIRD_ANIMA:			//Magician: magic damage (the server), less max mana (the client)
 		if ( lpCurPlayer->MotionInfo->State<0x100 ) {
 			int t5play = 0, t5server = 0;
 			switch( lpSkill->CODE ) {
+			case SKILL_SUMMON_RAMIEL:		t5play = SKILL_PLAY_SUMMON_RAMIEL;		t5server = 1;	break;
+			case SKILL_BLESSING_KRISHNA:	t5play = SKILL_PLAY_BLESSING_KRISHNA;					break;
+			case SKILL_THIRD_ANIMA:			t5play = SKILL_PLAY_THIRD_ANIMA;		t5server = 1;	break;
 			case SKILL_TALARIA:				t5play = SKILL_PLAY_TALARIA;							break;
 			case SKILL_SUMMON_ARCUDA:		t5play = SKILL_PLAY_SUMMON_ARCUDA;		t5server = 1;	break;
 			case SKILL_HOLY_BENEDIC:		t5play = SKILL_PLAY_HOLY_BENEDIC;		t5server = 1;	break;
@@ -1385,6 +1391,18 @@ int GetSkillDistRange( sSKILL *lpSkill , int AttackRange , int AttackMode )
 			return cnt;
 		}
 		break;
+
+	case SKILL_SPIRIT_IMPACT:
+		if ( lpSkill->Point ) return Spirit_Impact_Range[lpSkill->Point-1]*fONE;
+		break;
+	case SKILL_SILRAPHIM:
+		if ( lpSkill->Point ) return Silraphim_Range[lpSkill->Point-1]*fONE;
+		break;
+	case SKILL_PIERCING_ICE:
+	case SKILL_PRIMA_IGNIS:
+		return 200*fONE;
+	case SKILL_VIS_TENUS:
+		return 180*fONE;
 
 	case SKILL_SNIPPY_FEAR:
 		if ( lpSkill->Point ) {
@@ -3534,6 +3552,35 @@ int Avalanche_ArrowNum[10]	= {3,3,3,4,4,4,5,5,5,6};
 
 			lpCurPlayer->MotionLoopSpeed = 70;
 			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	//Priestess and Magician tier 5: single-target magic (the server works out the damage)
+	case SKILL_SPIRIT_IMPACT:
+	case SKILL_PIERCING_ICE:
+	case SKILL_SILRAPHIM:
+	case SKILL_VIS_TENUS:			//less life now, less damage for a time
+	case SKILL_PRIMA_IGNIS:
+		if ( lpSkill->Point && lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			switch( lpSkill->CODE ) {
+			case SKILL_SPIRIT_IMPACT:	lpCurPlayer->AttackSkil = SKILL_PLAY_SPIRIT_IMPACT;	break;
+			case SKILL_PIERCING_ICE:	lpCurPlayer->AttackSkil = SKILL_PLAY_PIERCING_ICE;	break;
+			case SKILL_SILRAPHIM:		lpCurPlayer->AttackSkil = SKILL_PLAY_SILRAPHIM;		break;
+			case SKILL_VIS_TENUS:		lpCurPlayer->AttackSkil = SKILL_PLAY_VIS_TENUS;		break;
+			default:					lpCurPlayer->AttackSkil = SKILL_PLAY_PRIMA_IGNIS;	break;
+			}
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			lpCurPlayer->MotionLoopSpeed = GetAttackSpeedFrame( 8 );
+			lpCurPlayer->MotionLoop = 1;
+
+			cnt = dm_SendTransDamage( lpChar , wpDamage[0],wpDamage[1] , 0, 0, lpCurPlayer->AttackSkil , FALSE );
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+			else
+				DamageExp( lpChar , cnt );
 		}
 		return TRUE;
 

@@ -1388,6 +1388,12 @@ public:
 	//tier 5 Knight: Holy Benedic (undead: attack power +%)
 	DWORD	dwSkill_HolyBenedic_Time;
 	int		dwSkill_HolyBenedic_Param;
+	//tier 5 Priestess: Blessing Krishna (the client counts its defense and absorption)
+	DWORD	dwSkill_BlessingKrishna_Time;
+	int		dwSkill_BlessingKrishna_Param;
+	//tier 5 Magician: Third Anima (magic damage +%)
+	DWORD	dwSkill_ThirdAnima_Time;
+	int		dwSkill_ThirdAnima_Param;
 	//피지컬
 	DWORD	dwSkill_PhysicalAbsorb_Time;
 	int		dwSkill_PhysicalAbsorb_Param;

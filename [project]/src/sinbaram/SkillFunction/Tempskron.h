@@ -379,6 +379,45 @@ int F_Galaxy_Coup();
 int F_Summon_Arcuda();
 int F_Snippy_Fear();
 
+//Priestess tier 5
+extern int Spirit_Impact_Damage[10][2];
+extern int Spirit_Impact_WeaponX[10];
+extern int Spirit_Impact_Range[10];
+extern int Piercing_Ice_Damage[10][2];
+extern int Summon_Ramiel_Damage[10][2];
+extern int Summon_Ramiel_Attack_Delay[10];
+extern int Summon_Ramiel_BlockPercent[10];
+extern int Summon_Ramiel_UndeadAbsorbPercent[10];
+extern int Summon_Ramiel_Time[10];
+extern int Blessing_Krishna_Defense[10];
+extern int Blessing_Krishna_Absorb[10];
+extern int Blessing_Krishna_Time[10];
+#define	MUSPELL_PARAM_RAMIEL	0x100
+int Muspell_BlockOf( int dwParam );			// the server's Summon Muspell param -> block %
+int Muspell_UndeadAbsorbOf( int dwParam );	// -> undead absorption %
+int Muspell_DamageOf( int dwParam , int i );	// -> attack power, min (0) or max (1)
+int F_Spirit_Impact();
+int F_Piercing_Ice();
+int F_Summon_Ramiel();
+int F_Blessing_Krishna();
+
+//Magician tier 5
+extern int Silraphim_Damage[10][2];
+extern int Silraphim_WeaponX[10];
+extern int Silraphim_Range[10];
+extern int Vis_Tenus_LifeDown[10];
+extern int Vis_Tenus_DamageDown[10];
+extern int Vis_Tenus_Time[10];
+extern int Prima_Ignis_Damage[10][2];
+extern int Prima_Ignis_WeaponX[10];
+extern int Third_Anima_Damage[10];
+extern int Third_Anima_ManaDown[10];
+extern int Third_Anima_Time[10];
+int F_Silraphim();
+int F_Vis_Tenus();
+int F_Prima_Ignis();
+int F_Third_Anima();
+
 //Fighter tier 5
 extern int Down_Hit_DamagePercent[10];
 extern int Down_Hit_AddHit[10];
