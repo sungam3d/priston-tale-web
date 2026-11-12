@@ -4554,6 +4554,28 @@ int cSKILL::ShowSkillInfo(sSKILL *pSkill , sSKILLBOX *pSkillBox ,  int Icon )
 			T5TIP("Attack Power:\r", "+%d%s\r", Power_Enhancement_Damage[T5P], "%");
 			T5TIP(CountinueTime, "%d%s\r", Power_Enhancement_Time[T5P], SecName);
 		break;
+		//[Atalanta] tier 5
+		case SKILL_TALARIA:
+			T5TIP("Move Speed:\r", "+%d\r", Talaria_Speed[T5P]);
+			T5TIP(CountinueTime, "%d%s\r", Talaria_Time[T5P], SecName);
+		break;
+		case SKILL_GALAXY_COUP:
+			T5TIP(AddPercentDamage4, "%d%s\r", Galaxy_Coup_DamagePercent[T5P], "%");
+			T5TIP(AttackAreaName, "%d\r", Galaxy_Coup_Area[T5P]);
+			T5TIP("Attack Rating:\r", "+%d%s\r", Galaxy_Coup_AddHit[T5P], "%");
+		break;
+		case SKILL_SUMMON_ARCUDA:
+			T5TIP("Attack Power:\r", "%d-%d\r", Summon_Arcuda_Damage[T5P][0], Summon_Arcuda_Damage[T5P][1]);
+			T5TIP("Attack Rating:\r", "%d\r", Summon_Arcuda_Hit[T5P]);
+			T5TIP("Defense:\r", "%d+\r", Summon_Arcuda_Defense[T5P]);
+			T5TIP("Life:\r", "%d\r", Summon_Arcuda_Life[T5P]);
+			T5TIP(CountinueTime, "%d%s\r", Summon_Arcuda_Time[T5P], SecName);
+		break;
+		case SKILL_SNIPPY_FEAR:
+			T5TIP(AddPercentDamage4, "%d%s\r", Snippy_Fear_DamagePercent[T5P], "%");
+			T5TIP("Critical:\r", "+%d%s\r", Snippy_Fear_Critical[T5P], "%");
+			T5TIP("Range:\r", "+%d\r", Snippy_Fear_Range[T5P]);
+		break;
 		//[Knight] tier 5
 		case SKILL_SOUL_BREAKER:
 			T5TIP(AddPercentDamage4, "%d%s\r", Soul_Breaker_DamagePercent[T5P], "%");

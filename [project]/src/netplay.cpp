@@ -3701,6 +3701,9 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 				case SKILL_PLAY_FIRE_ELEMENTAL:
 					cnt = SKILL_FIRE_ELEMENTAL;
 					break;
+				case SKILL_PLAY_SUMMON_ARCUDA:		// tier 5
+					cnt = SKILL_SUMMON_ARCUDA;
+					break;
 			}
 			cSkill.CancelContinueSkill( cnt );
 			break;

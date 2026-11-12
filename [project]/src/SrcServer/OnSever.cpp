@@ -334,13 +334,14 @@ srCRISTAL_MONSTER srMarvelCristalMonsterBoss[MARVELCRISTAL_MAX] = {
 	{ " \300\314\271\314\306\274\270\243 \260\241\265\345 "		, 0 , 3		}
 };
 
-#define	srSKILL_MONSTER_MAX		3
+#define	srSKILL_MONSTER_MAX		4
 
 //스킬소환 몬스터
 srCRISTAL_MONSTER	srSkillMonster[srSKILL_MONSTER_MAX] = {
 	{ "\270\336\305\273 \260\355\267\275"		, 0 , 0	},
 	{ "\277\357\271\366\270\260"			, 0 , 0	},
-	{ "\306\304\300\314\276\356 \277\244\267\271\270\340\305\273"	, 0 , 0	}
+	{ "\306\304\300\314\276\356 \277\244\267\271\270\340\305\273"	, 0 , 0	},
+	{ "\276\306\270\243\304\355\264\331"	, 0 , 0	}		// tier 5 Atalanta: Arcuda (GameServer\Monster\100_s_Arcuda.inf)
 };
 
 // 장별 - 소울스톤
@@ -3611,9 +3612,13 @@ smCHAR *OpenMonsterFromSkill( DWORD SkillCode , int x, int y, int z , rsPLAYINFO
 			lpCristalMonster = &srSkillMonster[2];
 			SkillMonsterAttackFlag = TRUE;
 			break;
+		case SKILL_PLAY_SUMMON_ARCUDA:		// tier 5
+			lpCristalMonster = &srSkillMonster[3];
+			SkillMonsterAttackFlag = TRUE;
+			break;
 	}
 
-	if ( !lpCristalMonster->lpCharInfo ) return NULL;
+	if ( !lpCristalMonster || !lpCristalMonster->lpCharInfo ) return NULL;
 
 	if ( lpPlayInfo ) {
 		//이미 소환된 몹 있으면 제거
@@ -31502,10 +31507,12 @@ int rsUpdateSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand )
 		case SKILL_PLAY_METAL_GOLEM:
 		case SKILL_PLAY_RECALL_WOLVERIN:
 		case SKILL_PLAY_FIRE_ELEMENTAL:
+		case SKILL_PLAY_SUMMON_ARCUDA:
 
 		case SKILL_METAL_GOLEM:
 		case SKILL_RECALL_WOLVERIN:
 		case SKILL_FIRE_ELEMENTAL:
+		case SKILL_SUMMON_ARCUDA:
 
 			if ( lpPlayInfo->lpLinkChar && lpPlayInfo->lpLinkChar->dwObjectSerial==lpPlayInfo->dwLinkCharCode && lpPlayInfo->lpLinkChar->HoSkillCode ) {
 				//소환몹 모드 변경
@@ -32072,6 +32079,23 @@ int rsRecvProcessSkill( rsPLAYINFO *lpPlayInfo , smTRANS_COMMAND *lpTransCommand
 					lpChar->sMoveStepCount[1] = 2;
 
 					lpChar->smCharInfo.wPlayClass[1] = (fONE/2)+point*12;		//크기 확대
+				}
+			}
+			break;
+
+		case SKILL_PLAY_SUMMON_ARCUDA:		// tier 5 Atalanta: Arcuda, like the Wolverine
+			if ( lpPlayInfo->smCharInfo.JOB_CODE==JOBCODE_ATALANTA && lpPlayInfo->smCharInfo.ChangeJob>=4 ) {
+				lpChar = OpenMonsterFromSkill( dwSkillCode , lpPlayInfo->Position.x,lpPlayInfo->Position.y,lpPlayInfo->Position.z, lpPlayInfo ,0);
+				if ( lpChar ) {
+					lpChar->dwUpdateCharInfoTime = dwPlayServTime+(Summon_Arcuda_Time[point]-5)*1000;
+					lpChar->smCharInfo.Attack_Damage[0] = Summon_Arcuda_Damage[point][0];
+					lpChar->smCharInfo.Attack_Damage[1] = Summon_Arcuda_Damage[point][1];
+					lpChar->smCharInfo.Attack_Rating = Summon_Arcuda_Hit[point];
+					lpChar->smCharInfo.Defence = Summon_Arcuda_Defense[point]+lpPlayInfo->smCharInfo.Dexterity*2;
+					lpChar->smCharInfo.Life[0] = Summon_Arcuda_Life[point];
+					lpChar->smCharInfo.Life[1] = Summon_Arcuda_Life[point];
+					lpChar->sMoveStepCount[0] = 1;
+					lpChar->sMoveStepCount[1] = 2;
 				}
 			}
 			break;

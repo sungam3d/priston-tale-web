@@ -3675,6 +3675,13 @@ int rsSetSkillAttack( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , TRANS_ATTACKDATA
 			}
 			break;
 
+		//Atalanta tier 5 (the fifth rank only)
+		case SKILL_PLAY_SNIPPY_FEAR:
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ATALANTA || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			lpTransAttackData->Power += (lpTransAttackData->Power*Snippy_Fear_DamagePercent[Point])/100;
+			lpTransAttackData2->Critical[0] += Snippy_Fear_Critical[Point];
+			break;
+
 		//Knight tier 5 (the fifth rank only)
 		case SKILL_PLAY_SOUL_BREAKER:
 			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_KNIGHT || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
@@ -5263,6 +5270,19 @@ rsDisplayDamgeToClient( lpPlayInfo , szDispDamage );
 			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
 			return TRUE;
 
+		case SKILL_PLAY_GALAXY_COUP:		//Atalanta tier 5: weapon damage +%, the target and those around it
+			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ATALANTA || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
+			if ( lpTransSkillAttackData->TargetCount>13 ) return FALSE;
+
+			pow = GetRandomPos( lpTransRangeAttack->Power[0] , lpTransRangeAttack->Power[1] );
+			pow += (pow*Galaxy_Coup_DamagePercent[Point])/100;
+			lpTransAttackData->Power = pow;
+			lpTransSkillAttackData->AttackSize = Galaxy_Coup_Area[Point];
+			lpTransSkillAttackData->Power = pow;
+			lpTransSkillAttackData->AttackState = 0;
+			dm_Critical_Temp = lpTransRangeAttack->Critical[0];
+			return TRUE;
+
 		case SKILL_PLAY_NATURE_SPLASH:		//Archer tier 5: weapon damage +%, the target and those around it
 		case SKILL_PLAY_CIRCLE_TRAP:		//(Circle Trap also slows them: RecvRangeAttack)
 			if ( lpPlayInfo->smCharInfo.JOB_CODE!=JOBCODE_ARCHER || lpPlayInfo->smCharInfo.ChangeJob<4 ) return FALSE;
@@ -6220,6 +6240,7 @@ int	rsBillingItemSkill( rsPLAYINFO *lpPlayInfo , smCHAR *lpChar , int HitMonster
 
 	if ( SkillCode==SKILL_PLAY_ROAR || SkillCode==SKILL_PLAY_METAL_GOLEM || SkillCode==SKILL_PLAY_COMPULSION || SkillCode==SKILL_PLAY_EXTINCTION ||
 		SkillCode==SKILL_PLAY_RECALL_WOLVERIN || SkillCode==SKILL_PLAY_FIRE_ELEMENTAL || SkillCode==SKILL_PLAY_DISTORTION ||
+		SkillCode==SKILL_PLAY_SUMMON_ARCUDA || SkillCode==SKILL_PLAY_SUMMON_RAMIEL ||
 		SkillCode==SKILL_PLAY_PET_ATTACK || SkillCode==SKILL_PLAY_PET_ATTACK2 || lpPlayInfo->Position.Area==rsCASTLE_FIELD )
 	{
 		return FALSE;

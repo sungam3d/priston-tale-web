@@ -6317,6 +6317,9 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 					sinChar->Defence += (int)((float)sinChar->Defence * TempSkillData);
 					SkillTextColor[SIN2_DEFENSE] = SIN_TEXT_COLOR_BLUE;
 				break;
+				case SKILL_TALARIA:			// tier 5 Atalanta: move speed +
+					sinChar->Move_Speed += Talaria_Speed[ContinueSkill[i].Point-1];
+				break;
 				case SKILL_AMPLIFIED:		// tier 5 Pikeman: attack rating +%
 					sinChar->Attack_Rating += (sinChar->Attack_Rating*Amplified_AddHit[ContinueSkill[i].Point-1])/100;
 					SkillTextColor[SIN2_ATTACK_RATE] = SIN_TEXT_COLOR_ORANGE;

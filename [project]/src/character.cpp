@@ -12014,6 +12014,19 @@ int smCHAR::BeginSkill( int SkilCode , int Level , smCHAR *lpTarChar , int x, in
 		SkillPlaySound( SKILL_SOUND_SKILL_MAXIMIZE2 , pX,pY,pZ );
 		break;
 
+	//Atalanta tier 5 (the older skills' effects for now)
+	case SKILL_PLAY_TALARIA:
+		SkillValhallaHallOfValhallaHandEffect( this , (float)(point ? Talaria_Time[point-1] : 120) );
+		SkillPlaySound( SKILL_SOUND_SKILL_HALL_OF_VALHALLA , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_SUMMON_ARCUDA:
+		SkillPlaySound( SKILL_SOUND_SKILL_RECALL_WOLVERIN , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_GALAXY_COUP:
+	case SKILL_PLAY_SNIPPY_FEAR:
+		SkillPlaySound( SKILL_SOUND_SKILL_FROST_JAVELIN , pX,pY,pZ );
+		break;
+
 	//Knight tier 5 (the older skills' effects for now)
 	case SKILL_PLAY_SOUL_BREAKER:
 	case SKILL_PLAY_CRESCENT_MOON:
@@ -14749,6 +14762,30 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 				cnt = dm_SendTransDamage( chrAttackTarget , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
 				smCharInfo.Attack_Rating = t5rate;
 				lpCurPlayer->AttackCritcal = cnt ? 0 : -1;
+			}
+		}
+		break;
+
+	//Atalanta tier 5
+	case SKILL_PLAY_SNIPPY_FEAR:
+		if ( chrAttackTarget && AttackCritcal>=0 && GetAttackPoint( &x,&y,&z )==TRUE ) {
+			StartSkill( chrAttackTarget->pX,chrAttackTarget->pY+(24*fONE),chrAttackTarget->pZ, 0,0,0, SKILL_TRIPLE_IMPACT );
+			SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 120, 0,0,0, 400 );
+		}
+		break;
+
+	case SKILL_PLAY_GALAXY_COUP:
+		if ( chrAttackTarget && point ) {
+			if ( lpCurPlayer!=this ) {
+				dm_SelectRange( chrAttackTarget->pX, chrAttackTarget->pY, chrAttackTarget->pZ, Galaxy_Coup_Area[point-1] , TRUE , 12 );
+				dm_AddRangeDamage( chrAttackTarget );
+			}
+			if ( MotionEvent==1 ) {
+				StartSkill( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ, 0,0,0, SKILL_GREAT_SMASH );
+				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 100, 100,200,0, 500 );
+			}
+			for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
+				StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
 			}
 		}
 		break;

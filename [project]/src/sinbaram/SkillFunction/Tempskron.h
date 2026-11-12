@@ -360,6 +360,25 @@ int F_Crescent_Moon();
 int F_Saint_Blade();
 int F_Holy_Benedic();
 
+//Atalanta tier 5
+extern int Talaria_Speed[10];
+extern int Talaria_Time[10];
+extern int Galaxy_Coup_DamagePercent[10];
+extern int Galaxy_Coup_Area[10];
+extern int Galaxy_Coup_AddHit[10];
+extern int Summon_Arcuda_Damage[10][2];
+extern int Summon_Arcuda_Hit[10];
+extern int Summon_Arcuda_Defense[10];
+extern int Summon_Arcuda_Life[10];
+extern int Summon_Arcuda_Time[10];
+extern int Snippy_Fear_DamagePercent[10];
+extern int Snippy_Fear_Critical[10];
+extern int Snippy_Fear_Range[10];
+int F_Talaria();
+int F_Galaxy_Coup();
+int F_Summon_Arcuda();
+int F_Snippy_Fear();
+
 //Fighter tier 5
 extern int Down_Hit_DamagePercent[10];
 extern int Down_Hit_AddHit[10];

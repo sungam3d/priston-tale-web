@@ -833,6 +833,29 @@ int Saint_Blade_Undead[10]			= {5,10,15,20,25,30,35,40,45,50};			//undead: a fur
 int Holy_Benedic_Undead[10]			= {25,30,35,40,45,50,55,60,65,70};			//undead: attack power +%
 int Holy_Benedic_Time[10]			= {120,140,160,180,200,220,240,260,280,300};	//seconds
 
+//[Atalanta] tier 5
+//Talaria: faster on the move
+int Talaria_Speed[10]				= {1,1,1,2,2,2,3,3,3,4};					//move speed +
+int Talaria_Time[10]				= {120,140,160,180,200,220,240,260,280,300};	//seconds
+
+//Galaxy Coup: a javelin pinning the target and the enemies around it
+int Galaxy_Coup_DamagePercent[10]	= {80,95,110,125,140,155,170,185,200,215};	//attack power +%
+int Galaxy_Coup_Area[10]			= {100,105,110,115,120,125,130,135,140,145};	//radius
+int Galaxy_Coup_AddHit[10]			= {30,45,60,75,90,105,120,135,150,165};		//attack rating +%
+
+//Summon Arcuda: a bear that fights at your side for 360 seconds
+int Summon_Arcuda_Damage[10][2]		= {{120,140},{130,150},{140,160},{150,170},{160,180},
+									   {170,190},{180,200},{190,210},{200,220},{210,230}};	//its attack power
+int Summon_Arcuda_Hit[10]			= {1000,1100,1200,1300,1400,1500,1600,1700,1800,1900};	//its attack rating
+int Summon_Arcuda_Defense[10]		= {1300,1400,1500,1600,1700,1800,1900,2000,2100,2200};	//its defense (+ agility x2)
+int Summon_Arcuda_Life[10]			= {2500,2700,2900,3100,3300,3500,3700,3900,4100,4300};	//its life
+int Summon_Arcuda_Time[10]			= {360,360,360,360,360,360,360,360,360,360};	//seconds
+
+//Snippy Fear: a critical javelin blow from further away
+int Snippy_Fear_DamagePercent[10]	= {115,135,155,175,195,215,235,255,275,295};	//attack power +%
+int Snippy_Fear_Critical[10]		= {5,8,11,14,17,20,23,26,29,32};			//critical +%
+int Snippy_Fear_Range[10]			= {20,25,30,35,40,45,50,55,60,65};			//throwing range +
+
 //[Fighter] tier 5
 //Down Hit: lifts the target and strikes it 3 times
 int Down_Hit_DamagePercent[10]		= {50,80,110,140,170,200,230,260,290,320};	//attack power +%

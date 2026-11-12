@@ -2041,6 +2041,27 @@ int F_Holy_Benedic()
 	return TRUE;
 }
 
+//Atalanta tier 5
+int F_Talaria()
+{
+	pUseSkill->UseTime = Talaria_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();		// the move speed (sinInvenTory.cpp SetItemToChar)
+	return TRUE;
+}
+int F_Galaxy_Coup()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+int F_Summon_Arcuda()
+{
+	pUseSkill->UseTime = Summon_Arcuda_Time[pUseSkill->Point-1];
+	sinContinueSkillSet(pUseSkill);
+	sinUseManaStamina(pUseSkill);
+	cInvenTory.SetItemToChar();
+	SummonSkillCodeIndex[3] = 0;		// sinSubMain.cpp SummonSkillCode: its attack mode
+	return TRUE;
+}
+int F_Snippy_Fear()		{ sinUseManaStamina(pUseSkill); return TRUE; }
+
 //파이크맨
 int F_Assassin_Eye()
 {

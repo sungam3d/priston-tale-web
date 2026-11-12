@@ -935,9 +935,13 @@ int OpenPlaySkill( sSKILL *lpSkill )
 	case SKILL_POWER_ENHANCEMENT:	//Mechanician: attack power (the server)
 	case SKILL_AMPLIFIED:			//Pikeman: damage (the server), attack rating and absorption (the client)
 	case SKILL_HOLY_BENEDIC:		//Knight: damage against the undead (the server)
+	case SKILL_TALARIA:				//Atalanta: move speed (the client)
+	case SKILL_SUMMON_ARCUDA:		//Atalanta: the server summons Arcuda
 		if ( lpCurPlayer->MotionInfo->State<0x100 ) {
 			int t5play = 0, t5server = 0;
 			switch( lpSkill->CODE ) {
+			case SKILL_TALARIA:				t5play = SKILL_PLAY_TALARIA;							break;
+			case SKILL_SUMMON_ARCUDA:		t5play = SKILL_PLAY_SUMMON_ARCUDA;		t5server = 1;	break;
 			case SKILL_HOLY_BENEDIC:		t5play = SKILL_PLAY_HOLY_BENEDIC;		t5server = 1;	break;
 			case SKILL_HYPER_SONIC:			t5play = SKILL_PLAY_HYPER_SONIC;							break;
 			case SKILL_POWER_ENHANCEMENT:	t5play = SKILL_PLAY_POWER_ENHANCEMENT;	t5server = 1;	break;
@@ -1377,6 +1381,14 @@ int GetSkillDistRange( sSKILL *lpSkill , int AttackRange , int AttackMode )
 		if ( lpSkill->Point ) {
 			cnt = Crescent_Moon_Range[lpSkill->Point-1]*fONE;
 			if ( AttackRange>cnt ) break;
+			LastAttackRange = cnt;
+			return cnt;
+		}
+		break;
+
+	case SKILL_SNIPPY_FEAR:
+		if ( lpSkill->Point ) {
+			cnt = AttackRange+Snippy_Fear_Range[lpSkill->Point-1]*fONE;
 			LastAttackRange = cnt;
 			return cnt;
 		}
@@ -3525,6 +3537,42 @@ int Avalanche_ArrowNum[10]	= {3,3,3,4,4,4,5,5,5,6};
 		}
 		return TRUE;
 
+	//Atalanta tier 5
+	case SKILL_GALAXY_COUP:			//a javelin on the target and the enemies around it, more accurate
+		if ( lpSkill->Point && lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_GALAXY_COUP;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			temp = lpCurPlayer->smCharInfo.Attack_Rating;
+			lpCurPlayer->smCharInfo.Attack_Rating += (temp*Galaxy_Coup_AddHit[lpSkill->Point-1])/100;
+			dm_SelectRange( lpChar->pX, lpChar->pY, lpChar->pZ, Galaxy_Coup_Area[lpSkill->Point-1] , TRUE , 12 );
+			dm_AddRangeDamage( lpChar );
+			dm_SendRangeDamage( lpChar->pX, lpChar->pY, lpChar->pZ,  lpChar , 0 , 0 ,0,0, lpCurPlayer->AttackSkil );
+			lpCurPlayer->smCharInfo.Attack_Rating = temp;
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
+	case SKILL_SNIPPY_FEAR:			//one critical javelin blow, from further away
+		if ( lpSkill->Point && lpSkill->Skill_Info.FuncPointer()==TRUE ) {
+			lpCurPlayer->AttackSkil = SKILL_PLAY_SNIPPY_FEAR;
+			lpCurPlayer->AttackSkil |= (lpSkill->Point<<8);
+			lpCurPlayer->BeginSkill(lpCurPlayer->AttackSkil,0,lpChar,0,0,0);
+			lpCurPlayer->SetMotionFromCode( CHRMOTION_STATE_SKILL );
+
+			cnt = dm_SendTransDamage( lpChar , 0,0 , 0, 0, lpCurPlayer->AttackSkil , TRUE );
+			if ( !cnt )
+				lpCurPlayer->AttackCritcal = -1;
+
+			lpCurPlayer->MotionLoopSpeed = 70;
+			lpCurPlayer->MotionLoop = 1;
+		}
+		return TRUE;
+
 	//Archer tier 5
 	case SKILL_EVADE_SHOT:			//one shot that stuns (the server stuns: monsters only, not bosses)
 	case SKILL_THUNDER_ROPE:		//one shot, with more reach and accuracy
@@ -3831,6 +3879,17 @@ int Avalanche_ArrowNum[10]	= {3,3,3,4,4,4,5,5,5,6};
 	case SKILL_SUMMON_MUSPELL:
 	case SKILL_FIRE_ELEMENTAL:
 	case SKILL_DISTORTION:
+	//tier 5 self casts
+	case SKILL_BLOODY_BERSERKER:
+	case SKILL_HYPER_SONIC:
+	case SKILL_POWER_ENHANCEMENT:
+	case SKILL_AMPLIFIED:
+	case SKILL_HOLY_BENEDIC:
+	case SKILL_TALARIA:
+	case SKILL_SUMMON_ARCUDA:
+	case SKILL_SUMMON_RAMIEL:
+	case SKILL_BLESSING_KRISHNA:
+	case SKILL_THIRD_ANIMA:
 
 
 		return TRUE;
