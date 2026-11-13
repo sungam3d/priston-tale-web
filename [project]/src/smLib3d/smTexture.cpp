@@ -2954,7 +2954,9 @@ int DrawSurfaceFromDib( LPDIRECTDRAWSURFACE4 lpDDSurface , BYTE *lpDib )
 		int pBuff_w;
 		int pBuff_k;
 
-		if (GetDibBitCount(lpDib)==24) {
+		// 24-bit, or 32-bit (the later item images; its 4th byte is not used, as with 24-bit)
+		int DibBpx = GetDibBitCount(lpDib)==32 ? 4 : 3;
+		if (GetDibBitCount(lpDib)==24 || GetDibBitCount(lpDib)==32) {
 			ddsd.dwSize		= sizeof(DDSURFACEDESC2);
 			lpDDSurface->Lock(NULL,&ddsd,DDLOCK_WAIT,NULL);
 			Dest = (BYTE *)ddsd.lpSurface;
@@ -2979,9 +2981,9 @@ int DrawSurfaceFromDib( LPDIRECTDRAWSURFACE4 lpDDSurface , BYTE *lpDib )
 				for(j=0;j<width;j++) {
 				
 					//pBuff = (height-i-1)*width*3 + (j*3);
-					pBuff = pBuff_w + (j*3);
-					b = dAddr[ pBuff ]; 
-					g = dAddr[ pBuff +1]; 
+					pBuff = pBuff_w + (j*DibBpx);
+					b = dAddr[ pBuff ];
+					g = dAddr[ pBuff +1];
 					r = dAddr[ pBuff +2];
 					a = 255;
 
@@ -3006,7 +3008,7 @@ int DrawSurfaceFromDib( LPDIRECTDRAWSURFACE4 lpDDSurface , BYTE *lpDib )
 					}
 
 				}
-				pBuff_w =  ((pBuff_w+width*3)+3)&0xFFFFFFFC;
+				pBuff_w =  ((pBuff_w+width*DibBpx)+3)&0xFFFFFFFC;
 				pBuff_k -= (int)ddsd.lPitch;
 			}
 			lpDDSurface->Unlock(NULL);
