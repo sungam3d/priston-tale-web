@@ -92,6 +92,7 @@
 	window.onerror = function (msg) { Module.setStatus('Error: ' + msg); };
 </script>
 <script src="progress.js"></script>
+<script src="fulldl.js"></script>
 <script src="settings.js"></script>
 <script src="admin.js"></script>
 <script>
@@ -137,7 +138,10 @@
 		Module.locateFile = function (path) {
 			return new URL(path, location.href).href + (ver && /\.wasm$/.test(path) ? '?v=' + encodeURIComponent(ver) : '');
 		};
-		function go() { gotVer.then(start, start); }
+		// web\fulldl.js: the player picks "play now" or "download the full game" first (once), and
+		// with the full game, files changed since the last visit download before the game starts
+		function gate() { return window.ptDownloadGate ? window.ptDownloadGate() : null; }
+		function go() { gotVer.then(gate, gate).then(start, start); }
 		var sw = navigator.serviceWorker;
 		if (!sw) return go();					// old browser or private window: downloads as before
 		if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});

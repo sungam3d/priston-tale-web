@@ -95,7 +95,7 @@ def main():
     shutil.copy(os.path.join(OUTDIR, 'game.html'), os.path.join(site, 'index.html'))
     for f in ('game.html', 'game.js', 'game.wasm', 'server_worker.js', 'data_startup.pack'):
         shutil.copy(os.path.join(OUTDIR, f), site)
-    for f in ('sw.js', 'progress.js', 'settings.js', 'admin.js'):
+    for f in ('sw.js', 'progress.js', 'fulldl.js', 'settings.js', 'admin.js'):
         shutil.copy(os.path.join(HERE, f), site)
     # the build: the page asks for game.js/game.wasm with it (a reload always gets the new ones)
     # and offers a reload when it changes (web\shell.html, web\progress.js)
