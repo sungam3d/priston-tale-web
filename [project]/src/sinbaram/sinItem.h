@@ -8,7 +8,7 @@
 
 #define _SINITEM_HEADER_
 
-#define MAX_ITEM					1072 // 983 + the daggers, phantoms and vambraces (89, tier 5 project) //071203 (700->720 ) pluto
+#define MAX_ITEM					1400 // 1072 + the gear of levels 106-145 (221, sinItem_NewGear.h) // 983 + the daggers, phantoms and vambraces (89, tier 5 project) //071203 (700->720 ) pluto
 										 //작성자 : 박재원,  작성일 : 08.04.07
 										 //내  용 : 클랜치프 링 20개 추가(720->740)					
 										 // 박재원 - 수표 삭제 후 746 부터 시작

@@ -18587,6 +18587,15 @@ static DWORD DeckItemClass( DWORD dwCode )
 	return 0;
 }
 
+// the gear of levels 106-145: regular gear although some are numbered past 30
+#include "..\sinbaram\sinItem_NewGearCodes.h"
+static int DeckIsNewGear( DWORD dwCode )
+{
+	for ( int cnt=0; DeckNewGearCodes[cnt]; cnt++ )
+		if ( DeckNewGearCodes[cnt]==dwCode ) return TRUE;
+	return FALSE;
+}
+
 // the item's number in its family (WA129 -> 29); 0 when unknown
 static int DeckItemOrdinal( DWORD dwCode )
 {
@@ -18634,7 +18643,7 @@ static int DeckPickItem( rsPLAYINFO *lpPlayInfo , DWORD dwFamily , int Aging , s
 			if ( lpDef->Level>lpChar->Level ) continue;
 			if ( !CanClassUseWeapon( JobCode, lpDef->CODE ) ) continue;
 			int ord = DeckItemOrdinal( lpDef->CODE );
-			if ( ord<=0 || ord>30 ) continue;				// event, costume and premium items
+			if ( ord<=0 || ( ord>30 && !DeckIsNewGear( lpDef->CODE ) ) ) continue;	// event, costume and premium items
 			for ( i=0; i<TriedCount; i++ ) if ( Tried[i]==cnt ) break;
 			if ( i<TriedCount ) continue;
 			if ( best<0 || lpDef->Level>DefaultItems[best].Item.Level ||
