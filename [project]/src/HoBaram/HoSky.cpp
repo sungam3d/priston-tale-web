@@ -5,6 +5,10 @@
 
 HoSky	SkyBackGround;
 
+#ifdef PT_WEB
+extern "C" void PtWeb_Crumb( const char *szFormat, ... );		// web\ptwin\src\ptwin_kernel.cpp: the crash trail
+#endif
+
 
 
 void HoSkyDrawInfo::LoadRes()
@@ -15,6 +19,9 @@ void HoSkyDrawInfo::LoadRes()
 		{
 			char buffer[256];
  			strcpy(buffer, SkyResInfoList[index].resName.c_str());
+#ifdef PT_WEB
+			PtWeb_Crumb( "sky: load %s", buffer );
+#endif
 			smPAT3D *stageSky = smASE_Read(buffer);
 			if(stageSky)
 			{
@@ -1164,6 +1171,9 @@ int DestroySky()
 
 int ChangeSky(int codeID)
 {
+#ifdef PT_WEB
+	if ( SkyBackGround.GetCodeID()!=codeID ) PtWeb_Crumb( "sky: code %d -> %d", SkyBackGround.GetCodeID(), codeID );
+#endif
    	if(SkyBackGround.TestModeFlag == FALSE)
 	{
 		if(codeID == FIELD_BACKIMAGE_NIGHTIRON1 ||

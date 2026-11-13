@@ -795,6 +795,9 @@ int InitLoader();
 //모델 로딩을 위한 쓰레드 생성
 int CreateLoaderThread();
 DWORD WINAPI smLoaderThreadProc( void *pInfo );
+#ifdef PT_WEB
+extern "C" void PtWeb_Crumb( const char *szFormat, ... );		// web\ptwin\src\ptwin_kernel.cpp: the crash trail
+#endif
 
 struct smDATALOADER	{
 	smSTAGE3D	*lpStage;
@@ -834,7 +837,10 @@ int AddLoaderStage( smSTAGE3D *lpStage , char *szName )
 	smLoader[cnt].lpItem		= 0;
 	smLoader[cnt].Cancel		= 0;
 	smLoader[cnt].Result 		= 0;
-	lstrcpy( smLoader[cnt].szLoadName , szName );
+	lstrcpyn( smLoader[cnt].szLoadName , szName , sizeof(smLoader[cnt].szLoadName) );
+#ifdef PT_WEB
+	PtWeb_Crumb( "map: load %s", szName );
+#endif
 
 	//모델 로딩을 위한 쓰레드 생성
 	CreateLoaderThread();
@@ -856,12 +862,15 @@ int	AddLoaderPattern( smCHAR *lpChar , char *szName , char *szName2 )
 	smLoader[cnt].lpItem		= 0;
 	smLoader[cnt].Cancel		= 0;
 	smLoader[cnt].Result 		= 0;
-	lstrcpy( smLoader[cnt].szLoadName , szName );
+	lstrcpyn( smLoader[cnt].szLoadName , szName , sizeof(smLoader[cnt].szLoadName) );
 
-	if ( szName2 ) 
-		lstrcpy( smLoader[cnt].szLoadName2 , szName2 );
+	if ( szName2 )
+		lstrcpyn( smLoader[cnt].szLoadName2 , szName2 , sizeof(smLoader[cnt].szLoadName2) );
 	else
 		smLoader[cnt].szLoadName2[0] = 0;
+#ifdef PT_WEB
+	PtWeb_Crumb( "model: %s%s%s (%s)", szName, szName2 ? " + " : "", szName2 ? szName2 : "", lpChar->smCharInfo.szName );
+#endif
 
 	smLoader[cnt].lpChar->PatLoading = TRUE;
 
@@ -888,7 +897,7 @@ int	AddLoaderItem( scITEM *lpItem , char *szName )
 	smLoader[cnt].lpItem		= lpItem;
 	smLoader[cnt].Cancel		= 0;
 	smLoader[cnt].Result 		= 0;
-	lstrcpy( smLoader[cnt].szLoadName , szName );
+	lstrcpyn( smLoader[cnt].szLoadName , szName , sizeof(smLoader[cnt].szLoadName) );
 
 	smLoader[cnt].lpItem->PatLoading = TRUE;
 

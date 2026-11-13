@@ -116,7 +116,11 @@ def main():
         '-sPTHREAD_POOL_SIZE=8', '-sALLOW_MEMORY_GROWTH', '-sINITIAL_MEMORY=256MB', '-sMAXIMUM_MEMORY=4GB',
         '-sSTACK_SIZE=4MB', '--pre-js', os.path.join(HERE, 'pre.js'), '--shell-file', os.path.join(HERE, 'shell.html'),
         '-sEXPORTED_RUNTIME_METHODS=addRunDependency,removeRunDependency,FS', '-sEXPORTED_FUNCTIONS=_main,_malloc,_free,_PtNet_Receive', '-sFORCE_FILESYSTEM', '-sERROR_ON_UNDEFINED_SYMBOLS=1', '-Wl,--error-limit=0',
-        '-o', os.path.join(outdir, 'game.html')] + ([] if release else ['-sASSERTIONS=1'])
+        '-o', os.path.join(outdir, 'game.html')] + ([] if release else ['-sASSERTIONS=1']) + [
+        # crash reports players can read: function names in the stack (not wasm-function[1234]),
+        # a stack overflow stops with "stack overflow" instead of silently wrecking memory,
+        # and a name list per build (web\out\game.html.symbols) for older reports
+        '--profiling-funcs', '-sSTACK_OVERFLOW_CHECK=2', '--emit-symbol-map']
     # extra link flags for a test build, e.g. PT_LINK_FLAGS=--profiling-funcs (function names in crash stacks)
     link += os.environ.get('PT_LINK_FLAGS', '').split()
     rsp = os.path.join(objdir, 'link.rsp')

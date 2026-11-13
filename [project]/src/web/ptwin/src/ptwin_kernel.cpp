@@ -21,6 +21,22 @@ void PtWin_Log( const char *szFormat, ... )
 	printf( "[ptwin] %s\n", buf );
 }
 
+// The trail: what the game did last (map and sky changes, models, file waits), kept by the
+// page (web\progress.js Module.ptCrumb, the last 40) and printed with a crash. Held in the
+// page, not in the game's memory, so a crash that wrecked that memory still shows it.
+extern "C" void PtWeb_Crumb( const char *szFormat, ... )
+{
+	char buf[256];
+	va_list args;
+	va_start( args, szFormat );
+	vsnprintf( buf, sizeof(buf), szFormat, args );
+	va_end( args );
+	if ( emscripten_is_main_runtime_thread() )
+		EM_ASM( { if ( Module['ptCrumb'] ) Module['ptCrumb']( UTF8ToString( $0 ) ); }, buf );
+	else			// another thread: to the page without waiting for it; the copy is freed there
+		MAIN_THREAD_ASYNC_EM_ASM( { var s = UTF8ToString( $0 ); _free( $0 ); if ( Module['ptCrumb'] ) Module['ptCrumb']( '(thread) ' + s ); }, strdup( buf ) );
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Errors
 //////////////////////////////////////////////////////////////////////////////
