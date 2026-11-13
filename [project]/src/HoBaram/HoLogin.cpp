@@ -25,13 +25,15 @@ char JobSelectCharacterName1[4][500];
 char JobSelectCharacterName2[4][500];
 
 
-static int UserCharacterPos[5][2] = 
+// where an account's characters stand on the select screen: a shallow arc, two to a row
+static int UserCharacterPos[CHARACTER_USER_MAX][2] =
 {
-	{ 0 ,-110 },
-	{ -35 ,-90 },
-	{  35 ,-90 },
-	{ -70 ,-60 },
-	{ 70 ,-60 }
+	{ -25 ,-110 },
+	{  25 ,-110 },
+	{ -65 ,-90 },
+	{  65 ,-90 },
+	{ -100 ,-60 },
+	{ 100 ,-60 }
 };
 
 // where the job screen's classes stand: a shallow arc, set for the race's class count by

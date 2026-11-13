@@ -1,5 +1,5 @@
 ﻿
-#define CHARACTER_USER_MAX			5
+#define CHARACTER_USER_MAX			6		// sPLAY_CHAR_MAX (record.h): characters per account
 #define CHARACTER_JOB_MAX			6		// classes per race on the job screen: Tempskron 6 (with the Assassin and the Martial Artist), Morion 5 (with the Shaman)
 
 

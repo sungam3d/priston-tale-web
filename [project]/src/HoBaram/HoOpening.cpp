@@ -515,6 +515,8 @@ int		CaretCount = 0;
 DWORD	End = 0;
 extern int Client_Version;
 
+#define PT_GAME_VERSION		"1.01.1"		// shown on the login screen
+
 #define	DISP_LOGIN_LEN		15
 
 
@@ -820,16 +822,9 @@ int HoOpening::Draw()
 		HFONT oldFont;
 		oldFont = (HFONT)SelectObject( opHdc , hFont );
 		
-		if ( Client_Version<1000 ) {
-			float Version = (float)Client_Version/100;
-			sprintf(buffer, "%s%2.2f%s", "Ver: ",Version,"b");
-		}
-		else {
-			int v1 = Client_Version/1000;
-			int v2 = (Client_Version/10)%100;
-			int v3 = Client_Version%10;
-			wsprintf(buffer, "%s%d.%d.%d", "Ver: ",v1,v2,v3 );
-		}
+		// the game's version as players see it; Client_Version stays the protocol number the
+		// server checks (LimitVersion, ClientFuncPos), so it is not shown here
+		wsprintf(buffer, "%s%s", "Ver: ", PT_GAME_VERSION );
      		dsTextLineOut(opHdc, smScreenWidth-80, smScreenHeight-75, buffer, strlen(buffer));
 		
 		if(oldFont)

@@ -3643,7 +3643,7 @@ int rsRECORD_DBASE::SendUserDataToClient( char *szID , smWINSOCK *lpsmSock , cha
 		}
 	}
 
-	if ( FindCnt>5 ) FindCnt=5;
+	if ( FindCnt>sPLAY_CHAR_MAX ) FindCnt=sPLAY_CHAR_MAX;
 
 	//클라이언트로 전송
 	TransUserCharInfo.PlayUserCount = FindCnt;
