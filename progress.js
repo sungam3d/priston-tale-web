@@ -91,7 +91,9 @@
 	// a crash: the full error and where in the game it happened, into the log under
 	// the game (copy it from there to report it)
 	function logError(what, err) {
-		var text = err && err.stack ? err.stack : String(err && err.message || err);
+		// Firefox's stack has no message line (Chrome's starts with it): add it
+		var msg = String(err && err.message || err);
+		var text = err && err.stack ? (err.stack.indexOf(msg) < 0 ? (err.name ? err.name + ': ' : '') + msg + '\n' : '') + err.stack : msg;
 		if (Module.printErr) Module.printErr('[web] ' + what + ': ' + text);
 	}
 	window.addEventListener('error', function (e) { logError('error', e.error || e.message); });
