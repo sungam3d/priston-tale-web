@@ -128,6 +128,7 @@
 	// a long log by hand was slow, and impossible once a crash had frozen the page
 	var saveLogBtn = null;
 	function saveLog() {
+		if (window.ptFlushLog) window.ptFlushLog();		// lines still waiting to be shown (web\shell.html)
 		var log = document.getElementById('log');
 		var text = 'Priston Tale log - build ' + (window.PT_BUILD || '?') + ' - ' + new Date().toString() + '\n' +
 			navigator.userAgent + '\n\n' + (log ? log.textContent : '') +
