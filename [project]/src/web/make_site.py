@@ -104,7 +104,7 @@ def main():
         build = hashlib.blake2b(fp.read(), digest_size=6).hexdigest()
     with open(os.path.join(site, 'version.txt'), 'w') as fp:
         fp.write(build + '\n')
-    for f in ('ws.ashx', 'web.config'):
+    for f in ('ws.ashx', 'crash-report.ashx', 'web.config'):
         shutil.copy(os.path.join(HERE, 'site', f), site)
     if not os.path.exists(os.path.join(site, 'config.js')):            # kept if you edited it
         with open(os.path.join(site, 'config.js'), 'w', newline='\n') as fp:

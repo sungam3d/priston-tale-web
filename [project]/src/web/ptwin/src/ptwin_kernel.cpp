@@ -35,12 +35,33 @@ extern "C" const char *__asan_default_options()
 }
 // ASan's own stack walk does not get past the first function here: before each report,
 // print the browser's call stack, which has every function's name
+static char s_AsanStack[16384];
 extern "C" void __asan_on_error()
 {
-	static char stack[16384];
-	emscripten_get_callstack( EM_LOG_C_STACK | EM_LOG_FUNC_PARAMS, stack, sizeof(stack) );
-	printf( "[asan] where (newest first):\n%s\n", stack );
+	emscripten_get_callstack( EM_LOG_C_STACK | EM_LOG_FUNC_PARAMS, s_AsanStack, sizeof(s_AsanStack) );
+	printf( "[asan] where (newest first):\n%s\n", s_AsanStack );
 }
+
+// Each report also goes to the web server (web\site\crash-report.ashx) the moment it is
+// written: an error on one of the game's threads can freeze the page right after, with the
+// report unreachable on screen. A synchronous request, which works on any thread.
+EM_JS( void, PtWeb_SendCrashReport, ( const char *kind, const char *text ), {
+	try {
+		var x = new XMLHttpRequest();
+		x.open( 'POST', self.location.origin + '/crash-report.ashx?kind=' + encodeURIComponent( UTF8ToString( kind ) ), false );
+		x.setRequestHeader( 'Content-Type', 'text/plain;charset=utf-8' );
+		x.send( UTF8ToString( text ) );
+	} catch ( e ) {}
+} );
+#include <sanitizer/asan_interface.h>
+static void OnAsanReport( const char *report )
+{
+	std::string all = std::string( "AddressSanitizer report, game thread " ) +
+		( emscripten_is_main_runtime_thread() ? "main" : "other" ) + "\n\n" + ( report ? report : "" ) +
+		"\n[asan] where (newest first):\n" + s_AsanStack + "\n";
+	PtWeb_SendCrashReport( "asan", all.c_str() );
+}
+static struct PtAsanInit { PtAsanInit() { __asan_set_error_report_callback( OnAsanReport ); } } s_PtAsanInit;
 #endif
 #endif
 
