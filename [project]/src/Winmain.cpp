@@ -17,6 +17,16 @@
 #ifdef PT_WEB
 #include <emscripten.h>
 #include "lang\\pt_lang.h"
+// Start-up in steps: the time each took into the log, and the browser gets its turn between
+// them - one long stretch without it and Firefox calls the page stuck ("slowing down")
+static void PtWeb_StartStep( const char *szDone )
+{
+	static double s_Last = 0;
+	double now = emscripten_get_now();
+	if ( s_Last && now-s_Last>500 ) printf( "[web] start-up: %s took %.1f s\n", szDone, (now-s_Last)/1000 );
+	emscripten_sleep( 0 );
+	s_Last = emscripten_get_now();
+}
 // Page settings (web\settings.js): Module.ptOpts = { v: version, music, effects
 // (0 = off .. 1), view (draw distance in map cells, 0 = the game's own), weather
 // (weather.h PTWX_SET_*), lang (lang\pt_lang.h PT_LANG_*) }. Read
@@ -1021,6 +1031,9 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPreInst, LPSTR lpCmdLine,INT nCmd
 #endif
 
 	if ( InitD3D( hwnd )==NULL ) return FALSE;
+#ifdef PT_WEB
+	PtWeb_StartStep( "graphics" );
+#endif
 
 	//Check_PlaySubReleaseFunc();
 	//nProtect 실행
@@ -1079,6 +1092,9 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPreInst, LPSTR lpCmdLine,INT nCmd
 	else {
 		DeleteFile( "ddd.txt" );			//클랜 디버그 파일 삭제
 	}
+#ifdef PT_WEB
+	PtWeb_StartStep( "windows, fonts, sockets" );
+#endif
 
 	SetGameMode( 1 );
 	CharacterName1[0] = 0;
@@ -4223,13 +4239,22 @@ int SetGameMode( int mode )
 		//작 성 자 : 오 영 석
 		smRender.CreateRenderBuff(CameraSight);
 		//######################################################################################
+#ifdef PT_WEB
+		PtWeb_StartStep( "render buffers" );
+#endif
 
 
 		//lpPlaySelect = new ccsSELECT();
 		// 메트리얼 초기화
 		InitMaterial();
 		smRender.SetMaterialGroup( smMaterialGroup );			//기본 메트리얼 그룹
+#ifdef PT_WEB
+		PtWeb_StartStep( "materials" );
+#endif
 		InitEffect();			//호 이펙트 초기화
+#ifdef PT_WEB
+		PtWeb_StartStep( "effects" );
+#endif
 
 		DIsplayLogoImage();			//로고를 보여준다
 //국문용

@@ -207,6 +207,20 @@ static void FetchWait()
 static void EnsureFetched( const std::string &abs, const std::string &rel )
 {
 	struct stat st;
+	// A long load (start-up, the character screen, a map) opens file after file without
+	// ever giving the browser its turn; past a few seconds Firefox calls the page stuck
+	// ("slowing down"). Opening a file can already wait here (a download), so give it its
+	// turn when a quarter of a second has gone by without one.
+	if ( emscripten_is_main_runtime_thread() ) {
+		static double s_LastYield = 0;
+		double now = emscripten_get_now();
+		if ( s_LastYield && now - s_LastYield > 2000 ) {		// where a long stretch without files was
+			static char stack[4096];
+			emscripten_get_callstack( EM_LOG_C_STACK, stack, sizeof(stack) );
+			PtWin_Log( "busy %.1f s without a break, then opened %s:\n%s", ( now - s_LastYield )/1000, rel.c_str(), stack );
+		}
+		if ( now - s_LastYield > 250 ) { emscripten_sleep( 0 ); s_LastYield = emscripten_get_now(); }
+	}
 	if ( stat( abs.c_str(), &st )==0 ) return;
 	PtFsWaitNote note( rel.c_str() );		// "waiting for this file" until we return
 	for (;;) {			// someone else downloading it: wait for them
