@@ -1315,7 +1315,7 @@ char *szModel_MartialFaceName[FACE_MODEL_MAX][HEAREPOTION_MAX] = {
 };
 
 #define	ARMOR_JOB_ROWS		11	// armour rows (playsub.cpp ArmorJobNum): 8 classes + the Assassin, the Shaman, the Martial Artist
-#define	ARMOR_FILE_MAX		54 // 54
+#define	ARMOR_FILE_MAX		70 // 54 + body models 025..040 (Magic to the level 145 gear: playsub.cpp NewArmorModel)
 
 //일반 옷 모델 목록
 char *szArmorNumFile[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
@@ -1324,7 +1324,8 @@ char *szArmorNumFile[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "A001.ini" , "A022.ini",  "A023.ini",  "A024.ini",  "A001.ini",  "A001.ini",  "A001.ini",  "A001.ini",
 	  "Ca001.ini", "Ca001.ini", "Ca001.ini", "Ca001.ini", "Ca002.ini", "Ca002.ini", "Ca002.ini", "Ca002.ini",
 	  "Ca003.ini", "Ca003.ini", "Ca003.ini", "Ca003.ini", "Ca004.ini", "Ca004.ini", "Ca004.ini", "Ca004.ini",
-	  "Ca005.ini", "Ca006.ini", "Ca007.ini", "Ca008.ini", "Ca009.ini", "Ca010.ini", "Ca011.ini", "Ca012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Ca005.ini", "Ca006.ini", "Ca007.ini", "Ca008.ini", "Ca009.ini", "Ca010.ini", "Ca011.ini", "Ca012.ini",
+	  "A025.ini", "A026.ini", "A027.ini", "A028.ini", "A029.ini", "A030.ini", "A031.ini", "A032.ini", "A033.ini", "A034.ini", "A035.ini", "A036.ini", "A037.ini", "A038.ini", "A039.ini", "A040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 
 	},
 
@@ -1333,7 +1334,8 @@ char *szArmorNumFile[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "B001.ini" , "B022.ini" , "B023.ini",  "B024.ini",  "B001.ini",  "B001.ini" , "B001.ini" , "B001.ini",
 	  "Cb001.ini", "Cb001.ini", "Cb001.ini", "Cb001.ini", "Cb002.ini", "Cb002.ini", "Cb002.ini", "Cb002.ini",	
 	  "Cb003.ini", "Cb003.ini", "Cb003.ini", "Cb003.ini", "Cb004.ini", "Cb004.ini", "Cb004.ini", "Cb004.ini",
-	  "Cb005.ini", "Cb006.ini", "Cb007.ini", "Cb008.ini", "Cb009.ini", "Cb010.ini", "Cb011.ini", "Cb012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cb005.ini", "Cb006.ini", "Cb007.ini", "Cb008.ini", "Cb009.ini", "Cb010.ini", "Cb011.ini", "Cb012.ini",
+	  "B025.ini", "B026.ini", "B027.ini", "B028.ini", "B029.ini", "B030.ini", "B031.ini", "B032.ini", "B033.ini", "B034.ini", "B035.ini", "B036.ini", "B037.ini", "B038.ini", "B039.ini", "B040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 
 	
@@ -1342,7 +1344,8 @@ char *szArmorNumFile[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "C001.ini" , "C022.ini",  "C023.ini",  "C024.ini",  "C001.ini",  "C001.ini",  "C001.ini",  "C001.ini",
 	  "Cc001.ini", "Cc001.ini", "Cc001.ini", "Cc001.ini", "Cc002.ini", "Cc002.ini", "Cc002.ini", "Cc002.ini",
 	  "Cc003.ini", "Cc003.ini", "Cc003.ini", "Cc003.ini", "Cc004.ini", "Cc004.ini", "Cc004.ini", "Cc004.ini",
-	  "Cc005.ini", "Cc006.ini", "Cc007.ini", "Cc008.ini", "Cc009.ini", "Cc010.ini", "Cc011.ini", "Cc012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cc005.ini", "Cc006.ini", "Cc007.ini", "Cc008.ini", "Cc009.ini", "Cc010.ini", "Cc011.ini", "Cc012.ini",
+	  "C025.ini", "C026.ini", "C027.ini", "C028.ini", "C029.ini", "C030.ini", "C031.ini", "C032.ini", "C033.ini", "C034.ini", "C035.ini", "C036.ini", "C037.ini", "C038.ini", "C039.ini", "C040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 
 	{ "D001.ini" , "D001.ini",  "D002.ini",  "D003.ini",  "D004.ini",  "D005.ini",  "D006.ini",  "D007.ini", "D008.ini", "D009.ini", "D010.ini", 
@@ -1350,7 +1353,8 @@ char *szArmorNumFile[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "D001.ini" , "D022.ini",  "D023.ini",  "D024.ini",  "D001.ini",  "D001.ini",  "D001.ini",  "D001.ini",
 	  "Cd001.ini", "Cd001.ini", "Cd001.ini", "Cd001.ini", "Cd002.ini", "Cd002.ini", "Cd002.ini", "Cd002.ini",
 	  "Cd003.ini", "Cd003.ini", "Cd003.ini", "Cd003.ini", "Cd004.ini", "Cd004.ini", "Cd004.ini", "Cd004.ini",
-	  "Cd005.ini", "Cd006.ini", "Cd007.ini", "Cd008.ini", "Cd009.ini", "Cd010.ini", "Cd011.ini", "Cd012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cd005.ini", "Cd006.ini", "Cd007.ini", "Cd008.ini", "Cd009.ini", "Cd010.ini", "Cd011.ini", "Cd012.ini",
+	  "D025.ini", "D026.ini", "D027.ini", "D028.ini", "D029.ini", "D030.ini", "D031.ini", "D032.ini", "D033.ini", "D034.ini", "D035.ini", "D036.ini", "D037.ini", "D038.ini", "D039.ini", "D040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 
 	{ "mA001.ini",  "mA001.ini",  "mA002.ini",  "mA003.ini",   "mA004.ini",  "mA005.ini",  "mA006.ini",  "mA007.ini", "mA008.ini", "mA009.ini", "mA010.ini", 
@@ -1358,7 +1362,8 @@ char *szArmorNumFile[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "mA001.ini",  "mA022.ini",  "mA023.ini",  "mA024.ini",  "mA001.ini",   "mA001.ini",  "mA001.ini",  "mA001.ini",
 	  "Cma001.ini", "Cma001.ini", "Cma001.ini", "Cma001.ini",  "Cma002.ini", "Cma002.ini", "Cma002.ini", "Cma002.ini",
 	  "Cma003.ini", "Cma003.ini", "Cma003.ini", "Cma003.ini",  "Cma004.ini", "Cma004.ini", "Cma004.ini", "Cma004.ini",
-	  "Cma005.ini", "Cma006.ini", "Cma007.ini", "Cma008.ini", "Cma009.ini", "Cma010.ini", "Cma011.ini", "Cma012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cma005.ini", "Cma006.ini", "Cma007.ini", "Cma008.ini", "Cma009.ini", "Cma010.ini", "Cma011.ini", "Cma012.ini",
+	  "mA025.ini", "mA026.ini", "mA027.ini", "mA028.ini", "mA029.ini", "mA030.ini", "mA031.ini", "mA032.ini", "mA033.ini", "mA034.ini", "mA035.ini", "mA036.ini", "mA037.ini", "mA038.ini", "mA039.ini", "mA040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 	
 	{ "mB001.ini",  "mB001.ini",  "mB002.ini",  "mB003.ini",  "mB004.ini",  "mB005.ini",  "mB006.ini",  "mB007.ini", "mB008.ini", "mB009.ini", "mB010.ini", 
@@ -1366,7 +1371,8 @@ char *szArmorNumFile[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "mB001.ini",  "mB022.ini",  "mB023.ini",  "mB024.ini" , "mB001.ini",  "mB001.ini",  "mB001.ini" , "mB001.ini" ,
 	  "Cmb001.ini", "Cmb001.ini", "Cmb001.ini", "Cmb001.ini", "Cmb002.ini", "Cmb002.ini", "Cmb002.ini", "Cmb002.ini",	
 	  "Cmb003.ini", "Cmb003.ini", "Cmb003.ini", "Cmb003.ini", "Cmb004.ini", "Cmb004.ini", "Cmb004.ini", "Cmb004.ini",
-	  "Cmb005.ini", "Cmb006.ini", "Cmb007.ini", "Cmb008.ini", "Cmb009.ini", "Cmb010.ini", "Cmb011.ini", "Cmb012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cmb005.ini", "Cmb006.ini", "Cmb007.ini", "Cmb008.ini", "Cmb009.ini", "Cmb010.ini", "Cmb011.ini", "Cmb012.ini",
+	  "mB025.ini", "mB026.ini", "mB027.ini", "mB028.ini", "mB029.ini", "mB030.ini", "mB031.ini", "mB032.ini", "mB033.ini", "mB034.ini", "mB035.ini", "mB036.ini", "mB037.ini", "mB038.ini", "mB039.ini", "mB040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 
 	{ "mC001.ini",  "mC001.ini",  "mC002.ini",  "mC003.ini",  "mC004.ini",  "mC005.ini",  "mC006.ini",  "mC007.ini", "mC008.ini", "mC009.ini", "mC010.ini", 
@@ -1374,7 +1380,8 @@ char *szArmorNumFile[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "mC001.ini",  "mC022.ini",  "mC023.ini",  "mC024.ini",  "mC001.ini",  "mC001.ini",  "mC001.ini",  "mC001.ini",
 	  "Cmc001.ini", "Cmc001.ini", "Cmc001.ini", "Cmc001.ini", "Cmc002.ini", "Cmc002.ini", "Cmc002.ini", "Cmc002.ini",
 	  "Cmc003.ini", "Cmc003.ini", "Cmc003.ini", "Cmc003.ini", "Cmc004.ini", "Cmc004.ini", "Cmc004.ini", "Cmc004.ini",
-	  "Cmc005.ini", "Cmc006.ini", "Cmc007.ini", "Cmc008.ini", "Cmc009.ini", "Cmc010.ini", "Cmc011.ini", "Cmc012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cmc005.ini", "Cmc006.ini", "Cmc007.ini", "Cmc008.ini", "Cmc009.ini", "Cmc010.ini", "Cmc011.ini", "Cmc012.ini",
+	  "mC025.ini", "mC026.ini", "mC027.ini", "mC028.ini", "mC029.ini", "mC030.ini", "mC031.ini", "mC032.ini", "mC033.ini", "mC034.ini", "mC035.ini", "mC036.ini", "mC037.ini", "mC038.ini", "mC039.ini", "mC040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 
 	{ "mD001.ini",  "mD001.ini",  "mD002.ini",  "mD003.ini",  "mD004.ini",  "mD005.ini",  "mD006.ini",  "mD007.ini", "mD008.ini", "mD009.ini", "mD010.ini",
@@ -1382,7 +1389,8 @@ char *szArmorNumFile[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "mD001.ini",  "mD022.ini",  "mD023.ini",  "mD024.ini",  "mD001.ini",  "mD001.ini",  "mD001.ini",  "mD001.ini",
 	  "Cmd001.ini", "Cmd001.ini", "Cmd001.ini", "Cmd001.ini", "Cmd002.ini", "Cmd002.ini", "Cmd002.ini", "Cmd002.ini",
 	  "Cmd003.ini", "Cmd003.ini", "Cmd003.ini", "Cmd003.ini", "Cmd004.ini", "Cmd004.ini", "Cmd004.ini", "Cmd004.ini",
-	  "Cmd005.ini", "Cmd006.ini", "Cmd007.ini", "Cmd008.ini", "Cmd009.ini", "Cmd010.ini", "Cmd011.ini", "Cmd012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cmd005.ini", "Cmd006.ini", "Cmd007.ini", "Cmd008.ini", "Cmd009.ini", "Cmd010.ini", "Cmd011.ini", "Cmd012.ini",
+	  "mD025.ini", "mD026.ini", "mD027.ini", "mD028.ini", "mD029.ini", "mD030.ini", "mD031.ini", "mD032.ini", "mD033.ini", "mD034.ini", "mD035.ini", "mD036.ini", "mD037.ini", "mD038.ini", "mD039.ini", "mD040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 
 	// Assassin (JOB_CODE 9)
@@ -1393,7 +1401,8 @@ char *szArmorNumFile[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "e023.ini", "e024.ini", "e001.ini", "e001.ini", "e001.ini", "e001.ini", "Ce001.ini", "Ce001.ini",
 	  "Ce001.ini", "Ce001.ini", "Ce002.ini", "Ce002.ini", "Ce002.ini", "Ce002.ini", "Ce003.ini", "Ce003.ini",
 	  "Ce003.ini", "Ce003.ini", "Ce004.ini", "Ce004.ini", "Ce004.ini", "Ce004.ini", "Ce005.ini", "Ce006.ini",
-	  "Ce007.ini", "Ce008.ini", "Ce009.ini", "Ce010.ini", "Ce011.ini", "Ce012.ini"
+	  "Ce007.ini", "Ce008.ini", "Ce009.ini", "Ce010.ini", "Ce011.ini", "Ce012.ini",
+	  "e025.ini", "e026.ini", "e027.ini", "e028.ini", "e029.ini", "e030.ini", "e031.ini", "e032.ini", "e033.ini", "e034.ini", "e035.ini", "e036.ini", "e037.ini", "e038.ini", "e039.ini", "e040.ini"	// 025..040 (NewArmorModel)
 	},
 
 	// Shaman (JOB_CODE 10)
@@ -1404,7 +1413,8 @@ char *szArmorNumFile[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "me023.ini", "me024.ini", "me001.ini", "me001.ini", "me001.ini", "me001.ini", "Cme001.ini", "Cme001.ini",
 	  "Cme001.ini", "Cme001.ini", "Cme002.ini", "Cme002.ini", "Cme002.ini", "Cme002.ini", "Cme003.ini", "Cme003.ini",
 	  "Cme003.ini", "Cme003.ini", "Cme004.ini", "Cme004.ini", "Cme004.ini", "Cme004.ini", "Cme005.ini", "Cme006.ini",
-	  "Cme007.ini", "Cme008.ini", "Cme009.ini", "Cme010.ini", "Cme011.ini", "Cme012.ini"
+	  "Cme007.ini", "Cme008.ini", "Cme009.ini", "Cme010.ini", "Cme011.ini", "Cme012.ini",
+	  "me025.ini", "me026.ini", "me027.ini", "me028.ini", "me029.ini", "me030.ini", "me031.ini", "me032.ini", "me033.ini", "me034.ini", "me035.ini", "me036.ini", "me037.ini", "me038.ini", "me039.ini", "me040.ini"	// 025..040 (NewArmorModel)
 	},
 
 	// Martial Artist (JOB_CODE 11)
@@ -1415,7 +1425,8 @@ char *szArmorNumFile[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "f023.ini", "f024.ini", "f001.ini", "f001.ini", "f001.ini", "f001.ini", "Cf001.ini", "Cf001.ini",
 	  "Cf001.ini", "Cf001.ini", "Cf002.ini", "Cf002.ini", "Cf002.ini", "Cf002.ini", "Cf003.ini", "Cf003.ini",
 	  "Cf003.ini", "Cf003.ini", "Cf004.ini", "Cf004.ini", "Cf004.ini", "Cf004.ini", "Cf005.ini", "Cf006.ini",
-	  "f001.ini", "Cf008.ini", "f001.ini", "Cf010.ini", "Cf011.ini", "Cf012.ini"
+	  "f001.ini", "Cf008.ini", "f001.ini", "Cf010.ini", "Cf011.ini", "Cf012.ini",
+	  "f025.ini", "f026.ini", "f027.ini", "f028.ini", "f029.ini", "f030.ini", "f031.ini", "f032.ini", "f033.ini", "f034.ini", "f035.ini", "f036.ini", "f037.ini", "f038.ini", "f039.ini", "f040.ini"	// 025..040 (NewArmorModel)
 	}
 };
 //코믹 옷 모델 목록
@@ -1425,7 +1436,8 @@ char *szArmorNumFile_Comic[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "A001.ini" , "A022.ini",  "A023.ini",  "A024.ini",  "A001.ini",  "A001.ini",  "A001.ini",  "A001.ini",
 	  "Ca001.ini", "Ca001.ini", "Ca001.ini", "Ca001.ini", "Ca002.ini", "Ca002.ini", "Ca002.ini", "Ca002.ini",
 	  "Ca003.ini", "Ca003.ini", "Ca003.ini", "Ca003.ini", "Ca004.ini", "Ca004.ini", "Ca004.ini", "Ca004.ini",
-	  "Ca005.ini", "Ca006.ini", "Ca007.ini", "Ca008.ini", "Ca009.ini", "Ca010.ini", "Ca011.ini", "Ca012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Ca005.ini", "Ca006.ini", "Ca007.ini", "Ca008.ini", "Ca009.ini", "Ca010.ini", "Ca011.ini", "Ca012.ini",
+	  "A025.ini", "A026.ini", "A027.ini", "A028.ini", "A029.ini", "A030.ini", "A031.ini", "A032.ini", "A033.ini", "A034.ini", "A035.ini", "A036.ini", "A037.ini", "A038.ini", "A039.ini", "A040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 
 	{ "B001.ini" , "B001.ini",  "B002.ini",  "B003.ini",  "B004.ini" , "B005.ini",  "B006.ini",  "B007.ini", "B008.ini", "B009.ini", "B010.ini" , 
@@ -1433,7 +1445,8 @@ char *szArmorNumFile_Comic[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "B001.ini" , "B022.ini",  "B023.ini",  "B024.ini",  "B001.ini",  "B001.ini" , "B001.ini" , "B001.ini",
 	  "Cb001.ini", "Cb001.ini", "Cb001.ini", "Cb001.ini", "Cb002.ini", "Cb002.ini", "Cb002.ini", "Cb002.ini",	
 	  "Cb003.ini", "Cb003.ini", "Cb003.ini", "Cb003.ini", "Cb004.ini", "Cb004.ini", "Cb004.ini", "Cb004.ini",
-	  "Cb005.ini", "Cb006.ini", "Cb007.ini", "Cb008.ini", "Cb009.ini", "Cb010.ini", "Cb011.ini", "Cb012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cb005.ini", "Cb006.ini", "Cb007.ini", "Cb008.ini", "Cb009.ini", "Cb010.ini", "Cb011.ini", "Cb012.ini",
+	  "B025.ini", "B026.ini", "B027.ini", "B028.ini", "B029.ini", "B030.ini", "B031.ini", "B032.ini", "B033.ini", "B034.ini", "B035.ini", "B036.ini", "B037.ini", "B038.ini", "B039.ini", "B040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 
 	
@@ -1442,7 +1455,8 @@ char *szArmorNumFile_Comic[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "C001.ini" , "C022.ini",  "C023.ini",  "C024.ini",  "C001.ini",  "C001.ini",  "C001.ini",  "C001.ini",
 	  "Cc001.ini", "Cc001.ini", "Cc001.ini", "Cc001.ini", "Cc002.ini", "Cc002.ini", "Cc002.ini", "Cc002.ini",
 	  "Cc003.ini", "Cc003.ini", "Cc003.ini", "Cc003.ini", "Cc004.ini", "Cc004.ini", "Cc004.ini", "Cc004.ini",
-	  "Cc005.ini", "Cc006.ini", "Cc007.ini", "Cc008.ini", "Cc009.ini", "Cc010.ini", "Cc011.ini", "Cc012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cc005.ini", "Cc006.ini", "Cc007.ini", "Cc008.ini", "Cc009.ini", "Cc010.ini", "Cc011.ini", "Cc012.ini",
+	  "C025.ini", "C026.ini", "C027.ini", "C028.ini", "C029.ini", "C030.ini", "C031.ini", "C032.ini", "C033.ini", "C034.ini", "C035.ini", "C036.ini", "C037.ini", "C038.ini", "C039.ini", "C040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 
 	{ "D001.ini" , "D001.ini",  "D002.ini",  "D003.ini",  "D004.ini",  "D005.ini",  "D006.ini",  "D007.ini", "D008.ini", "D009.ini", "D010.ini", 
@@ -1450,7 +1464,8 @@ char *szArmorNumFile_Comic[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "D001.ini" , "D022.ini",  "D023.ini",  "D024.ini",  "D001.ini",  "D001.ini",  "D001.ini",  "D001.ini",
 	  "Cd001.ini", "Cd001.ini", "Cd001.ini", "Cd001.ini", "Cd002.ini", "Cd002.ini", "Cd002.ini", "Cd002.ini",
 	  "Cd003.ini", "Cd003.ini", "Cd003.ini", "Cd003.ini", "Cd004.ini", "Cd004.ini", "Cd004.ini", "Cd004.ini",
-	  "Cd005.ini", "Cd006.ini", "Cd007.ini", "Cd008.ini", "Cd009.ini", "Cd010.ini", "Cd011.ini", "Cd012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cd005.ini", "Cd006.ini", "Cd007.ini", "Cd008.ini", "Cd009.ini", "Cd010.ini", "Cd011.ini", "Cd012.ini",
+	  "D025.ini", "D026.ini", "D027.ini", "D028.ini", "D029.ini", "D030.ini", "D031.ini", "D032.ini", "D033.ini", "D034.ini", "D035.ini", "D036.ini", "D037.ini", "D038.ini", "D039.ini", "D040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 
 	{ "mA001.ini",  "mA001.ini",  "mA002.ini",  "mA003.ini",   "mA004.ini",  "mA005.ini",  "mA006.ini",  "mA007.ini", "mA008.ini", "mA009.ini", "mA010.ini", 
@@ -1458,7 +1473,8 @@ char *szArmorNumFile_Comic[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "mA001.ini",  "mA022.ini",  "mA023.ini",  "mA024.ini",  "mA001.ini",   "mA001.ini",  "mA001.ini",  "mA001.ini",
 	  "Cma001.ini", "Cma001.ini", "Cma001.ini", "Cma001.ini",  "Cma002.ini", "Cma002.ini", "Cma002.ini", "Cma002.ini",
 	  "Cma003.ini", "Cma003.ini", "Cma003.ini", "Cma003.ini",  "Cma004.ini", "Cma004.ini", "Cma004.ini", "Cma004.ini",
-	  "Cma005.ini", "Cma006.ini", "Cma007.ini", "Cma008.ini",  "Cma009.ini",  "Cma010.ini", "Cma011.ini", "Cma012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cma005.ini", "Cma006.ini", "Cma007.ini", "Cma008.ini",  "Cma009.ini",  "Cma010.ini", "Cma011.ini", "Cma012.ini",
+	  "mA025.ini", "mA026.ini", "mA027.ini", "mA028.ini", "mA029.ini", "mA030.ini", "mA031.ini", "mA032.ini", "mA033.ini", "mA034.ini", "mA035.ini", "mA036.ini", "mA037.ini", "mA038.ini", "mA039.ini", "mA040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 	
 	{ "mB001.ini",  "mB001.ini",  "mB002.ini",  "mB003.ini",  "mB004.ini",  "mB005.ini",  "mB006.ini",  "mB007.ini", "mB008.ini", "mB009.ini", "mB010.ini", 
@@ -1466,7 +1482,8 @@ char *szArmorNumFile_Comic[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "mB001.ini",  "mB022.ini",  "mB023.ini",  "mB024.ini" , "mB001.ini",  "mB001.ini",  "mB001.ini" , "mB001.ini" ,
 	  "Cmb001.ini", "Cmb001.ini", "Cmb001.ini", "Cmb001.ini", "Cmb002.ini", "Cmb002.ini", "Cmb002.ini", "Cmb002.ini",	
 	  "Cmb003.ini", "Cmb003.ini", "Cmb003.ini", "Cmb003.ini", "Cmb004.ini", "Cmb004.ini", "Cmb004.ini", "Cmb004.ini",
-	  "Cmb005.ini", "Cmb006.ini", "Cmb007.ini", "Cmb008.ini", "Cmb009.ini", "Cmb010.ini", "Cmb011.ini", "Cmb012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cmb005.ini", "Cmb006.ini", "Cmb007.ini", "Cmb008.ini", "Cmb009.ini", "Cmb010.ini", "Cmb011.ini", "Cmb012.ini",
+	  "mB025.ini", "mB026.ini", "mB027.ini", "mB028.ini", "mB029.ini", "mB030.ini", "mB031.ini", "mB032.ini", "mB033.ini", "mB034.ini", "mB035.ini", "mB036.ini", "mB037.ini", "mB038.ini", "mB039.ini", "mB040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 
 	{ "mC001.ini",  "mC001.ini",  "mC002.ini",  "mC003.ini",  "mC004.ini",  "mC005.ini",  "mC006.ini",  "mC007.ini", "mC008.ini", "mC009.ini", "mC010.ini", 
@@ -1474,7 +1491,8 @@ char *szArmorNumFile_Comic[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "mC001.ini",  "mC022.ini",  "mC023.ini",  "mC024.ini",  "mC001.ini",  "mC001.ini",  "mC001.ini",  "mC001.ini",
 	  "Cmc001.ini", "Cmc001.ini", "Cmc001.ini", "Cmc001.ini", "Cmc002.ini", "Cmc002.ini", "Cmc002.ini", "Cmc002.ini",
 	  "Cmc003.ini", "Cmc003.ini", "Cmc003.ini", "Cmc003.ini", "Cmc004.ini", "Cmc004.ini", "Cmc004.ini", "Cmc004.ini",
-	  "Cmc005.ini", "Cmc006.ini", "Cmc007.ini", "Cmc008.ini", "Cmc009.ini", "Cmc010.ini", "Cmc011.ini", "Cmc012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cmc005.ini", "Cmc006.ini", "Cmc007.ini", "Cmc008.ini", "Cmc009.ini", "Cmc010.ini", "Cmc011.ini", "Cmc012.ini",
+	  "mC025.ini", "mC026.ini", "mC027.ini", "mC028.ini", "mC029.ini", "mC030.ini", "mC031.ini", "mC032.ini", "mC033.ini", "mC034.ini", "mC035.ini", "mC036.ini", "mC037.ini", "mC038.ini", "mC039.ini", "mC040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 
 	{ "mD001.ini",  "mD001.ini",  "mD002.ini",  "mD003.ini",  "mD004.ini",  "mD005.ini",  "mD006.ini",  "mD007.ini", "mD008.ini", "mD009.ini", "mD010.ini",
@@ -1482,7 +1500,8 @@ char *szArmorNumFile_Comic[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "mD001.ini",  "mD022.ini",  "mD023.ini",  "mD024.ini",  "mD001.ini",  "mD001.ini",  "mD001.ini",  "mD001.ini",
 	  "Cmd001.ini", "Cmd001.ini", "Cmd001.ini", "Cmd001.ini", "Cmd002.ini", "Cmd002.ini", "Cmd002.ini", "Cmd002.ini",
 	  "Cmd003.ini", "Cmd003.ini", "Cmd003.ini", "Cmd003.ini", "Cmd004.ini", "Cmd004.ini", "Cmd004.ini", "Cmd004.ini",
-	  "Cmd005.ini", "Cmd006.ini", "Cmd007.ini", "Cmd008.ini", "Cmd009.ini", "Cmd010.ini", "Cmd011.ini", "Cmd012.ini" // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
+	  "Cmd005.ini", "Cmd006.ini", "Cmd007.ini", "Cmd008.ini", "Cmd009.ini", "Cmd010.ini", "Cmd011.ini", "Cmd012.ini",
+	  "mD025.ini", "mD026.ini", "mD027.ini", "mD028.ini", "mD029.ini", "mD030.ini", "mD031.ini", "mD032.ini", "mD033.ini", "mD034.ini", "mD035.ini", "mD036.ini", "mD037.ini", "mD038.ini", "mD039.ini", "mD040.ini"	// 025..040 (NewArmorModel) // 박재원 - 2010 월드컵 이벤트(축구복 추가), 수영복 추가
 	},
 
 	// Assassin (JOB_CODE 9)
@@ -1493,7 +1512,8 @@ char *szArmorNumFile_Comic[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "e023.ini", "e024.ini", "e001.ini", "e001.ini", "e001.ini", "e001.ini", "Ce001.ini", "Ce001.ini",
 	  "Ce001.ini", "Ce001.ini", "Ce002.ini", "Ce002.ini", "Ce002.ini", "Ce002.ini", "Ce003.ini", "Ce003.ini",
 	  "Ce003.ini", "Ce003.ini", "Ce004.ini", "Ce004.ini", "Ce004.ini", "Ce004.ini", "Ce005.ini", "Ce006.ini",
-	  "Ce007.ini", "Ce008.ini", "Ce009.ini", "Ce010.ini", "Ce011.ini", "Ce012.ini"
+	  "Ce007.ini", "Ce008.ini", "Ce009.ini", "Ce010.ini", "Ce011.ini", "Ce012.ini",
+	  "e025.ini", "e026.ini", "e027.ini", "e028.ini", "e029.ini", "e030.ini", "e031.ini", "e032.ini", "e033.ini", "e034.ini", "e035.ini", "e036.ini", "e037.ini", "e038.ini", "e039.ini", "e040.ini"	// 025..040 (NewArmorModel)
 	},
 
 	// Shaman (JOB_CODE 10)
@@ -1504,7 +1524,8 @@ char *szArmorNumFile_Comic[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "me023.ini", "me024.ini", "me001.ini", "me001.ini", "me001.ini", "me001.ini", "Cme001.ini", "Cme001.ini",
 	  "Cme001.ini", "Cme001.ini", "Cme002.ini", "Cme002.ini", "Cme002.ini", "Cme002.ini", "Cme003.ini", "Cme003.ini",
 	  "Cme003.ini", "Cme003.ini", "Cme004.ini", "Cme004.ini", "Cme004.ini", "Cme004.ini", "Cme005.ini", "Cme006.ini",
-	  "Cme007.ini", "Cme008.ini", "Cme009.ini", "Cme010.ini", "Cme011.ini", "Cme012.ini"
+	  "Cme007.ini", "Cme008.ini", "Cme009.ini", "Cme010.ini", "Cme011.ini", "Cme012.ini",
+	  "me025.ini", "me026.ini", "me027.ini", "me028.ini", "me029.ini", "me030.ini", "me031.ini", "me032.ini", "me033.ini", "me034.ini", "me035.ini", "me036.ini", "me037.ini", "me038.ini", "me039.ini", "me040.ini"	// 025..040 (NewArmorModel)
 	},
 
 	// Martial Artist (JOB_CODE 11)
@@ -1515,7 +1536,8 @@ char *szArmorNumFile_Comic[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	  "f023.ini", "f024.ini", "f001.ini", "f001.ini", "f001.ini", "f001.ini", "Cf001.ini", "Cf001.ini",
 	  "Cf001.ini", "Cf001.ini", "Cf002.ini", "Cf002.ini", "Cf002.ini", "Cf002.ini", "Cf003.ini", "Cf003.ini",
 	  "Cf003.ini", "Cf003.ini", "Cf004.ini", "Cf004.ini", "Cf004.ini", "Cf004.ini", "Cf005.ini", "Cf006.ini",
-	  "f001.ini", "Cf008.ini", "f001.ini", "Cf010.ini", "Cf011.ini", "Cf012.ini"
+	  "f001.ini", "Cf008.ini", "f001.ini", "Cf010.ini", "Cf011.ini", "Cf012.ini",
+	  "f025.ini", "f026.ini", "f027.ini", "f028.ini", "f029.ini", "f030.ini", "f031.ini", "f032.ini", "f033.ini", "f034.ini", "f035.ini", "f036.ini", "f037.ini", "f038.ini", "f039.ini", "f040.ini"	// 025..040 (NewArmorModel)
 	}
 };
 

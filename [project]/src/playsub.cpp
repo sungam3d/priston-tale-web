@@ -756,6 +756,37 @@ int CheckOftenMeshTextureSwap()
 }
 
 
+/*----------------------------------------------------------------------------*
+*	The body model of the armour and robes past Highlander/Archangel (the gear
+*	of levels 103-145): by their item key, as their codes do not follow the old
+*	"byte, or byte-17" rule. DA126..DA129 / DA226..DA229 -> model 025..028,
+*	DA301..DA310 / DA401..DA410 -> 029..038 (KPT's numbering: a025 is Magic Armor,
+*	a026 Cronus). Index into szArmorNumFile (playmodel.h), or -1 for the old rule.
+*-----------------------------------------------------------------------------*/
+static int NewArmorModel( DWORD dwCode )
+{
+	for ( int cnt=0; cnt<MAX_ITEM; cnt++ ) {
+		if ( sItem[cnt].CODE!=dwCode ) continue;
+		const char *k = sItem[cnt].LastCategory;
+		if ( (k[0]!='D' && k[0]!='d') || (k[1]!='A' && k[1]!='a') || lstrlen(k)!=5 ) return -1;
+		int num = atoi( k+3 ), model = 0;
+		if ( (k[2]=='1' || k[2]=='2') && num>=26 && num<=29 ) model = num-1;
+		else if ( (k[2]=='3' || k[2]=='4') && num>=1 && num<=10 ) model = 28+num;
+		if ( !model ) return -1;
+		return 54 + (model-25);			// "X025.ini" is entry 54
+	}
+	return -1;
+}
+
+static int ArmorIndexOfCode( DWORD dwCode )
+{
+	int n = NewArmorModel( dwCode );
+	if ( n>=0 ) return n;
+	//작성자 하 대 용 : 아이템 코드 수정(sin25 이후엔 -16을 해준다.)
+	if ( ((dwCode&sinITEM_MASK3)>>8) > 25 ) return ((dwCode&sinITEM_MASK3)>>8)-17;
+	return (dwCode&sinITEM_MASK3)>>8;
+}
+
 //갑옷 모양 바꾸기
 int SetPlayerArmor( int armor )
 {
@@ -801,12 +832,7 @@ int SetChrArmor( smCHAR *lpChar , int ItemNum )
 	if ( !lpChar->smCharInfo.szModelName2[0] ) return FALSE;		//머리 없는 캐릭터 값옷 설정 금지 // 얼큰이 오류 수정
 
 	if ( ItemNum>=0 ){
-		//작성자 하 대 용
-		//아이템 코드 수정(sin25 이후엔 -16을 해준다.)---------------------------------
-		if(((sItem[ItemNum].CODE&sinITEM_MASK3)>>8) > 25 )
-			armor = (((sItem[ItemNum].CODE&sinITEM_MASK3)>>8)-17);			
-		else
-			armor = (sItem[ItemNum].CODE&sinITEM_MASK3)>>8;			
+		armor = ArmorIndexOfCode( sItem[ItemNum].CODE );		// the old rule, or the new armour's model
 	}
 	else
 		armor = 0;
@@ -1503,13 +1529,7 @@ InvenItem[sInven[2].ItemIndex-1] //갑옷
 
 				if ( SetFlag ) {
 					dwCode = CODE;
-					//작성자 하 대 용
-					//아이템 코드 수정(sin25 이후엔 -16을 해준다.)---------------------------------
-					if( (dwCode&sinITEM_MASK3)>>8  > 25 )
-						SetPlayerArmor( ((dwCode&sinITEM_MASK3)>>8)-17 );
-					else
-						SetPlayerArmor( (dwCode&sinITEM_MASK3)>>8 );
-					//-----------------------------------------------------------------------------
+					SetPlayerArmor( ArmorIndexOfCode( dwCode ) );		// the old rule, or the new armour's model
 					lpCurPlayer->wStickItems[smPLAYBUFF_ITEM_BODY] = GetSinItemNumFromCode( dwCode );
 				}
 				else {
