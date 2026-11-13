@@ -1613,7 +1613,9 @@ int sinCostumeView = 0;			// 1: the costume page and look (when one is worn), 0:
 
 void sinRefreshBodyLook()
 {
-	DWORD dwShow = ( sinCostumeView && sinWornCostumeCode ) ? sinWornCostumeCode : sinWornArmorCode;
+	extern int sinCostumeFits( DWORD dwCode , int JobCode );		// sinInvenTory.cpp: gender, armour or robe
+	DWORD dwShow = ( sinCostumeView && sinWornCostumeCode && sinCostumeFits( sinWornCostumeCode , lpCurPlayer->smCharInfo.JOB_CODE ) )
+		? sinWornCostumeCode : sinWornArmorCode;
 	DWORD dwMotionCode = lpCurPlayer->MotionInfo->State;
 	int FrameCounter = lpCurPlayer->FrameCounter;
 

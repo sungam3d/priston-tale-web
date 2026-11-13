@@ -114,6 +114,24 @@ static int InvenItemHidden( sITEM *pItem )
 	return pItem->ItemPosition && InvenSlotHidden( pItem->ItemPosition-1 );
 }
 
+/*----------------------------------------------------------------------------*
+*	Who may wear a costume (sinItem_CostumeFit.h, from the 3215 names): its
+*	gender, and armour for the armour classes / robe for the robe classes
+*	(Magician, Priestess, Shaman). TRUE for anything that is not a costume.
+*-----------------------------------------------------------------------------*/
+#include "sinItem_CostumeFit.h"
+int sinCostumeFits( DWORD dwCode , int JobCode )
+{
+	for ( int k=0; sinCostumeFit[k][0]; k++ ) {
+		if ( sinCostumeFit[k][0]!=dwCode ) continue;
+		int female = ( JobCode==JOBCODE_ARCHER || JobCode==JOBCODE_ATALANTA || JobCode==JOBCODE_PRIESTESS ||
+					   JobCode==JOBCODE_ASSASSIN || JobCode==JOBCODE_MARTIALARTIST );
+		int robe = ( JobCode==JOBCODE_MAGICIAN || JobCode==JOBCODE_PRIESTESS || JobCode==JOBCODE_SHAMAN );
+		return (int)sinCostumeFit[k][1]==( female ? 2 : 1 ) && (int)sinCostumeFit[k][2]==robe;
+	}
+	return TRUE;
+}
+
 int sinUsePotionDelayFlag = 0;
 int PotionCheckNumJumpFlag = 1;
 
@@ -3404,8 +3422,9 @@ int cINVENTORY::AutoSetInvenItem(sITEM *pItem , int PostBox )
 
 
 	//먼저 무기구 박스를 체크한다 
-	for(int i=0 ; i < INVENTORY_MAX_POS ; i++){  
+	for(int i=0 ; i < INVENTORY_MAX_POS ; i++){
 		if(pItem->Class & sInven[i].Position){
+			if(i==INVENTORY_POS_SLOT_COSTUME && !sinCostumeFits(pItem->CODE , sinChar->JOB_CODE))continue;	// not this class's costume: to the bag
 			if(!sInven[i].ItemIndex){
 				if(sInven[i].ItemIndex)break;
 				if(pItem->Class == ITEM_CLASS_WEAPON_TWO) //양손영역에 아이템이 있으면 셋팅할수 없다 
@@ -4264,6 +4283,11 @@ int cINVENTORY::SetInvenItemAreaCheck(sITEM *pItem)
 				ColorIndex = NOT_SETTING_COLOR;
 				return FALSE;
 			}
+			// a costume for the other gender, or armour for a robe class (and the other way round)
+			if(i==INVENTORY_POS_SLOT_COSTUME && !sinCostumeFits(pItem->CODE , sinChar->JOB_CODE)){
+				ColorIndex = NOT_SETTING_COLOR;
+				return FALSE;
+			}
 			if(pItem->sItemInfo.NotUseFlag){ //클래스가 맞지 않거나 셋팅이 될수없으면  
 				ColorIndex = NOT_USE_COLOR;
 				return FALSE;
@@ -4860,6 +4884,7 @@ int cINVENTORY::CheckRequireItem()
 			if(InvenItem[i].sItemInfo.Talent    > sinChar->Talent)NotUseItemFlag = 1;
 			if(InvenItem[i].sItemInfo.Spirit    > sinChar->Spirit)NotUseItemFlag = 1;
 			if(InvenItem[i].sItemInfo.Health    > sinChar->Health)NotUseItemFlag = 1;
+			if(!sinCostumeFits(InvenItem[i].sItemInfo.CODE , sinChar->JOB_CODE))NotUseItemFlag = 1;	// another class's costume: no stats
 			if(DeleteEventItem_TimeOut( &InvenItem[i].sItemInfo)==TRUE) NotUseItemFlag = 1;  //	박재원 : 기간제 아이템 만료되었을때(클랜치프링 등등)
 			if(NotUseItemFlag){
 				InvenItem[i].sItemInfo.NotUseFlag = 1;
