@@ -1364,6 +1364,9 @@ void CALLBACK LSTimeRunFuncForDSound(UINT uTimerID, UINT uMsg, DWORD dwUser, DWO
 //       Input.
 //           DWORD dwState - 플래그
 //-----------------------------------------------------------------------
+#ifdef PT_WEB
+static thread_local BOOL s_InMusicTimer = FALSE;	// this thread is running LSTimeRunFuncForDSound
+#endif
 void LSStopBackground(DWORD dwState)
 {
     m_wiWave.bDonePlaying = TRUE;
@@ -1371,6 +1374,10 @@ void LSStopBackground(DWORD dwState)
         timeKillEvent(m_uTimerID);
         timeEndPeriod(PLAYBACK_TIMER_PERIOD / PLAYBACK_OVERSAMPLE);
         // Busy wait for timer func to exit
+#ifdef PT_WEB
+        // (not from the timer func itself - the end of a track: it holds m_lInTimer, the wait never ends)
+        if(!s_InMusicTimer)
+#endif
         while(InterlockedExchange(&m_lInTimer, TRUE)) Sleep(100);
         m_bTimerInit = FALSE;
     }
@@ -1514,7 +1521,13 @@ void CALLBACK LSTimeRunFuncForDSound(UINT uTimerID, UINT uMsg, DWORD dwUser, DWO
     if(m_wiWave.bFoundEnd && !m_wiWave.dwBytesRemaining){
         if(!m_wiWave.bDonePlaying){
             m_wiWave.bDonePlaying = TRUE;
+#ifdef PT_WEB
+			s_InMusicTimer = TRUE;
 			LSStopBackground(0L);
+			s_InMusicTimer = FALSE;
+#else
+			LSStopBackground(0L);
+#endif
         }
         InterlockedExchange(&m_lInTimer, FALSE);
         return;

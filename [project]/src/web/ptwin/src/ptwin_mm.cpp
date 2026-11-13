@@ -184,6 +184,7 @@ struct PtMmTimer {
 	DWORD_PTR			user;
 	UINT				flags;
 	std::atomic<bool>	stop;
+	std::atomic<bool>	selfDelete;		// killed from its own callback: the thread deletes it
 	pthread_t			th;
 };
 
@@ -199,6 +200,7 @@ static void *TimerThread( void *p )
 		if ( t->stop ) break;
 		t->proc( t->id, 0, t->user, 0, 0 );
 	} while ( ( t->flags & TIME_PERIODIC ) && !t->stop );
+	if ( t->selfDelete ) { pthread_detach( pthread_self() ); delete t; }
 	return NULL;
 }
 
@@ -210,6 +212,7 @@ MMRESULT WINAPI timeSetEvent( UINT delay, UINT, LPTIMECALLBACK proc, DWORD_PTR u
 	t->user = user;
 	t->flags = flags;
 	t->stop = false;
+	t->selfDelete = false;
 	pthread_mutex_lock( &s_TimerLock );
 	t->id = s_NextTimerId++;
 	s_MmTimers[t->id] = t;
@@ -234,6 +237,10 @@ MMRESULT WINAPI timeKillEvent( UINT id )
 	pthread_mutex_unlock( &s_TimerLock );
 	if ( !t ) return MMSYSERR_INVALPARAM;
 	t->stop = true;
+	// From the timer's own callback (the music streamer stops itself at the end of a track):
+	// a thread cannot wait for itself - it was deleted here while still running, and went on
+	// reading the freed timer. Now it ends after the callback and deletes the timer itself.
+	if ( pthread_equal( pthread_self(), t->th ) ) { t->selfDelete = true; return 0; }
 	pthread_join( t->th, NULL );
 	delete t;
 	return 0;
