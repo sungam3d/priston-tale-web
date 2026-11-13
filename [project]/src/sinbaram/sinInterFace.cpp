@@ -2014,9 +2014,10 @@ int sinGM_ApplyLevel( int Level , int SaveNow )
 }
 
 /*----------------------------------------------------------------------------*
-*	GM /MakeMeTester (server command): after the server's level 100 arrives
+*	GM /MakeMeTester (server command): after the server's level 199 arrives
 *	(smTRANSCODE_GM_SETLEVEL with LParam 1), the fifth rank and every skill of it
-*	learned at rank 1, then /DeckMeOut! for the gear. Rank 1 each stays inside the
+*	learned at rank 1, then /DeckMeOut! for the gear; once the gear is on, the stat
+*	points it needs are spent (sinGM_TesterSpendStats). Rank 1 each stays inside the
 *	skill-point budget the save and login checks allow (record.cpp CheckSkillPoint),
 *	so the points left over are free to raise the skills being tested.
 *-----------------------------------------------------------------------------*/
@@ -2052,11 +2053,15 @@ int sinGM_MakeTester()
 
 	{
 		char szMsg[128];
-		wsprintf( szMsg , "GM: tester ready: fifth rank, %d skills learned, %d + %d points left. Gear next." ,
+		wsprintf( szMsg , "GM: tester: fifth rank, %d skills learned, %d + %d skill points left. Gear next." ,
 			learned , sinSkill.SkillPoint , sinSkill.SkillPoint4 );
 		AddChatBuff( szMsg );
 	}
-	SendChatMessageToServer( "/DeckMeOut!" );		// the server already has level 100
+	{
+		extern int sinGM_TesterStats;
+		sinGM_TesterStats = 1;					// spend the gear's stats once it is all on
+	}
+	SendChatMessageToServer( "/DeckMeOut!" );		// the server already has the level
 	return TRUE;
 }
 

@@ -20327,13 +20327,14 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 		return TRUE;
 	}
 
-	// GM: /MakeMeTester - a skill-test character in one go: level 100 (or the current
+	// GM: /MakeMeTester - a skill-test character in one go: level 199 (or the current
 	// level if higher) as /MakeMeLevel does; the client then takes the fifth rank, learns
-	// every skill at rank 1 and sends /DeckMeOut! (sinGM_MakeTester, sinInterFace.cpp).
+	// every skill at rank 1, sends /DeckMeOut! and spends the stat points the gear needs
+	// (sinGM_MakeTester, sinInterFace.cpp; sinGM_TesterSpendStats, sinSubMain.cpp).
 	len = rsCompString( "/MakeMeTester" , szChatCommand );
 	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.GmCheats || lpPlayInfo->AdminMode>=4 ) )
 	{
-		cnt = lpPlayInfo->smCharInfo.Level<100 ? 100 : lpPlayInfo->smCharInfo.Level;
+		cnt = lpPlayInfo->smCharInfo.Level<199 ? 199 : lpPlayInfo->smCharInfo.Level;
 		if ( cnt>CHAR_LEVEL_MAX ) cnt = CHAR_LEVEL_MAX;
 		lpPlayInfo->spExp_Start = GetNextExp( cnt-1 );
 		SetExp64( &lpPlayInfo->smCharInfo , lpPlayInfo->spExp_Start );
@@ -20347,7 +20348,7 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 		smTransCommand.EParam = 0;
 		lpPlayInfo->lpsmSock->Send( (char *)&smTransCommand , smTransCommand.size , TRUE );
 
-		wsprintf( TransChatMessage.szMessage , "> Tester: level %d, then the fifth rank, every skill and gear." , cnt );
+		wsprintf( TransChatMessage.szMessage , "> Tester: level %d, then the fifth rank, every skill, gear and its stats." , cnt );
 		TransChatMessage.code = smTRANSCODE_WHISPERMESSAGE;
 		TransChatMessage.size = 32+lstrlen(TransChatMessage.szMessage);
 		TransChatMessage.dwIP = 0;

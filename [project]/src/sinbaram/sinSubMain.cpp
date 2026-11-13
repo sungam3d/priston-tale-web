@@ -488,6 +488,51 @@ int CheckPotionDelayFlag = 0;
 *	usual way (smTRANSCODE_PUTITEM) and, the slots being empty, go straight on.
 *-----------------------------------------------------------------------------*/
 int sinGM_DeckOutCount = 0;		// items still to come: set them straight into the empty slots
+int sinGM_TesterStats = 0;		// GM /MakeMeTester: spend the gear's stats once the last item is on
+
+/*----------------------------------------------------------------------------*
+*	GM /MakeMeTester: raise each stat to the most any worn item asks for, from the
+*	free stat points (the total stays what the level gives, so the save check
+*	ReformCharStatePoint is happy). What is left stays free to spend.
+*-----------------------------------------------------------------------------*/
+int sinGM_TesterSpendStats()
+{
+	int i, k, need[5] = { 0,0,0,0,0 };
+	int *stat[5] = { &sinChar->Strength , &sinChar->Spirit , &sinChar->Talent , &sinChar->Dexterity , &sinChar->Health };
+	int spent = 0, shortBy = 0;
+
+	for ( i=0; i<INVENTORY_MAXITEM; i++ ) {
+		sITEM *it = &cInvenTory.InvenItem[i];
+		if ( !it->Flag || !it->ItemPosition ) continue;		// worn items only
+		int req[5] = { it->sItemInfo.Strength , it->sItemInfo.Spirit , it->sItemInfo.Talent , it->sItemInfo.Dexterity , it->sItemInfo.Health };
+		for ( k=0; k<5; k++ ) if ( req[k]>need[k] ) need[k] = req[k];
+	}
+
+	CheckCharForm();
+	for ( k=0; k<5; k++ ) {
+		int add = need[k]-*stat[k];
+		if ( add<=0 ) continue;
+		if ( add>sinChar->StatePoint ) { shortBy += add-sinChar->StatePoint; add = sinChar->StatePoint; }
+		*stat[k] += add;
+		sinChar->StatePoint -= add;
+		spent += add;
+	}
+	ReformCharForm();
+	cInvenTory.CheckRequireItem();
+	cInvenTory.SetItemToChar();
+	cInvenTory.CheckDamage();
+	SaveGameData();
+
+	{
+		char szMsg[160];
+		if ( shortBy )
+			wsprintf( szMsg , "GM: tester: %d stat points put where the gear needs them, %d short; %d left." , spent , shortBy , sinChar->StatePoint );
+		else
+			wsprintf( szMsg , "GM: tester ready: %d stat points put where the gear needs them, %d left to spend." , spent , sinChar->StatePoint );
+		AddChatBuff( szMsg );
+	}
+	return TRUE;
+}
 
 int sinGM_DeckOutClearSlots( DWORD dwPositionMask , int ItemCount )
 {
@@ -527,6 +572,7 @@ int sinGM_DeckOutClearSlots( DWORD dwPositionMask , int ItemCount )
 	}
 
 	sinGM_DeckOutCount = ItemCount;
+	if ( ItemCount<=0 ) sinGM_TesterStats = 0;		// nothing coming: no stats to spend
 	return TRUE;
 }
 
@@ -561,6 +607,10 @@ int sinSetInvenItem(sITEMINFO *sItemInfo ) //아이템을 집을때 함수가 �
 				cInvenTory.CheckWeight();
 			}
 			SaveGameData();
+			if ( sinGM_DeckOutCount==0 && sinGM_TesterStats ) {	// the last one: /MakeMeTester's stats
+				sinGM_TesterStats = 0;
+				sinGM_TesterSpendStats();
+			}
 			return TRUE;
 		}
 
