@@ -121,8 +121,43 @@
 			' · downloads ' + (localStorage.getItem('ptDownloadMode') || 'unset'));
 		Module.printErr('[web] last things the game did (oldest first):\n  ' + (crumbs.length ? crumbs.join('\n  ') : '(nothing recorded)'));
 	}
-	window.addEventListener('error', function (e) { logError('error', e.error || e.message); });
-	window.addEventListener('unhandledrejection', function (e) { logError('error (promise)', e.reason); });
+	window.addEventListener('error', function (e) { logError('error', e.error || e.message); markCrash(); });
+	window.addEventListener('unhandledrejection', function (e) { logError('error (promise)', e.reason); markCrash(); });
+
+	// "Save log": the whole debug window (and the trail) as a text file - selecting and copying
+	// a long log by hand was slow, and impossible once a crash had frozen the page
+	var saveLogBtn = null;
+	function saveLog() {
+		var log = document.getElementById('log');
+		var text = 'Priston Tale log - build ' + (window.PT_BUILD || '?') + ' - ' + new Date().toString() + '\n' +
+			navigator.userAgent + '\n\n' + (log ? log.textContent : '') +
+			'\n\n[web] last things the game did (oldest first):\n  ' + (crumbs.length ? crumbs.join('\n  ') : '(nothing recorded)') + '\n';
+		var a = document.createElement('a');
+		a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+		a.download = 'priston-log-' + new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19) + '.txt';
+		document.body.appendChild(a); a.click(); a.remove();
+		setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
+	}
+	function markCrash() {
+		if (!saveLogBtn) return;
+		saveLogBtn.textContent = 'Save crash log';
+		saveLogBtn.style.borderColor = '#c0703a';
+		saveLogBtn.style.color = '#f0b080';
+	}
+	// an AddressSanitizer report (the test page) comes as log lines, not as an error
+	['print', 'printErr'].forEach(function (k) {
+		var orig = Module[k];
+		if (orig) Module[k] = function (t) { if (/AddressSanitizer/.test(t)) markCrash(); return orig.call(Module, t); };
+	});
+	(function addSaveLog() {
+		var bar = document.getElementById('bar');
+		if (!bar) return;
+		saveLogBtn = document.createElement('button');
+		saveLogBtn.textContent = 'Save log';
+		saveLogBtn.title = 'Download the debug window as a text file (to send with a bug report)';
+		saveLogBtn.onclick = saveLog;
+		bar.insertBefore(saveLogBtn, document.getElementById('saveInfo'));
+	})();
 
 	var origSetStatus = Module.setStatus;
 	Module.setStatus = function (t) {

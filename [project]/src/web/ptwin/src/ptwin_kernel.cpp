@@ -27,8 +27,11 @@ void PtWin_Log( const char *szFormat, ... )
 #if __has_feature(address_sanitizer)
 extern "C" const char *__asan_default_options()
 {
+	// abort_on_error: an error ASan cannot continue from stops with abort() (a browser error:
+	// the game stops, the page stays usable and progress.js prints the details) - its exit()
+	// left the page frozen, the report out of reach
 	return "halt_on_error=0:detect_leaks=0:suppress_equal_pcs=1:malloc_context_size=16:print_summary=1:"
-		"fast_unwind_on_fatal=0:fast_unwind_on_malloc=0:symbolize=1";
+		"fast_unwind_on_fatal=0:fast_unwind_on_malloc=0:symbolize=1:abort_on_error=1";
 }
 // ASan's own stack walk does not get past the first function here: before each report,
 // print the browser's call stack, which has every function's name
