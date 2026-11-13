@@ -1850,7 +1850,12 @@ int smCHAR::SetTool( DWORD dwItemCode , int hvPosi  )
 
 		cnt = 0;
 		dwItemSetting = 1;
-		
+
+		// every claw stays in the hand in town, as all the original ones (sin01-23) are listed
+		// below: the claws added later (Legend Talon to Anima Talon) were put away instead -
+		// on a point meant for other weapons, which put a claw inside the player's head
+		if ( (dwActionItemCode&sinITEM_MASK2)==sinWC1 ) dwItemSetting = 0;
+
 		while(1) {
 			if ( dwItemCodeFromVillage[cnt]==0 ) break;
 			if ( dwItemCodeFromVillage[cnt]==dwActionItemCode ) {
