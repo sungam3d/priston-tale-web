@@ -2533,6 +2533,10 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 			lpTransCommand = (smTRANS_COMMAND *)pData->Buff;
 			rsRecorder.dwRecordTime = 0;
 			rsRecorder.dwNextRecordTime = dwPlayTime+RECORD_TIME_STEP;
+			{
+				extern int SaveGameAgain;			// a save was asked for meanwhile (SaveGameData): now
+				if ( SaveGameAgain ) { SaveGameAgain = 0; rsRecorder.dwNextRecordTime = dwPlayTime+500; }
+			}
 			dwLastRecordTime = dwPlayTime;
 			if ( lpTransCommand->WParam ) {
 				RecordFailCount = 0;				//저장 성공 실패 카운터 초기화
@@ -7343,9 +7347,17 @@ int ReformSkillInfo()
 }
 
 //게임을 저장
+// A save asked for while the last one is still on its way (no answer from the server yet)
+// used to be dropped: GM /DeckMeOut!'s items arrive one by one, each asks for a save, and
+// only the first got through - a relog then lost the rest. Now it goes out once the server
+// answers (smTRANSCODE_RECORDRESULT).
+int SaveGameAgain = 0;
+
 int	SaveGameData()
 {
-	if ( smWsockDataServer && !rsRecorder.dwRecordTime && 
+	if ( rsRecorder.dwRecordTime ) SaveGameAgain = TRUE;
+
+	if ( smWsockDataServer && !rsRecorder.dwRecordTime &&
 		lpCurPlayer->smCharInfo.JOB_CODE && !AdminCharDisable && !cTrade.OpenFlag && !cWareHouse.OpenFlag &&
 		!QuitSave ) {
 
