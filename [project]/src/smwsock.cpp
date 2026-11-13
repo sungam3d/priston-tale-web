@@ -433,7 +433,7 @@ StartPos:
 						//받은 길이가 패킷 수신 길이보다 클경우 
 						//..(붙어서 다음 패킷까지 온 경우 )
 						BuffCnt -= RecvLen;
-						memcpy( szBuff , szBuff+RecvLen , BuffCnt );
+						memmove( szBuff , szBuff+RecvLen , BuffCnt );		// overlapping: memmove (memcpy's result is undefined)
 
 						if ( BuffCnt>=8 ) {
 							RecvLen = (((int *)szBuff)[0]);
@@ -1843,7 +1843,7 @@ DWORD WINAPI smWinsockRecvThreadProc( void *pInfo )
 
 					if ( RecvLen<BuffCnt ) {
 						BuffCnt -= RecvLen;
-						memcpy( szBuff , szBuff+RecvLen , BuffCnt );
+						memmove( szBuff , szBuff+RecvLen , BuffCnt );		// overlapping: memmove (memcpy's result is undefined)
 						if ( BuffCnt>=8 ) {
 							RecvLen = (((int *)szBuff)[0]);
 							RecvCode = (((int *)szBuff)[1]);

@@ -39,13 +39,13 @@ int MatMultiSpark[9];
 int MatAgony[9];
 int MatHolyMind[4];
 int MatHolyMindParticle;
-int MatVigorSpear[6];
+int MatVigorSpear[7];		// 7 frames (v_spear00-06, AniMax 7): with 6, the 7th was written over the next global (found by the AddressSanitizer test page)
 int MatZenith[5];
 int MatFireBolt[3];
 int MatBomb6[6];
 int MatSwordBlast[2];
 int MatHolyBody[2];
-int MatShieldStrike[2];
+int MatShieldStrike[3];		// 3 textures (sd1-3), [2] used: with 2, the 3rd was written over ShieldStrikeTime
 
 int ShieldStrikeTime;
 
