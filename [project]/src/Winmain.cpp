@@ -17,6 +17,7 @@
 #ifdef PT_WEB
 #include <emscripten.h>
 #include "lang\\pt_lang.h"
+extern "C" void PtFs_Preload();
 // Start-up in steps: the time each took into the log, and the browser gets its turn between
 // them - one long stretch without it and Firefox calls the page stuck ("slowing down")
 static void PtWeb_StartStep( const char *szDone )
@@ -605,8 +606,16 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPreInst, LPSTR lpCmdLine,INT nCmd
 
 	lstrcpy( szCmdLine , lpCmdLine );
 //	HoCommandLineDecoder();		//해외 블럭(Handes 관련)
+#ifdef PT_WEB
+	PtWeb_StartStep( "begin" );		// (the first one only starts the clock)
+	PtFs_Preload();				// the game's file list, in slices (web\ptwin\src\ptwin_fs.cpp)
+	PtWeb_StartStep( "file list" );
+#endif
 
 	initSinCos();		//삼각함수 초기화
+#ifdef PT_WEB
+	PtWeb_StartStep( "sin/cos tables" );
+#endif
 	//기본 설정 불러옴
 	//if ( smConfigDecode( "default.ini"  )==FALSE ) return FALSE;
 #ifdef PT_SERVER_EXE		//server.exe 빌드 (_W_SERVER 는 NetType.hpp 에서 항상 켜져 있음)
@@ -616,8 +625,14 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPreInst, LPSTR lpCmdLine,INT nCmd
 #else
 	smConfigDecode( "hotuk.ini"  );
 #endif
+#ifdef PT_WEB
+	PtWeb_StartStep( "hotuk.ini" );
+#endif
 	ReadShotcutMessage( "ShortCut.ini" );		//단축 메세지 읽어 오기
 	DecodeCmdLine( lpCmdLine );
+#ifdef PT_WEB
+	PtWeb_StartStep( "settings" );
+#endif
 
 #ifndef PT_SERVER_EXE
 	//오프라인 솔로 플레이: server.exe + server.ini 가 있으면 로컬 서버를 띄우고 접속한다
@@ -3732,9 +3747,15 @@ int _stdcall InitD3D(HWND hWnd)
 	viewdistZ = WinSizeX;
 
 
+#ifdef PT_WEB
+	PtWeb_StartStep( "window and input" );
+#endif
     // Direct3D 생성
     if ( !CreateD3D() )
         return FALSE;
+#ifdef PT_WEB
+	PtWeb_StartStep( "graphics device" );
+#endif
 
     // 비디오 모드를 640x480 16비트 모드로 설정
 //    if ( !SetDisplayMode( hWnd, WinSizeX, WinSizeY, 16 ) )
@@ -3758,10 +3779,19 @@ int _stdcall InitD3D(HWND hWnd)
        return FALSE;
 
 	TestTraceMatrix();
+#ifdef PT_WEB
+	PtWeb_StartStep( "display" );
+#endif
 
     // 랜더링 초기화
     InitRender();
+#ifdef PT_WEB
+	PtWeb_StartStep( "renderer" );
+#endif
 	InitTexture();
+#ifdef PT_WEB
+	PtWeb_StartStep( "textures" );
+#endif
 
 	//텍스쳐 품질 모드 설정 ( 0 - 3 )
 	smSetTextureLevel( smConfig.TextureQuality );

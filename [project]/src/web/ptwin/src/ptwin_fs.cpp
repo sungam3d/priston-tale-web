@@ -52,34 +52,59 @@ static void LoadRestoredList()					// written by pre.js: files restored from the
 	}
 	fclose( fp );
 }
-static void LoadManifest()
+static void LoadManifest( bool bYield = false )
 {
 	if ( s_ManLoaded ) return;
 	s_ManLoaded = true;
 	FILE *fp = fopen( "/game_manifest.txt", "rb" );
 	if ( !fp ) { PtWin_Log( "no game manifest: game data cannot be fetched" ); return; }
 	char line[1024];
+	// The list is in folder order: most lines are in the same folder as the one before, and
+	// only a new folder needs its levels registered. (Every level for every file was about a
+	// million small allocations: 11 s at start-up in the memory-checking test build.)
+	std::string lastDir;
+	std::map<std::string, std::string> *lastMap = NULL;
+	int nLines = 0;
 	while ( fgets( line, sizeof(line), fp ) ) {
+		if ( bYield && ++nLines%2000==0 ) emscripten_sleep( 0 );		// PtFs_Preload: the page keeps running
 		char *tab = strchr( line, '\t' );
 		if ( !tab ) continue;
 		*tab = 0;
 		std::string rel = line;
 		s_ManFiles[rel] = atol( tab+1 );
-		// register every directory level
-		size_t k = 0;
-		std::string dir = "";
-		for ( ;; ) {
-			size_t e = rel.find( '/', k );
-			std::string name = rel.substr( k, e==std::string::npos ? std::string::npos : e-k );
-			s_ManDirs[dir][Lower( name )] = name;
-			if ( e==std::string::npos ) break;
-			dir = dir.empty() ? name : dir + "/" + name;
-			k = e+1;
+		size_t slash = rel.rfind( '/' );
+		std::string dir = slash==std::string::npos ? std::string() : rel.substr( 0, slash );
+		if ( !lastMap || dir!=lastDir ) {
+			// a new folder: register each of its levels in the one above
+			size_t k = 0;
+			std::string up = "";
+			while ( k<dir.size() ) {
+				size_t e = dir.find( '/', k );
+				std::string name = dir.substr( k, e==std::string::npos ? std::string::npos : e-k );
+				s_ManDirs[up][Lower( name )] = name;
+				up = up.empty() ? name : up + "/" + name;
+				if ( e==std::string::npos ) break;
+				k = e+1;
+			}
+			lastDir = dir;
+			lastMap = &s_ManDirs[dir];
 		}
+		std::string name = slash==std::string::npos ? rel : rel.substr( slash+1 );
+		(*lastMap)[Lower( name )] = name;
 	}
 	fclose( fp );
 	PtWin_Log( "game manifest: %d files", (int)s_ManFiles.size() );
 	LoadRestoredList();
+}
+
+// At start-up (WinMain, main thread): the file list loads in slices with the browser's turn
+// between them - in one go it froze the page for seconds (11 s in the memory-checking test
+// build). Under the lock: anything else wanting a file meanwhile waits for the whole list.
+extern "C" void PtFs_Preload()
+{
+	pthread_mutex_lock( &s_DirLock );
+	LoadManifest( emscripten_is_main_runtime_thread() );
+	pthread_mutex_unlock( &s_DirLock );
 }
 
 // "/game/Field/x.smd" -> "Field/x.smd"; false if outside the game folder

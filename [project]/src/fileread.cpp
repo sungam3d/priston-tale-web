@@ -1,4 +1,7 @@
 ﻿#include <stddef.h>
+#ifdef PT_WEB
+#include <emscripten.h>
+#endif
 #include "smlib3d\\smd3d.h"
 #include "smwsock.h"
 #include "character.h"
@@ -2912,8 +2915,14 @@ smCONFIG *smConfigDecode( char *iniFile  )
 	////////////////////////// 디버그 모드 설정 //////////////////////
 
 
+#ifdef PT_WEB
+	double tWeb0 = emscripten_get_now();
+#endif
 	fp = fopen( iniFile , "rb" );
-	
+#ifdef PT_WEB
+	if ( emscripten_get_now()-tWeb0>500 ) printf( "[web] start-up: opening %s took %.1f s\n", iniFile, (emscripten_get_now()-tWeb0)/1000 );
+#endif
+
 	if( fp != NULL )
 	{
 		MAKELOG("fp = fopen( iniFile , 'rb' ) : success");
@@ -2934,6 +2943,12 @@ smCONFIG *smConfigDecode( char *iniFile  )
 		p = fileread_GetWord( decode , line);
 
 		CmdNum = 0;
+#if defined(_W_SERVER) && defined(PT_WEB)
+		// The server settings were tried again for every client command (hundreds of
+		// comparisons each, for every line): the same answer each time, millions of
+		// comparisons in all - 11 s at start-up in the memory-checking test build. Once a line.
+		BOOL bServerTried = FALSE;
+#endif
 
 		while(1) {
 
@@ -2944,6 +2959,10 @@ smCONFIG *smConfigDecode( char *iniFile  )
 			CmdNum++;
 
 #ifdef _W_SERVER
+#ifdef PT_WEB
+			if ( bServerTried ) continue;
+			bServerTried = TRUE;
+#endif
 			//////////// 서버용 설정 /////////////////////////////////
 			if ( SetOdbcConfig( decode , p ) ) break;			// ODBC
 			if ( SetServerSelectList( decode , p ) ) break;		// 접속 서버 목록
@@ -3335,7 +3354,13 @@ smCONFIG *smConfigDecode( char *iniFile  )
 	int		IniWinMode = Config->WinMode;
 	POINT	IniScreenSize = Config->ScreenSize;
 
+#ifdef PT_WEB
+	double tWeb1 = emscripten_get_now();
+#endif
 	smConfigReg();					//레지스트리 설정 적용
+#ifdef PT_WEB
+	if ( emscripten_get_now()-tWeb1>500 ) printf( "[web] start-up: settings from the registry took %.1f s\n", (emscripten_get_now()-tWeb1)/1000 );
+#endif
 
 	if ( IniSetWinMode )	Config->WinMode = IniWinMode;
 	if ( IniSetScreenSize )	Config->ScreenSize = IniScreenSize;
