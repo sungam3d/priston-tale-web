@@ -778,9 +778,28 @@ static int NewArmorModel( DWORD dwCode )
 	return -1;
 }
 
+// a costume's worn model: COSTUME_ARMOR_BASE + its place in szCostumeArmorFile (playmodel_costume.h).
+// CA1xx/CA2xx: table 1 at the item number (CA131 -> 31); CA5xx/CA6xx: table 2 at number-1. -1: not one
+static int CostumeArmorIndex( DWORD dwCode )
+{
+	DWORD dwFam = dwCode & sinITEM_MASK2;
+	if ( dwFam!=sinCA1 && dwFam!=sinCA2 && dwFam!=sinCA5 && dwFam!=sinCA6 ) return -1;
+	for ( int cnt=0; cnt<MAX_ITEM; cnt++ ) {
+		if ( sItem[cnt].CODE!=dwCode ) continue;
+		int num = lstrlen( sItem[cnt].LastCategory )==5 ? atoi( sItem[cnt].LastCategory+3 ) : 0;
+		if ( num<=0 ) return -1;
+		int k = ( dwFam==sinCA1 || dwFam==sinCA2 ) ? num : 97 + num-1;
+		if ( k<0 || k>=COSTUME_ARMOR_MAX ) return -1;
+		return COSTUME_ARMOR_BASE + k;
+	}
+	return -1;
+}
+
 static int ArmorIndexOfCode( DWORD dwCode )
 {
-	int n = NewArmorModel( dwCode );
+	int n = CostumeArmorIndex( dwCode );
+	if ( n>=0 ) return n;
+	n = NewArmorModel( dwCode );
 	if ( n>=0 ) return n;
 	//작성자 하 대 용 : 아이템 코드 수정(sin25 이후엔 -16을 해준다.)
 	if ( ((dwCode&sinITEM_MASK3)>>8) > 25 ) return ((dwCode&sinITEM_MASK3)>>8)-17;
@@ -799,8 +818,16 @@ int SetPlayerArmor( int armor )
 	if ( armor == -1) armor=0; 
 	
 	jobNum = lpCurPlayer->smCharInfo.JOB_CODE;
-	if ( armor>ARMOR_FILE_MAX-1 ) armor=ARMOR_FILE_MAX-1;
 	if ( jobNum>MAX_JOBNUM ) jobNum=0;
+	if ( armor>=COSTUME_ARMOR_BASE && armor<COSTUME_ARMOR_BASE+COSTUME_ARMOR_MAX ) {	// a costume
+		lstrcpy( szbuff, szArmorDirectory );
+		lstrcat( szbuff, szCostumeArmorFile[ArmorJobNum[jobNum]][ armor-COSTUME_ARMOR_BASE ] );
+		lpCurPlayer->PatLoading = TRUE;
+		AddLoaderPattern( lpCurPlayer , szbuff , lpCurPlayer->smCharInfo.szModelName2 );
+		PlayerArmor = armor;
+		return TRUE;
+	}
+	if ( armor>ARMOR_FILE_MAX-1 ) armor=ARMOR_FILE_MAX-1;
 
 	lstrcpy( szbuff, szArmorDirectory );
 
@@ -838,8 +865,15 @@ int SetChrArmor( smCHAR *lpChar , int ItemNum )
 		armor = 0;
 
 	jobNum = lpChar->smCharInfo.JOB_CODE;
-	if ( armor>ARMOR_FILE_MAX-1 ) armor=ARMOR_FILE_MAX-1;
 	if ( jobNum>MAX_JOBNUM ) jobNum=0;
+	if ( armor>=COSTUME_ARMOR_BASE && armor<COSTUME_ARMOR_BASE+COSTUME_ARMOR_MAX ) {	// another player's costume
+		lstrcpy( szbuff, szArmorDirectory );
+		lstrcat( szbuff, szCostumeArmorFile[ArmorJobNum[jobNum]][ armor-COSTUME_ARMOR_BASE ] );
+		lpChar->PatLoading = TRUE;
+		AddLoaderPattern( lpChar , szbuff , lpChar->smCharInfo.szModelName2 );
+		return TRUE;
+	}
+	if ( armor>ARMOR_FILE_MAX-1 ) armor=ARMOR_FILE_MAX-1;
 
 	lstrcpy( szbuff, szArmorDirectory );
 
@@ -1404,6 +1438,9 @@ int GetItemKindFromBliankColor( smCHARTOOL	*lpCharTool )
 
 }
 
+extern DWORD sinWornArmorCode, sinWornCostumeCode;
+void sinRefreshBodyLook();
+
 /////////////// 신바람 인벤토리 변경 호출 함수 ///////////////
 int sinSetCharItem(DWORD CODE , DWORD Posi , BOOL SetFlag )
 {
@@ -1551,35 +1588,55 @@ InvenItem[sInven[2].ItemIndex-1] //갑옷
 		break;
 
 		case INVENTORY_POS_ARMOR:
-			dwMotionCode = lpCurPlayer->MotionInfo->State;
-			FrameCounter = lpCurPlayer->FrameCounter;
-
 			//옷 갑아 입기
-			if( CODE != NULL){
+			sinWornArmorCode = ( CODE!=NULL && SetFlag ) ? CODE : 0;
+			sinRefreshBodyLook();
+		break;
 
-				if ( SetFlag ) {
-					dwCode = CODE;
-					SetPlayerArmor( ArmorIndexOfCode( dwCode ) );		// the old rule, or the new armour's model
-					lpCurPlayer->wStickItems[smPLAYBUFF_ITEM_BODY] = GetSinItemNumFromCode( dwCode );
-				}
-				else {
-					SetPlayerArmor( 0 );
-					lpCurPlayer->wStickItems[smPLAYBUFF_ITEM_BODY] = -2;
-				}
-				if ( dwMotionCode==CHRMOTION_STATE_DEAD ) {
-					//죽었을때 옷 갈아입어도 소용 없다
-					lpCurPlayer->SetMotionFromCode( dwMotionCode );
-					lpCurPlayer->frame = (lpCurPlayer->MotionInfo->EndFrame-1)*160;
-					lpCurPlayer->FrameCounter = FrameCounter;
-				}
-			}
-			else{
-				SetPlayerArmor( -1 );
-				lpCurPlayer->wStickItems[smPLAYBUFF_ITEM_BODY] = -2;
-			}
+		case INVENTORY_POS_COSTUME:		// the costume slot: shown instead of the armour in costume view
+			sinWornCostumeCode = ( CODE!=NULL && SetFlag ) ? CODE : 0;
+			sinRefreshBodyLook();
 		break;
 	}
 	return TRUE;
+}
+
+/*----------------------------------------------------------------------------*
+*	The costume slot (3215 inventory): the body shows the costume while the
+*	costume view is on (the inventory's up arrow, or T) and one is worn, else
+*	the armour. Others see the same (wStickItems body = the item shown). The
+*	costume's stats count either way (it is an item in a slot: SetItemToChar).
+*-----------------------------------------------------------------------------*/
+DWORD sinWornArmorCode = 0;		// what the armour slot holds (0: nothing)
+DWORD sinWornCostumeCode = 0;	// what the costume slot holds
+int sinCostumeView = 0;			// 1: the costume page and look (when one is worn), 0: the gear (at login)
+
+void sinRefreshBodyLook()
+{
+	DWORD dwShow = ( sinCostumeView && sinWornCostumeCode ) ? sinWornCostumeCode : sinWornArmorCode;
+	DWORD dwMotionCode = lpCurPlayer->MotionInfo->State;
+	int FrameCounter = lpCurPlayer->FrameCounter;
+
+	if ( dwShow ) {
+		SetPlayerArmor( ArmorIndexOfCode( dwShow ) );		// the old rule, the new armour's model, or a costume
+		lpCurPlayer->wStickItems[smPLAYBUFF_ITEM_BODY] = GetSinItemNumFromCode( dwShow );
+	}
+	else {
+		SetPlayerArmor( 0 );
+		lpCurPlayer->wStickItems[smPLAYBUFF_ITEM_BODY] = -2;
+	}
+	if ( dwMotionCode==CHRMOTION_STATE_DEAD ) {
+		//죽었을때 옷 갈아입어도 소용 없다
+		lpCurPlayer->SetMotionFromCode( dwMotionCode );
+		lpCurPlayer->frame = (lpCurPlayer->MotionInfo->EndFrame-1)*160;
+		lpCurPlayer->FrameCounter = FrameCounter;
+	}
+}
+
+void sinToggleCostumeView()
+{
+	sinCostumeView = !sinCostumeView;
+	sinRefreshBodyLook();
 }
 
 //아이템 버리기 함수

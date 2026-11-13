@@ -9,7 +9,10 @@
 #define INVENTORY_BOX_COL		6   //아이템 박스의 갯수 (세로)
 #define INVENTORY_BOX_ROW		12  //아이템 박스의 갯수 (가로)
 
-#define INVENTORY_MAX_POS		13    //창고를 제외한 10곳의 아이템셋팅 포지션 뒤의 3은 임시이다 RECT만 사용한다 
+// 13 + the 3215 slots: 14 costume, 15/16 premium rings (sinInvenTory.cpp sInven)
+#define INVENTORY_MAX_POS		16    //창고를 제외한 10곳의 아이템셋팅 포지션 뒤의 3은 임시이다 RECT만 사용한다
+#define INVENTORY_POS_SLOT_COSTUME	13	// sInven index of the costume slot (ItemPosition 14)
+#define INVENTORY_POS_SLOT_PRING	14	// the two premium ring slots: 14, 15 (ItemPosition 15, 16)
 #define MAX_WINGQUEST			10  //윙 종류가 설마 10개 넘겠어 --;
 
 

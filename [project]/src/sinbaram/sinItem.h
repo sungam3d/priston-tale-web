@@ -68,6 +68,10 @@
 #define INVENTORY_POS_ARMLET			0x00000800
 #define INVENTORY_POS_TWO_HAND			0x00001000
 #define INVENTORY_POS_POTION			0x00002000
+// the 3215 inventory: the costume slot (shown with the up arrow or T) and two premium ring slots
+#define INVENTORY_POS_COSTUME			0x00004000
+#define INVENTORY_POS_PRING1			0x00008000
+#define INVENTORY_POS_PRING2			0x00010000
 
 
 /*---------------------------------------------*
@@ -90,6 +94,7 @@
 #define ITEM_CLASS_QUEST				INVENTORY_POS_BOX
 #define ITEM_CLASS_FORCEORB				INVENTORY_POS_BOX
 #define ITEM_CLASS_SEEL					INVENTORY_POS_BOX
+#define ITEM_CLASS_COSTUME				INVENTORY_POS_COSTUME		// costumes (sinItem_Costume.h)
 
 //발사형인지 근접형인지 
 #define ITEM_WEAPONCLASS_NOT_SHOOTING	1 //근접형 
@@ -134,6 +139,12 @@ inline int CanClassUseWeapon( int JobCode, DWORD dwItemCode )
 #define sinDG1			0x02030000	//Gloves
 #define sinDS1			0x02040000	//Shields
 #define sinDA2			0x02050000	//Armor
+// costumes (the 3215 codes): CA1xx armours, CA2xx robes, CA5xx/CA6xx outfits. Not 0x0201/0x0204,
+// so record.cpp does not take one in the costume slot for a misplaced armour
+#define sinCA1			0x02060000
+#define sinCA2			0x02070000
+#define sinCA5			0x02100000
+#define sinCA6			0x02110000
 
 
 /*---------------------------------------------*

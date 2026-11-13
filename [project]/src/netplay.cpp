@@ -12081,6 +12081,17 @@ int DeleteEventItem_TimeOut( sITEMINFO	*lpsItem )
 
 	DWORD NowTime = GetPlayTime_T(); // 현재 시간(second단위)
 
+	// costumes (the 3215 costume slot): the days in their names, "(1Day)" / "(7Days)" / "(30Days)"
+	{
+		#include "sinbaram\sinItem_CostumeDays.h"
+		for ( int k=0; sinCostumeDays[k][0]; k++ ) {
+			if ( lpsItem->CODE==sinCostumeDays[k][0] ) {
+				if ( lpsItem->dwCreateTime+(60*60*24*sinCostumeDays[k][1]) < NowTime ) return true;
+				break;
+			}
+		}
+	}
+
 	//한복 14일
 	if( lpsItem->CODE == (sinDA1|sin48) || lpsItem->CODE == (sinDA2|sin48) )
 	{

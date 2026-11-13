@@ -258,6 +258,11 @@ int	AttackRecvCountUp();
 int	CheckCopyItem( sITEMINFO *lpItem );
 //집업 변경 얼굴 변화
 int ChangeJobFace();
+// the costume slot (playsub.cpp): what the armour and costume slots hold, and which one the body shows
+extern DWORD sinWornArmorCode, sinWornCostumeCode;
+extern int sinCostumeView;
+void sinRefreshBodyLook();
+void sinToggleCostumeView();
 // The face of a rank (ChangeJob): faces 0..3 are the first four ranks and 4..6 the big-head
 // event faces (playmodel.h). The fifth rank is JOB_FACE_RANK5: ChangeModelSkin gives it the
 // fifth rank's heads ("...d.inf", hair styles 01..03) and the fourth rank's head for the others.

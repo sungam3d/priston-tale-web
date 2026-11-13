@@ -96,6 +96,24 @@ int GhostPotionCheckFlag=0;		// 'E'키로인한 물약 사라지는 버그를 �
 
 int sinChangeSetFlag = 0;
 
+/*----------------------------------------------------------------------------*
+*	The 3215 costume slot. Its page (Costume-UI.bmp) covers the weapon, armour
+*	and shield slots while the costume view is on (the up arrow, or T); the
+*	slots and items of the page that is not shown can't be clicked or dropped on.
+*-----------------------------------------------------------------------------*/
+static LPDIRECTDRAWSURFACE4 lpCostumeUI = 0, lpCostumeArrow = 0, lpCostumeInfo = 0;
+extern int sinCostumeView;			// playsub.cpp
+void sinToggleCostumeView();
+static int InvenSlotHidden( int i )			// sInven index
+{
+	if ( sinCostumeView ) return i>=0 && i<=2;		// right hand, left hand, armour
+	return i==INVENTORY_POS_SLOT_COSTUME;
+}
+static int InvenItemHidden( sITEM *pItem )
+{
+	return pItem->ItemPosition && InvenSlotHidden( pItem->ItemPosition-1 );
+}
+
 int sinUsePotionDelayFlag = 0;
 int PotionCheckNumJumpFlag = 1;
 
@@ -175,19 +193,24 @@ sINVENTORY sInven[INVENTORY_MAX_POS] = {
 	{INVENTORY_POS_POTION ,{ 495   , 565   , 495+26 , 565+26}},  //포션 1			10
 	{INVENTORY_POS_POTION ,{ 495+26 , 565  , 495+26+26 , 565+26}},  //포션 2			11
 	{INVENTORY_POS_POTION ,{ 495+26+26 , 565 , 495+26+26+26 , 565+26}},  //포션 3			12
+	// the 3215 inventory (Inven.bmp has them drawn in)
+	{INVENTORY_POS_COSTUME,{ 648+1 , 433+1 , 714 , 544}},  //costume: where the armour is, in costume view	13
+	{INVENTORY_POS_PRING1 ,{ 512+1 , 500+1 , 534 , 522}},  //premium ring 1			14
+	{INVENTORY_POS_PRING2 ,{ 539+1 , 500+1 , 561 , 522}},  //premium ring 2			15
 };
 
 //화살표 좌표 
-int ArrowPosi[9][4] = {
+int ArrowPosi[10][4] = {
 	{26,572,26+22,591},
 	{48,572,48+22,591},
-	{519,514,538,533},
-	{541,514,560,533},
+	{524,525,542,543},		// weapon set A/B: where the 3215 Inven.bmp draws the left and right arrows
+	{546,525,564,543},
 	{266,572,266+22,591},//인벤 닫기 
 	{302,467,321,486},//무게 아이콘 
 	{120,572,120+20,591},//돈 아이콘 
 	{70,572,70+22,591},//퀘스트 아이템
 	{98,572,98+22,591},//개인상점
+	{502,525,520,543},		// the up arrow: costume view on/off (also T)	(InvenArrowPosi 10)
 };
 
 
@@ -361,6 +384,10 @@ void cINVENTORY::Load()
 	lpInvenMain = LoadDibSurfaceOffscreen( "Image\\SinImage\\Inven\\Inven.bmp" );
 	lpInvenArrow[0] = LoadDibSurfaceOffscreen( "Image\\SinImage\\Inven\\LeftArrow.bmp" );
 	lpInvenArrow[1] = LoadDibSurfaceOffscreen( "Image\\SinImage\\Inven\\RightArrow.bmp" );
+	// the costume slot (3215): its panel over the weapon/armour/shield slots, the lit up arrow, its label
+	lpCostumeUI    = LoadDibSurfaceOffscreen( "Image\\SinImage\\Inven\\Costume-UI.bmp" );
+	lpCostumeArrow = LoadDibSurfaceOffscreen( "Image\\SinImage\\Inven\\CArrow.bmp" );
+	lpCostumeInfo  = LoadDibSurfaceOffscreen( "Image\\SinImage\\Inven\\InfoBox\\Costume.bmp" );
 
 	lpCoverSmall   = LoadDibSurfaceOffscreen( "Image\\SinImage\\Inven\\CoverSmall.bmp" );
 	lpCoverMiddle  = LoadDibSurfaceOffscreen( "Image\\SinImage\\Inven\\CoverMiddle.bmp" );
@@ -454,6 +481,10 @@ void cINVENTORY::InvenItemRelease()
 void cINVENTORY::Release()
 {
 	int i;
+
+	if(lpCostumeUI){ lpCostumeUI->Release(); lpCostumeUI = 0; }
+	if(lpCostumeArrow){ lpCostumeArrow->Release(); lpCostumeArrow = 0; }
+	if(lpCostumeInfo){ lpCostumeInfo->Release(); lpCostumeInfo = 0; }
 
 	for(i = 0 ; i <2 ; i++){
 		if(lpInvenArrow[i]){
@@ -613,12 +644,23 @@ void cINVENTORY::Draw()
 
 
 	////////////////무기 셋팅여역 배경 
-	for( i=0 ; i<3 ; i++){ //값옷 , 무기 배경   
+	if(sinCostumeView && lpCostumeUI){	// the costume page over the weapon / armour / shield slots
+		DrawSprite(sInven[0].Rect.left-3 , sInven[0].Rect.top-3+(256-sinMoveKindInter[SIN_INVENTORY]) , lpCostumeUI ,0 ,0 , 220 , 116);
+		i = INVENTORY_POS_SLOT_COSTUME;
+		if(sInven[i].ItemIndex && InvenItem[sInven[i].ItemIndex-1].Flag)
+			DrawSprite(sInven[i].Rect.left , sInven[i].Rect.top+(256-sinMoveKindInter[SIN_INVENTORY]) , lpCoverLarge ,0 ,0 , 66 , 110);
+	}
+	else
+	for( i=0 ; i<3 ; i++){ //값옷 , 무기 배경
 		if(sInven[i].ItemIndex && InvenItem[sInven[i].ItemIndex-1].Flag)
 			DrawSprite(sInven[i].Rect.left , sInven[i].Rect.top+(256-sinMoveKindInter[SIN_INVENTORY]) , lpCoverLarge ,0 ,0 , 66 , 110);
 	}
 
-	for( i=3 ; i<7 ; i++){    //링 , 아물렛 , 쉘텀 
+	for( i=3 ; i<7 ; i++){    //링 , 아물렛 , 쉘텀
+		if(sInven[i].ItemIndex && InvenItem[sInven[i].ItemIndex-1].Flag)
+			DrawSprite(sInven[i].Rect.left , sInven[i].Rect.top+(256-sinMoveKindInter[SIN_INVENTORY]) , lpCoverSmall ,0 ,0 , 22 , 22);
+	}
+	for( i=INVENTORY_POS_SLOT_PRING ; i<INVENTORY_POS_SLOT_PRING+2 ; i++){    // the premium rings
 		if(sInven[i].ItemIndex && InvenItem[sInven[i].ItemIndex-1].Flag)
 			DrawSprite(sInven[i].Rect.left , sInven[i].Rect.top+(256-sinMoveKindInter[SIN_INVENTORY]) , lpCoverSmall ,0 ,0 , 22 , 22);
 	}
@@ -719,6 +761,7 @@ void cINVENTORY::Draw()
 				DrawSprite(StartX+(22*8),sInven[0].Rect.top+(256-sinMoveKindInter[SIN_INVENTORY])+2 , lpPuzzleInven,0,0,88,88);
 			}
 
+			if(InvenItemHidden(&InvenItem[cnt]))continue;		// on the costume / gear page that is not shown
 			if(InvenItem[cnt].sItemInfo.NotUseFlag && !MyShopItemIndex[cnt]){
 				dsDrawColorBox( sinInvenColor[2] ,InvenItem[cnt].x,InvenItem[cnt].y+(256-sinMoveKindInter[SIN_INVENTORY]), InvenItem[cnt].w, InvenItem[cnt].h );
 				if(InvenItem[cnt].ItemPosition != 0){
@@ -730,8 +773,8 @@ void cINVENTORY::Draw()
 		}
 	}
 
-	for(i=0 ; i < INVENTORY_MAXITEM ; i++){  
-		if(InvenItem[i].Flag){ 
+	for(i=0 ; i < INVENTORY_MAXITEM ; i++){
+		if(InvenItem[i].Flag && !InvenItemHidden(&InvenItem[i])){
 			//인터페이스의 물약창이 아닐경우에만 아이템의 높이를 보정한다
 			if(InvenItem[i].ItemPosition != 11 && InvenItem[i].ItemPosition != 12 && InvenItem[i].ItemPosition != 13){
 				//지금 상점에 등록된 아이템은 이미지를 표시해준다
@@ -828,10 +871,14 @@ void cINVENTORY::Draw()
 				DrawSprite(ArrowPosi[7][0], ArrowPosi[7][1]-27+(256-sinMoveKindInter[SIN_INVENTORY]),lpSpecialItemInfo[1],0 ,0 , 70,27);
 			}
 		break;
-		case 9:    
+		case 9:
 			DrawSprite(ArrowPosi[8][0], ArrowPosi[8][1]+(256-sinMoveKindInter[SIN_INVENTORY]),lpMyShopIcon,0 ,0 , 20,20);
 			DrawSprite(ArrowPosi[8][0]-39, ArrowPosi[8][1]-27+(256-sinMoveKindInter[SIN_INVENTORY]),lpMyShopIcon_T,0 ,0 , 100,26);
-			
+
+		break;
+		case 10:	// the costume view arrow: lit, with its "Costume" label
+			if(lpCostumeArrow) DrawSprite(ArrowPosi[9][0], ArrowPosi[9][1]+(256-sinMoveKindInter[SIN_INVENTORY]),lpCostumeArrow,0 ,0 , 20,20);
+			if(lpCostumeInfo) DrawSprite(ArrowPosi[9][0]-30, ArrowPosi[9][1]-27+(256-sinMoveKindInter[SIN_INVENTORY]),lpCostumeInfo,0 ,0 , 80,27);
 		break;
 
 	}
@@ -1062,8 +1109,8 @@ void cINVENTORY::Main()
 	InvenArrowPosi = 0; //리턴하기전에 값을 초기화해준다 
 	int i = 0;
 	if(OpenFlag)
-		for(i=0;i<9 ;i++)
-			if ( ArrowPosi[i][0] < pCursorPos.x  && ArrowPosi[i][2] > pCursorPos.x  && 
+		for(i=0;i<10 ;i++)		// 10: the costume view arrow
+			if ( ArrowPosi[i][0] < pCursorPos.x  && ArrowPosi[i][2] > pCursorPos.x  &&
 				 ArrowPosi[i][1] < pCursorPos.y  && ArrowPosi[i][3] > pCursorPos.y  )
 				InvenArrowPosi = i+1;
 
@@ -1184,6 +1231,14 @@ void cINVENTORY::LButtonDown(int x , int y)
 	//} 
 
 	if( bGiftBoxDelay ) return;		// pluto 선물상자
+	// the up arrow: the costume view on/off (the T key does the same)
+	if(InvenArrowPosi == 10){
+		if(!MouseItem.Flag){
+			sinToggleCostumeView();
+			sinPlaySound(SIN_SOUND_SHOW_INTER);
+		}
+		return;
+	}
 	//퀘스트 아이템
 	if(InvenArrowPosi == 8){
 		if(!cTrade.OpenFlag && !cWareHouse.OpenFlag && !cCraftItem.OpenFlag && !cMyShop.OpenFlag && !cCharShop.OpenFlag && !MyShopSendButton) //에이징은 열리게한다 워쩔수엄따
@@ -2729,7 +2784,12 @@ void cINVENTORY::KeyDown()
 	memset(&TempPotion,0,sizeof(sITEM));
 	int CountTemp  = 0;
 	int sArrowPosi = 0;
-	char szKeyBuff[3]={'1','2','3'}; //키버퍼 
+	char szKeyBuff[3]={'1','2','3'}; //키버퍼
+
+	// T: the costume view on/off, as in the 3215 client (the inventory's up arrow does the same)
+	if(sinGetKeyClick('T')){
+		if(!MouseItem.Flag) sinToggleCostumeView();
+	}
 
 	if(sinGetKeyClick('V')){
 		cHelpPet.PetMessage("*InvenTory",3);
@@ -2867,8 +2927,8 @@ int cINVENTORY::LoadItemInfo() //아이템정보를 로드한후 저장한다
 {
 	int i;
 
-	int TempItemIndex[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-	int TempItemIndex2[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+	int TempItemIndex[INVENTORY_MAX_POS+4] = {0,};		// by ItemPosition (1..INVENTORY_MAX_POS)
+	int TempItemIndex2[INVENTORY_MAX_POS+4] = {0,};
 	
 	char szFilePath[256];
 
@@ -3032,7 +3092,7 @@ int cINVENTORY::LoadItemInfo() //아이템정보를 로드한후 저장한다
 			}
 
 			if(InvenItem[i].ItemPosition > 0){
-				if(InvenItem[i].ItemPosition >= 15)continue;
+				if(InvenItem[i].ItemPosition > INVENTORY_MAX_POS)continue;	// was >= 15: the costume and premium ring slots are 14..16
 				//현재 아머창에 아이템이 잇으면 
 				if( InvenItem[i].ItemPosition == 3)
 						ArmorFlag  = true;	
@@ -3988,9 +4048,9 @@ int cINVENTORY::PickUpInvenItem(int x , int y , int PickUpFlag)
 	SelectInvenItemIndex = 0;    //집을 아이템 
 	SelectPotionIndex    = 0;    //포션 오토셋 인덱스 
 	int kk = 0;
-	for(int i=0 ; i < INVENTORY_MAXITEM ; i++){  
-		if(InvenItem[i].Flag){
-			if ( InvenItem[i].x < x  && InvenItem[i].x + InvenItem[i].w > x  && 
+	for(int i=0 ; i < INVENTORY_MAXITEM ; i++){
+		if(InvenItem[i].Flag && !InvenItemHidden(&InvenItem[i])){		// not on the page that is not shown
+			if ( InvenItem[i].x < x  && InvenItem[i].x + InvenItem[i].w > x  &&
 				InvenItem[i].y < y  && InvenItem[i].y + InvenItem[i].h > y ){
 				if(!InvenNotOpenCheck(&InvenItem[i]))return FALSE;
 				if(PickUpFlag == 1){ 
@@ -4186,7 +4246,8 @@ int cINVENTORY::SetInvenItemAreaCheck(sITEM *pItem)
 
 	///////////무기 영역 &포션 영역 
 	if(!cInvenTory.OpenFlag)return FALSE; //인벤토리가 열려있지 않을시에는 아이템을 셋팅할수 없다
-	for( i=0 ; i < INVENTORY_MAX_POS ; i++){ 
+	for( i=0 ; i < INVENTORY_MAX_POS ; i++){
+		if(InvenSlotHidden(i))continue;		// the costume slot in the gear view, the gear slots in the costume view
 		if(CheckInvenPos(pItem->x+11 , pItem->y+11 ,pItem->x +pItem->w -11 ,pItem->y +pItem->h -11 , sInven[i].Rect)){
 			ColorRect.left   = sInven[i].Rect.left;     //컬럭 박스의 RECT
 			ColorRect.top    = sInven[i].Rect.top;
@@ -4196,7 +4257,10 @@ int cINVENTORY::SetInvenItemAreaCheck(sITEM *pItem)
 			pItem->SetY = ColorRect.top  + ((ColorRect.bottom - pItem->h)/2);
 			pItem->ItemPosition = i+1;
 
-			if(!(sInven[i].Position & pItem->Class)){ //클래스가 맞지 않는다 
+			// the premium ring slots take the premium (OR2xx) rings only
+			int bPremiumRing = ( i>=INVENTORY_POS_SLOT_PRING && i<INVENTORY_POS_SLOT_PRING+2 &&
+								 (pItem->Class & ITEM_CLASS_RING) && (pItem->CODE & sinITEM_MASK2)==sinOR2 );
+			if(!(sInven[i].Position & pItem->Class) && !bPremiumRing){ //클래스가 맞지 않는다
 				ColorIndex = NOT_SETTING_COLOR;
 				return FALSE;
 			}
@@ -4301,6 +4365,7 @@ int cINVENTORY::CrashInvenItem(RECT &desRect , int PassItemIndex)
 
 	for(int i=0 ; i<INVENTORY_MAXITEM ; i++){
 		if(InvenItem[i].Flag){
+			if(InvenItemHidden(&InvenItem[i]))continue;		// the armour under the costume slot, and so on
 			if(PassItemIndex != 0)
 				if(PassItemIndex == i+1)continue;
 			rect.left   = InvenItem[i].x;
@@ -5164,7 +5229,7 @@ int cINVENTORY::SetItemToChar(int CheckHackFlag)
 	sinUndeadAbsorb = 0; //언데드 흡수율 초기화 
 
 	//////////////////////////////////////////////////
-	int InvenCheckItem[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+	int InvenCheckItem[INVENTORY_MAX_POS+4] = {0,};		// by ItemPosition: the costume and premium rings too
 	sITEM sinTempItem;
 	memset(&sinTempItem,0,sizeof(sITEM));
 

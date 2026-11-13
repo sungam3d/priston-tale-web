@@ -1541,6 +1541,9 @@ char *szArmorNumFile_Comic[ARMOR_JOB_ROWS][ARMOR_FILE_MAX] = {
 	}
 };
 
+// worn costume models (the costume slot): szCostumeArmorFile, COSTUME_ARMOR_BASE
+#include "playmodel_costume.h"
+
 /*
 //일반 옷 모델 목록
 char *szArmorNumFile[8][18] = {
