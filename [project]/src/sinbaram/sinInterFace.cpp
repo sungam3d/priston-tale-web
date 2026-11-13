@@ -2013,6 +2013,53 @@ int sinGM_ApplyLevel( int Level , int SaveNow )
 	return TRUE;
 }
 
+/*----------------------------------------------------------------------------*
+*	GM /MakeMeTester (server command): after the server's level 100 arrives
+*	(smTRANSCODE_GM_SETLEVEL with LParam 1), the fifth rank and every skill of it
+*	learned at rank 1, then /DeckMeOut! for the gear. Rank 1 each stays inside the
+*	skill-point budget the save and login checks allow (record.cpp CheckSkillPoint),
+*	so the points left over are free to raise the skills being tested.
+*-----------------------------------------------------------------------------*/
+int sinGM_MakeTester()
+{
+	int j, learned = 0;
+	if ( !lpCurPlayer ) return FALSE;
+
+	CheckCharForm();
+	sinChar->ChangeJob = 4;							// the fifth rank (tier 5 skills)
+	sinJobList = GetJobDataCode( sinChar->JOB_CODE , sinChar->ChangeJob );
+	if ( sinJobList ) lstrcpy( cInvenTory.JobName , sinJobList->szName2 );
+	ReformCharForm();
+	cSkill.SearchUseSkill();
+	ChangeJobFace();
+	cSkill.CheckingNowSkillState();
+
+	for ( j=1; j<ChangeJobSkillPlus && j<SIN_MAX_USE_SKILL; j++ ) {	// in tree order: each needs the one before
+		sSKILL *s = &sinSkill.UseSkill[j];
+		int *pool = j<13 ? &sinSkill.SkillPoint : &sinSkill.SkillPoint4;	// tiers 1-3 / tiers 4-5
+		if ( !s->Skill_Info.CODE || s->Point ) continue;
+		if ( s->Skill_Info.RequireLevel>sinChar->Level || *pool<=0 ) continue;
+		cSkill.CheckSkillPointForm( s );
+		s->Point = 1;
+		cSkill.ReformSkillPointForm( s );
+		(*pool)--;
+		learned++;
+	}
+	ReformCharForm();
+	cSkill.CheckingNowSkillState();
+	cInvenTory.SetItemToChar();
+	SaveGameData();
+
+	{
+		char szMsg[128];
+		wsprintf( szMsg , "GM: tester ready: fifth rank, %d skills learned, %d + %d points left. Gear next." ,
+			learned , sinSkill.SkillPoint , sinSkill.SkillPoint4 );
+		AddChatBuff( szMsg );
+	}
+	SendChatMessageToServer( "/DeckMeOut!" );		// the server already has level 100
+	return TRUE;
+}
+
 char InputSecretCode[256];
 char sinBuff[256];
 int  ResetQuset3Flag = 0;
