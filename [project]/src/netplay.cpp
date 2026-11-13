@@ -1566,9 +1566,15 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 		return FALSE;
 	}
 
+	// The decoded packet. It was declared inside the block below, but pData is pointed at it
+	// and the rest of this function reads the packet through pData after the block has ended:
+	// the compiler may then use that stack space for other variables, and the packet is read
+	// half overwritten - garbage values and pointers, crashes later (found by the
+	// AddressSanitizer test page: stack-use-after-scope). It lives as long as the function now.
+	smTHREADSOCK smEncData;
+
 	dwEncCode = (IPData[1]&0xFFFF0000);
 	if ( dwEncCode==smTRANSCODE_ENCODE_PACKET || dwEncCode==smTRANSCODE_ENCODE_PACKET2 ) {
-		smTHREADSOCK smEncData;
 
 		addExp = 0;
 		addMoney = 0;

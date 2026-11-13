@@ -21436,11 +21436,16 @@ int RecvMessage( smTHREADSOCK *SockInfo )
 
 	dwPacketCode = (IPData[1]&0xFFFF0000);
 
+	// The decoded packet: SockInfo is pointed at it and read after the block below has ended,
+	// so it must live as long as the function (it was declared inside the block - the stack
+	// space could be reused while the packet was still being read; as in the client's
+	// rsTRANS_SERVER::RecvMessage, found there by the AddressSanitizer test page)
+	smTHREADSOCK smEncData;
+
 pRetry:
 
 	if ( dwPacketCode==smTRANSCODE_ENCODE_PACKET || ( lpPlayInfo && dwPacketCode==lpPlayInfo->dwDecPacketCode ) ) {
 		//암호화 패킷
-		smTHREADSOCK smEncData;
 
 		memcpy( &smEncData , SockInfo , sizeof(smTHREADSOCK)-smSOCKBUFF_SIZE );
 

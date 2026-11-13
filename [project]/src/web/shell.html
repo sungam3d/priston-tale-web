@@ -33,11 +33,26 @@
 </div>
 <script src="config.js"></script>
 <script>
-	var logEl = document.getElementById('log');
-	function addLog(text) {
-		logEl.textContent += text + '\n';
-		if (logEl.textContent.length > 200000) logEl.textContent = logEl.textContent.slice(-100000);
+	// The debug window. Each line used to rewrite the whole text (up to 200,000 characters): a
+	// burst of lines - a crash report, a busy map - stalled the page for seconds. Lines now
+	// gather and are written at most 4 times a second; error lines at once (a crash can stop
+	// the page right after). window.ptFlushLog: what is still waiting, written now.
+	var logEl = document.getElementById('log'), logWaiting = [], logTimer = 0;
+	function flushLog() {
+		clearTimeout(logTimer);
+		logTimer = 0;
+		if (!logWaiting.length) return;
+		var t = logEl.textContent + logWaiting.join('\n') + '\n';
+		logWaiting = [];
+		if (t.length > 200000) t = t.slice(-100000);
+		logEl.textContent = t;
 		logEl.scrollTop = logEl.scrollHeight;
+	}
+	window.ptFlushLog = flushLog;
+	function addLog(text) {
+		logWaiting.push(text);
+		if (/error|abort|AddressSanitizer|crash/i.test(text)) flushLog();
+		else if (!logTimer) logTimer = setTimeout(flushLog, 250);
 	}
 	var Module = {
 		ptServerUrl: (window.PT_CONFIG && PT_CONFIG.serverUrl) || '',	// config.js: shared server.exe
