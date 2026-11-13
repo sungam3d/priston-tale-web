@@ -121,8 +121,29 @@
 			' · downloads ' + (localStorage.getItem('ptDownloadMode') || 'unset'));
 		Module.printErr('[web] last things the game did (oldest first):\n  ' + (crumbs.length ? crumbs.join('\n  ') : '(nothing recorded)'));
 	}
-	window.addEventListener('error', function (e) { logError('error', e.error || e.message); markCrash(); });
-	window.addEventListener('unhandledrejection', function (e) { logError('error (promise)', e.reason); markCrash(); });
+	window.addEventListener('error', function (e) { logError('error', e.error || e.message); markCrash(); sendReport('crash'); });
+	window.addEventListener('unhandledrejection', function (e) { logError('error (promise)', e.reason); markCrash(); sendReport('crash'); });
+
+	// Every crash and every hang also goes to the web server (crash-report.ashx, kept in
+	// App_Data\crash-reports): the error, the details, the trail and the end of the log -
+	// a frozen page could not show or save them. Each kind once per page load.
+	var sentKinds = {};
+	function sendReport(kind) {
+		if (sentKinds[kind]) return;
+		sentKinds[kind] = true;
+		setTimeout(function () {				// the details are printed just after the error
+			try {
+				if (window.ptFlushLog) window.ptFlushLog();
+				var log = document.getElementById('log');
+				var lines = (log ? log.textContent : '').split('\n');
+				var text = kind + ' on ' + location.pathname + ' - build ' + (window.PT_BUILD || '?') + ' - up ' + stamp() +
+					' - frames ' + (Module.ptFrames || 0) + '\n\nlast things the game did:\n  ' + crumbs.join('\n  ') +
+					'\n\nend of the log:\n' + lines.slice(-300).join('\n');
+				fetch('crash-report.ashx?kind=' + kind, { method: 'POST', body: text.slice(-500000),
+					headers: { 'Content-Type': 'text/plain;charset=utf-8' }, keepalive: text.length < 60000 }).catch(function () {});
+			} catch (e) {}
+		}, 300);
+	}
 
 	// "Save log": the whole debug window (and the trail) as a text file - selecting and copying
 	// a long log by hand was slow, and impossible once a crash had frozen the page
@@ -148,7 +169,12 @@
 	// an AddressSanitizer report (the test page) comes as log lines, not as an error
 	['print', 'printErr'].forEach(function (k) {
 		var orig = Module[k];
-		if (orig) Module[k] = function (t) { if (/AddressSanitizer/.test(t)) markCrash(); return orig.call(Module, t); };
+		if (orig) Module[k] = function (t) {
+			if (/AddressSanitizer/.test(t)) markCrash();
+			// a hang while playing (not the long start-up of the test page), with the stack that follows
+			if (/main thread waits in .* without a frame/.test(t) && (Module.ptFrames || 0) > 600) setTimeout(function () { sendReport('hang'); }, 2000);
+			return orig.call(Module, t);
+		};
 	});
 	(function addSaveLog() {
 		var bar = document.getElementById('bar');

@@ -93,7 +93,10 @@ int AddErrorList( char *szErrMsg )
 
 	cnt = ErrorListCnt & ERROR_LIST_MASK;
 
-	lstrcpy( szErrorList[cnt] , szErrMsg );
+	// cut to the slot (64): a long texture path ran into the next slot, and from the last one
+	// past the end of the list over other globals (found by the AddressSanitizer test page:
+	// global-buffer-overflow, loading the character screen)
+	lstrcpyn( szErrorList[cnt] , szErrMsg , sizeof(szErrorList[cnt]) );
 
 	ErrorListCnt++;
 
