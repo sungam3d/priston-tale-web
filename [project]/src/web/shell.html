@@ -101,11 +101,24 @@
 	// stored. (A <template>'s script does not run; emcc needs the placeholder.)
 	(function () {
 		var started = false;
+		// game.js is downloaded once and run from memory (a blob: URL). The game starts 8 threads
+		// (workers) from the same script; each used to download game.js again, and in Firefox one of
+		// those downloads now and then failed - the game then waited for that thread for ever at
+		// "Getting the game ready". From memory, there is nothing left to fail.
 		function load() {
-			var s = document.createElement('script');
-			s.src = document.getElementById('gameScript').content.querySelector('script').getAttribute('src') +
+			var url = document.getElementById('gameScript').content.querySelector('script').getAttribute('src') +
 				(ver ? '?v=' + encodeURIComponent(ver) : '');
-			document.body.appendChild(s);
+			function run(src) {
+				var s = document.createElement('script');
+				s.src = src;
+				document.body.appendChild(s);
+			}
+			var tries = 0;
+			(function get() {
+				fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+					.then(function (b) { run(URL.createObjectURL(new Blob([b], { type: 'text/javascript' }))); },
+						function () { if (++tries < 3) setTimeout(get, 700 * tries); else run(url); });	// as before, at worst
+			})();
 		}
 		function start() {
 			if (started) return;
@@ -120,8 +133,9 @@
 		var gotVer = fetch('version.txt', { cache: 'no-store' })
 			.then(function (r) { return r.ok ? r.text() : ''; })
 			.then(function (t) { ver = (t || '').trim(); }, function () {});
-		Module.locateFile = function (path, dir) {
-			return dir + path + (ver && /\.wasm$/.test(path) ? '?v=' + encodeURIComponent(ver) : '');
+		// files next to the page (game.js runs from a blob: URL, so its own address can't be the base)
+		Module.locateFile = function (path) {
+			return new URL(path, location.href).href + (ver && /\.wasm$/.test(path) ? '?v=' + encodeURIComponent(ver) : '');
 		};
 		function go() { gotVer.then(start, start); }
 		var sw = navigator.serviceWorker;
