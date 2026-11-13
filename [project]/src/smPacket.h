@@ -2686,6 +2686,8 @@ struct rsSERVER_CONFIG	{
 	int		OfflinePasswords;
 	// GM gold/exp/level commands (/GiveMeMoney!, /GiveMeExp!, /MakeMeLevel) for any GM (*GM_CHEATS, test server only)
 	int		GmCheats;
+	// nobody is put on (or kept off by) the black list; hack alerts are still logged (*DISABLE_BLACKLIST, test server)
+	int		NoBlacklist;
 
 
 	#ifdef LOG_THE_PK

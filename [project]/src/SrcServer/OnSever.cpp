@@ -30608,6 +30608,7 @@ int rsAddBackListID( char *szID , DWORD dwTime )
 	DWORD	dwFreeTime;
 
 	if ( !szID[0] ) return FALSE;
+	if ( rsServerConfig.NoBlacklist ) return FALSE;		// *DISABLE_BLACKLIST: no block, nothing recorded
 
 	if ( !rsBlackListInit ) {
 		//나쁜자들 명단 모두 초기화
@@ -30665,6 +30666,8 @@ int rsAddBackListID( char *szID , DWORD dwTime )
 DWORD rsCheckBackListID( char *szID )
 {
 	int cnt;
+
+	if ( rsServerConfig.NoBlacklist ) return NULL;		// *DISABLE_BLACKLIST: nobody is kept off, old entries included
 
 	for( cnt=0;cnt<srBLACK_LIST_MAX;cnt++ ) {
 

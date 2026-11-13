@@ -2263,6 +2263,11 @@ int SetServerConfig( char *decode , char *lpPoint )
 		rsServerConfig.GmCheats = TRUE;
 		flag++;
 	}
+	// test server: no black list (high-level gear trips the old stat checks: "Hacking Alert ( 100 )")
+	if ( !flag && lstrcmpi( decode , "*DISABLE_BLACKLIST" )==0 ) {
+		rsServerConfig.NoBlacklist = TRUE;
+		flag++;
+	}
 
 	if ( !flag && ( lstrcmp( decode , "*\267\316\261\327\300\316\261\335\301\366" )==0 ||
 		lstrcmpi( decode , "*DISABLE_LOGIN" )==0 ) ) {
