@@ -88,13 +88,38 @@
 		var rate = d.got / secs, left = d.size ? (d.size - d.got) / rate : 0;
 		return ' · ' + mb(rate) + '/s' + (left > 2 ? ' · about ' + (left < 90 ? Math.round(left) + ' s' : Math.round(left / 60) + ' min') + ' left' : '');
 	}
+	// The trail: the last things the game did (PtWeb_Crumb in the game: maps, skies, models;
+	// the file waits below), printed with a crash
+	var crumbs = [], t0 = Date.now();
+	function stamp() { var s = (Date.now() - t0) / 1000; return (s < 60 ? s.toFixed(1) + 's' : Math.floor(s / 60) + 'm' + (s % 60).toFixed(0) + 's'); }
+	var waitRun = 0;			// file waits in a row: one line, with how many
+	Module.ptCrumb = function (text) {
+		var wait = /^file wait: /.test(text);
+		if (wait && waitRun) {
+			waitRun++;
+			crumbs[crumbs.length - 1] = stamp() + '  file waits: ' + waitRun + ', the last ' + text.slice(11);
+			return;
+		}
+		waitRun = wait ? 1 : 0;
+		crumbs.push(stamp() + '  ' + text);
+		if (crumbs.length > 40) crumbs.shift();
+	};
 	// a crash: the full error and where in the game it happened, into the log under
-	// the game (copy it from there to report it)
+	// the game (copy it from there to report it), with the trail and the game's state
+	var reported = 0;
 	function logError(what, err) {
 		// Firefox's stack has no message line (Chrome's starts with it): add it
 		var msg = String(err && err.message || err);
 		var text = err && err.stack ? (err.stack.indexOf(msg) < 0 ? (err.name ? err.name + ': ' : '') + msg + '\n' : '') + err.stack : msg;
-		if (Module.printErr) Module.printErr('[web] ' + what + ': ' + text);
+		if (!Module.printErr) return;
+		Module.printErr('[web] ' + what + ': ' + text);
+		if (reported++ > 2) return;			// one crash can raise several errors: the details once or twice
+		var mem = 0;
+		try { mem = (typeof wasmMemory != 'undefined' ? wasmMemory : Module.wasmMemory).buffer.byteLength; } catch (e) {}	// game.js's global
+		Module.printErr('[web] crash details: build ' + (window.PT_BUILD || '?') + ' · ' + navigator.userAgent.replace(/^Mozilla\/5\.0 /, '') +
+			' · up ' + stamp() + ' · frames ' + (Module.ptFrames || 0) + ' · memory ' + Math.round(mem / 1048576) + ' MB' +
+			' · downloads ' + (localStorage.getItem('ptDownloadMode') || 'unset'));
+		Module.printErr('[web] last things the game did (oldest first):\n  ' + (crumbs.length ? crumbs.join('\n  ') : '(nothing recorded)'));
 	}
 	window.addEventListener('error', function (e) { logError('error', e.error || e.message); });
 	window.addEventListener('unhandledrejection', function (e) { logError('error (promise)', e.reason); });
@@ -153,6 +178,8 @@
 			'Downloading what the game needs - the first time only.');
 	}
 	function onWait(m) {
+		// (not the offline server's own loads: local test builds only, and many)
+		if (m.on && !waits[m.rel] && !/^server\//i.test(m.rel)) Module.ptCrumb('file wait: ' + m.rel);
 		if (m.on) waits[m.rel] = (waits[m.rel] || 0) + 1;
 		else if (waits[m.rel] && --waits[m.rel] <= 0) delete waits[m.rel];
 		if (Object.keys(waits).length) {
