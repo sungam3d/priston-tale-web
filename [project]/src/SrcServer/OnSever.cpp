@@ -36825,7 +36825,9 @@ int SetAgingItem(sITEMINFO *pItem, int AgingNum)
 	pItem->ItemKindCode = ITEM_KIND_AGING;
 
 	// 박재원 - 무기, 방어구 일 경우에만 에이징 시도
-	if( ((pItem->CODE & sinITEM_MASK2) >= sinWA1) && ((pItem->CODE & sinITEM_MASK2) <= sinDA2) )
+	// + orbs and bracelets (armlets): sinSetAgingItemIncreState ages both, as the aging NPC does
+	DWORD dwFam = pItem->CODE & sinITEM_MASK2;
+	if( (dwFam >= sinWA1 && dwFam <= sinDA2) || dwFam==sinOM1 || dwFam==sinOA2 )
 	{
 		for(int i=0 ; i<AgingNum ; i++)
 		{
