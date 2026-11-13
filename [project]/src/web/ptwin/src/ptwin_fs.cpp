@@ -183,6 +183,21 @@ EM_JS( char *, PtFs_DataUrl, ( const char *rel ), {
 static pthread_mutex_t s_FetchLock = PTHREAD_MUTEX_INITIALIZER;
 static std::set<std::string> s_Fetching;		// abs paths being downloaded
 
+// The game waits for a file to download: tell the page (web\progress.js shows "Loading game
+// files" after a moment), so a long wait never looks like a crash - from any thread, with or
+// without the service worker.
+EM_JS( void, PtFs_NoteWait, ( int on, const char *rel ), {
+	try {
+		if ( !self.__ptWaitChannel ) self.__ptWaitChannel = new BroadcastChannel( 'pt-downloads' );
+		self.__ptWaitChannel.postMessage( { t: 'gwait', on: on, rel: UTF8ToString( rel ) } );
+	} catch ( e ) {}
+} );
+struct PtFsWaitNote {
+	const char *rel;
+	PtFsWaitNote( const char *r ) : rel( r ) { PtFs_NoteWait( 1, rel ); }
+	~PtFsWaitNote() { PtFs_NoteWait( 0, rel ); }
+};
+
 static void FetchWait()
 {
 	if ( emscripten_is_main_runtime_thread() ) emscripten_sleep( 5 );		// the page keeps running
@@ -193,6 +208,7 @@ static void EnsureFetched( const std::string &abs, const std::string &rel )
 {
 	struct stat st;
 	if ( stat( abs.c_str(), &st )==0 ) return;
+	PtFsWaitNote note( rel.c_str() );		// "waiting for this file" until we return
 	for (;;) {			// someone else downloading it: wait for them
 		while ( pthread_mutex_trylock( &s_FetchLock )!=0 ) FetchWait();
 		if ( stat( abs.c_str(), &st )==0 ) { pthread_mutex_unlock( &s_FetchLock ); return; }

@@ -133,13 +133,39 @@
 		clearTimeout(showTimer);
 		showTimer = 0;
 		clearTimeout(hideTimer);
-		hideTimer = setTimeout(function () { if (!Object.keys(active).length) { burst = null; if (!starting) box.hidden = true; } }, 600);
+		hideTimer = setTimeout(function () {
+			if (!Object.keys(active).length) { burst = null; if (!starting) { if (Object.keys(waits).length) drawWait(); else box.hidden = true; } }
+		}, 600);
+	}
+	// ---- the game waiting for files (web\ptwin\src\ptwin_fs.cpp, any thread) ----
+	// Shown when the service worker's bar is not (no worker, or files coming from elsewhere),
+	// so a long wait - creating a character, changing maps - never looks like a crash.
+	var waits = {}, waitTimer = 0;
+	function drawWait() {
+		if (starting) return;
+		var names = Object.keys(waits);
+		if (!names.length) { if (!Object.keys(active).length) idle(); return; }
+		if (Object.keys(active).length) return;			// the download bar already shows them
+		show('small', 'Loading game files', null,
+			names[names.length - 1].split('/').pop() + (names.length > 1 ? ' · ' + names.length + ' files' : ''),
+			'Downloading what the game needs - the first time only.');
+	}
+	function onWait(m) {
+		if (m.on) waits[m.rel] = (waits[m.rel] || 0) + 1;
+		else if (waits[m.rel] && --waits[m.rel] <= 0) delete waits[m.rel];
+		if (Object.keys(waits).length) {
+			clearTimeout(hideTimer);
+			if (!waitTimer) waitTimer = setTimeout(function () { waitTimer = 0; drawWait(); }, 300);	// quick ones: no flash
+			else if (!box.hidden) drawWait();
+		}
+		else { clearTimeout(waitTimer); waitTimer = 0; drawWait(); }
 	}
 	if (window.BroadcastChannel) {
 		var channel = new BroadcastChannel('pt-downloads');
 		channel.onmessage = function (e) {
 			var m = e.data;
 			if (!m || !m.t) return;
+			if (m.t == 'gwait') { onWait(m); return; }
 			if (m.rel == 'data_startup.pack') {			// the start-up panel shows this one
 				if (m.t == 'start') pack = { size: m.size, got: 0, t0: Date.now() };
 				else if (m.t == 'bytes' && pack) pack.got = m.got;
