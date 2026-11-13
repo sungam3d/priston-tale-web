@@ -20334,6 +20334,13 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 	len = rsCompString( "/MakeMeTester" , szChatCommand );
 	if ( len && lpPlayInfo->AdminMode && ( DebugServerMode || rsServerConfig.TestSeverMode || rsServerConfig.GmCheats || lpPlayInfo->AdminMode>=4 ) )
 	{
+		int aging;								// /MakeMeTester [aging]: the gear's aging, 0-25
+		lpBuff = szChatCommand + len;
+		lpBuff = rsGetWord( szCmdBuff , lpBuff );
+		aging = szCmdBuff[0] ? atoi(szCmdBuff) : 0;
+		if ( aging<0 ) aging = 0;
+		if ( aging>25 ) aging = 25;		// sinTrade.h MAX_AGING
+
 		cnt = lpPlayInfo->smCharInfo.Level<199 ? 199 : lpPlayInfo->smCharInfo.Level;
 		if ( cnt>CHAR_LEVEL_MAX ) cnt = CHAR_LEVEL_MAX;
 		lpPlayInfo->spExp_Start = GetNextExp( cnt-1 );
@@ -20344,7 +20351,7 @@ int RecvCommand( rsPLAYINFO *lpPlayInfo , char *szChatCommand )
 		smTransCommand.code = smTRANSCODE_GM_SETLEVEL;
 		smTransCommand.WParam = cnt;
 		smTransCommand.LParam = 1;			// then the rank, skills and gear
-		smTransCommand.SParam = 0;
+		smTransCommand.SParam = aging;		// for the client's /DeckMeOut!
 		smTransCommand.EParam = 0;
 		lpPlayInfo->lpsmSock->Send( (char *)&smTransCommand , smTransCommand.size , TRUE );
 

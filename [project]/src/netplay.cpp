@@ -2563,8 +2563,8 @@ int rsTRANS_SERVER::RecvMessage( smTHREADSOCK *pData )
 				extern int sinGM_ApplyLevel( int Level , int SaveNow );
 				sinGM_ApplyLevel( lpTransCommand->WParam , TRUE );
 				if ( lpTransCommand->LParam==1 ) {		// GM /MakeMeTester: rank, skills and gear next
-					extern int sinGM_MakeTester();
-					sinGM_MakeTester();
+					extern int sinGM_MakeTester( int Aging );
+					sinGM_MakeTester( lpTransCommand->SParam );
 				}
 			}
 			break;

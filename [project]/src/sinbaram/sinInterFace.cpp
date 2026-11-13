@@ -2021,7 +2021,7 @@ int sinGM_ApplyLevel( int Level , int SaveNow )
 *	skill-point budget the save and login checks allow (record.cpp CheckSkillPoint),
 *	so the points left over are free to raise the skills being tested.
 *-----------------------------------------------------------------------------*/
-int sinGM_MakeTester()
+int sinGM_MakeTester( int Aging )
 {
 	int j, learned = 0;
 	if ( !lpCurPlayer ) return FALSE;
@@ -2061,7 +2061,12 @@ int sinGM_MakeTester()
 		extern int sinGM_TesterStats;
 		sinGM_TesterStats = 1;					// spend the gear's stats once it is all on
 	}
-	SendChatMessageToServer( "/DeckMeOut!" );		// the server already has the level
+	{
+		char szCmd[32];								// the server already has the level
+		if ( Aging>0 && Aging<=25 ) wsprintf( szCmd , "/DeckMeOut! %d" , Aging );
+		else lstrcpy( szCmd , "/DeckMeOut!" );
+		SendChatMessageToServer( szCmd );
+	}
 	return TRUE;
 }
 
