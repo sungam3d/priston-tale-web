@@ -97,6 +97,13 @@ def main():
         shutil.copy(os.path.join(OUTDIR, f), site)
     for f in ('sw.js', 'progress.js', 'settings.js', 'admin.js'):
         shutil.copy(os.path.join(HERE, f), site)
+    # the build: the page asks for game.js/game.wasm with it (a reload always gets the new ones)
+    # and offers a reload when it changes (web\shell.html, web\progress.js)
+    import hashlib
+    with open(os.path.join(OUTDIR, 'game.wasm'), 'rb') as fp:
+        build = hashlib.blake2b(fp.read(), digest_size=6).hexdigest()
+    with open(os.path.join(site, 'version.txt'), 'w') as fp:
+        fp.write(build + '\n')
     for f in ('ws.ashx', 'web.config'):
         shutil.copy(os.path.join(HERE, 'site', f), site)
     if not os.path.exists(os.path.join(site, 'config.js')):            # kept if you edited it

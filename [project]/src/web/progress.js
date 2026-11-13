@@ -180,4 +180,32 @@
 			if (pack && starting) drawStart();			// keeps speed and time left moving
 		}, 1000);
 	}
+
+	// A new build on the web server (version.txt, written at each deploy; the page loaded
+	// window.PT_BUILD): say so, with a button to reload - a plain reload gets it (web\shell.html).
+	var notice = null;
+	function checkBuild() {
+		if (!window.PT_BUILD || notice) return;
+		fetch('version.txt', { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
+			t = (t || '').trim();
+			if (!t || t == window.PT_BUILD || notice) return;
+			notice = document.createElement('div');
+			notice.style.cssText = 'position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:5;' +
+				'background:rgba(11,11,16,.92);border:1px solid #9a7430;border-radius:8px;color:#d8d4c8;' +
+				'font:13px/1.4 system-ui,sans-serif;padding:8px 12px;display:flex;gap:10px;align-items:center';
+			notice.innerHTML = '<span>A new version of the game is ready.</span>';
+			var b = document.createElement('button');
+			b.textContent = 'Reload';
+			b.style.cssText = 'background:#2a2620;color:#e8cf8e;border:1px solid #9a7430;border-radius:4px;padding:3px 10px;cursor:pointer;font:inherit';
+			b.onclick = function () { location.reload(); };
+			var x = document.createElement('button');
+			x.textContent = 'Later';
+			x.style.cssText = 'background:none;color:#807a6c;border:0;cursor:pointer;font:inherit';
+			x.onclick = function () { notice.remove(); };		// stays dismissed until the next page load
+			notice.appendChild(b); notice.appendChild(x);
+			stage.appendChild(notice);
+		}, function () {});
+	}
+	setInterval(checkBuild, 60000);
+	document.addEventListener('visibilitychange', function () { if (!document.hidden) checkBuild(); });
 })();

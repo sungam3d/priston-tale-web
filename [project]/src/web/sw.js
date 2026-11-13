@@ -42,6 +42,10 @@ function counted(res, rel, size, batch) {
 }
 
 self.addEventListener('install', function () { self.skipWaiting(); });
+// the page after a hard refresh (Shift+Reload) is not handled by the worker: it asks to be (web\shell.html)
+self.addEventListener('message', function (e) {
+	if (e.data === 'claim') e.waitUntil(self.clients.claim());
+});
 self.addEventListener('activate', function (e) {
 	e.waitUntil(caches.keys().then(function (names) {
 		return Promise.all(names.filter(function (n) { return n.indexOf('pt-data-') == 0 && n != CACHE; })

@@ -103,24 +103,40 @@
 		var started = false;
 		function load() {
 			var s = document.createElement('script');
-			s.src = document.getElementById('gameScript').content.querySelector('script').getAttribute('src');
+			s.src = document.getElementById('gameScript').content.querySelector('script').getAttribute('src') +
+				(ver ? '?v=' + encodeURIComponent(ver) : '');
 			document.body.appendChild(s);
 		}
 		function start() {
 			if (started) return;
 			started = true;
+			window.PT_BUILD = ver;					// progress.js offers a reload when the site's build changes
 			if (document.readyState == 'loading') document.addEventListener('DOMContentLoaded', load);	// template below
 			else load();
 		}
+		// The build (version.txt, written at each deploy): game.js and game.wasm are asked for with it,
+		// so a plain reload always gets the newest ones - no hard refresh needed.
+		var ver = '';
+		var gotVer = fetch('version.txt', { cache: 'no-store' })
+			.then(function (r) { return r.ok ? r.text() : ''; })
+			.then(function (t) { ver = (t || '').trim(); }, function () {});
+		Module.locateFile = function (path, dir) {
+			return dir + path + (ver && /\.wasm$/.test(path) ? '?v=' + encodeURIComponent(ver) : '');
+		};
+		function go() { gotVer.then(start, start); }
 		var sw = navigator.serviceWorker;
-		if (!sw) return start();				// old browser or private window: downloads as before
+		if (!sw) return go();					// old browser or private window: downloads as before
 		if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
-		if (sw.controller) { start(); sw.register('sw.js').catch(function () {}); return; }
-		sw.addEventListener('controllerchange', start);
-		sw.register('sw.js').then(function () { return sw.ready; }).then(function () {
-			setTimeout(start, sw.controller ? 0 : 1000);	// Shift+Reload: the page stays unhandled
-		}, start);
-		setTimeout(start, 5000);
+		if (sw.controller) { go(); sw.register('sw.js').catch(function () {}); return; }
+		sw.addEventListener('controllerchange', go);
+		sw.register('sw.js').then(function () { return sw.ready; }).then(function (reg) {
+			if (sw.controller) return go();
+			// Shift+Reload (hard refresh) leaves the page unhandled: ask the worker to take it, so the
+			// downloads still go through it (download bar, several files at once, stored copies)
+			if (reg.active) reg.active.postMessage('claim');
+			setTimeout(go, 1500);
+		}, go);
+		setTimeout(go, 5000);
 	})();
 </script>
 <template id="gameScript">{{{ SCRIPT }}}</template>

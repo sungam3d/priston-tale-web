@@ -126,17 +126,48 @@ static void MakeDirs( const std::string &path )
 
 // Fetch from the web server: the main thread waits without blocking the page
 // (Asyncify); other threads use a synchronous request (allowed in workers).
+// Both give up on a request after 45 s and try 3 times (a stalled request used to
+// freeze the game for good, e.g. when changing maps quickly); 404 is final.
 EM_JS( int, PtFs_FetchSync, ( const char *url, int *pSize ), {
-	var xhr = new XMLHttpRequest();
-	xhr.open( 'GET', UTF8ToString( url ), false );
-	xhr.responseType = 'arraybuffer';
-	try { xhr.send( null ); } catch ( e ) { return 0; }
-	if ( xhr.status != 200 ) return 0;
-	var a = new Uint8Array( xhr.response );
-	var p = _malloc( a.length || 1 );
-	HEAPU8.set( a, p );
-	HEAP32[pSize >> 2] = a.length;
-	return p;
+	var u = UTF8ToString( url );
+	for ( var attempt = 0; attempt < 3; attempt++ ) {
+		var xhr = new XMLHttpRequest();
+		xhr.open( 'GET', u, false );
+		xhr.responseType = 'arraybuffer';
+		try { xhr.timeout = 45000; } catch ( e ) {}		// allowed for synchronous requests in workers
+		try { xhr.send( null ); } catch ( e ) { continue; }
+		if ( xhr.status == 404 ) return 0;
+		if ( xhr.status != 200 ) continue;
+		var a = new Uint8Array( xhr.response );
+		var p = _malloc( a.length || 1 );
+		HEAPU8.set( a, p );
+		HEAP32[pSize >> 2] = a.length;
+		return p;
+	}
+	return 0;
+} );
+
+EM_ASYNC_JS( int, PtFs_FetchAsync, ( const char *url, int *pSize ), {
+	var u = UTF8ToString( url );
+	for ( var attempt = 0; attempt < 3; attempt++ ) {
+		var ctl = self.AbortController ? new AbortController() : null;
+		var timer = ctl ? setTimeout( function () { ctl.abort(); }, 45000 ) : 0;
+		try {
+			var r = await fetch( u, ctl ? { signal: ctl.signal } : {} );
+			if ( r.status == 404 ) { clearTimeout( timer ); return 0; }
+			if ( !r.ok ) throw new Error( 'HTTP ' + r.status );
+			var a = new Uint8Array( await r.arrayBuffer() );
+			clearTimeout( timer );
+			var p = _malloc( a.length || 1 );
+			HEAPU8.set( a, p );
+			HEAP32[pSize >> 2] = a.length;
+			return p;
+		} catch ( e ) {
+			clearTimeout( timer );
+			await new Promise( function ( ok ) { setTimeout( ok, 400 * ( attempt + 1 ) ); } );
+		}
+	}
+	return 0;
 } );
 
 EM_JS( char *, PtFs_DataUrl, ( const char *rel ), {
@@ -144,31 +175,53 @@ EM_JS( char *, PtFs_DataUrl, ( const char *rel ), {
 	return stringToNewUTF8( s );
 } );
 
+// One download per file, several files at once. The lock only guards the list of
+// files being fetched (never held during a download): before, one lock was held for
+// the whole download, so every other file - and the page itself, when the main
+// thread waited on it - stood still behind one slow request. A file is written
+// under a temporary name and renamed, so nobody reads it half written.
 static pthread_mutex_t s_FetchLock = PTHREAD_MUTEX_INITIALIZER;
+static std::set<std::string> s_Fetching;		// abs paths being downloaded
+
+static void FetchWait()
+{
+	if ( emscripten_is_main_runtime_thread() ) emscripten_sleep( 5 );		// the page keeps running
+	else usleep( 5000 );
+}
 
 static void EnsureFetched( const std::string &abs, const std::string &rel )
 {
 	struct stat st;
 	if ( stat( abs.c_str(), &st )==0 ) return;
-	pthread_mutex_lock( &s_FetchLock );
-	if ( stat( abs.c_str(), &st )==0 ) { pthread_mutex_unlock( &s_FetchLock ); return; }
-	char *url = PtFs_DataUrl( rel.c_str() );
-	void *data = NULL;
-	int size = 0;
-	if ( emscripten_is_main_runtime_thread() ) {
-		int err = 0;
-		emscripten_wget_data( url, &data, &size, &err );
-		if ( err ) data = NULL;
+	for (;;) {			// someone else downloading it: wait for them
+		while ( pthread_mutex_trylock( &s_FetchLock )!=0 ) FetchWait();
+		if ( stat( abs.c_str(), &st )==0 ) { pthread_mutex_unlock( &s_FetchLock ); return; }
+		if ( !s_Fetching.count( abs ) ) { s_Fetching.insert( abs ); pthread_mutex_unlock( &s_FetchLock ); break; }
+		pthread_mutex_unlock( &s_FetchLock );
+		FetchWait();
 	}
-	else data = (void *)(intptr_t)PtFs_FetchSync( url, &size );
+
+	char *url = PtFs_DataUrl( rel.c_str() );
+	int size = 0;
+	void *data = emscripten_is_main_runtime_thread()
+		? (void *)(intptr_t)PtFs_FetchAsync( url, &size )
+		: (void *)(intptr_t)PtFs_FetchSync( url, &size );
 	if ( data ) {
 		MakeDirs( abs );
-		FILE *fp = fopen( abs.c_str(), "wb" );
-		if ( fp ) { if ( size ) fwrite( data, 1, size, fp ); fclose( fp ); }
+		std::string tmp = abs + ".ptpart";
+		FILE *fp = fopen( tmp.c_str(), "wb" );
+		if ( fp ) {
+			if ( size ) fwrite( data, 1, size, fp );
+			fclose( fp );
+			if ( rename( tmp.c_str(), abs.c_str() )!=0 ) unlink( tmp.c_str() );
+		}
 		free( data );
 	}
 	else PtWin_Log( "fetch failed: %s", url );
 	free( url );
+
+	while ( pthread_mutex_trylock( &s_FetchLock )!=0 ) FetchWait();
+	s_Fetching.erase( abs );
 	pthread_mutex_unlock( &s_FetchLock );
 }
 
