@@ -9,6 +9,7 @@
 //    server (ETag / Last-Modified) - a few hundred bytes - and downloaded again
 //    only when it changed.
 // Everything else (page, game.js, game.wasm, ws.ashx) goes to the network as before.
+// The full download (web\fulldl.js) asks for data files with the header X-PT-Full: 1.
 // Downloads from the network are announced on BroadcastChannel 'pt-downloads' for
 // the page's progress bar (web\progress.js): { t: 'start', id, rel, size, batch },
 // { t: 'bytes', id, got }, { t: 'end', id, ok }, and for a batch (below)
@@ -67,7 +68,7 @@ self.addEventListener('fetch', function (e) {
 		return;
 	}
 	if (req.method != 'GET' || req.headers.has('Range')) return;
-	if (rel.indexOf('data/') == 0) e.respondWith(dataFile(e, decodeURIComponent(rel.slice(5))));
+	if (rel.indexOf('data/') == 0) e.respondWith(dataFile(e, decodeURIComponent(rel.slice(5)), req.headers.get('X-PT-Full') == '1'));
 	else if (CHECKED.indexOf(rel) >= 0) e.respondWith(checked(e, rel));
 });
 
@@ -103,15 +104,18 @@ function dataUrl(rel) {
 var inflight = new Map();
 
 // A data file from the network into the cache: { body, headers } or a Response
-// that is not 200 (passed on as it is).
+// that is not 200 (passed on as it is). batch 'quiet': the page's full download
+// (web\fulldl.js) - not announced (the page shows its own progress), and kept out of
+// the browser's own cache (it would hold a second copy of the whole game).
 function download(url, rel, entry, batch) {
 	var p = inflight.get(url);
 	if (p) return p;
+	var quiet = batch === 'quiet';
 	p = (async function () {
 		// 'no-cache': the browser's own cache may still hold the old copy (data\web.config max-age)
-		var res = await fetch(url, { cache: 'no-cache' });
+		var res = await fetch(url, { cache: quiet ? 'no-store' : 'no-cache' });
 		if (res.status != 200) return res;
-		var body = await new Response(counted(res, rel, entry.size, batch)).arrayBuffer();
+		var body = await (quiet ? res.arrayBuffer() : new Response(counted(res, rel, entry.size, batch)).arrayBuffer());
 		var h = new Headers(res.headers);
 		h.delete('Content-Encoding');
 		h.set('Content-Length', String(body.byteLength));
@@ -125,13 +129,13 @@ function download(url, rel, entry, batch) {
 	return p;
 }
 
-async function dataFile(e, rel) {
+async function dataFile(e, rel, quiet) {
 	var entry = (await getVersions()).get(rel);
 	if (!entry) return fetch(e.request);			// not listed (or old manifest without hashes)
 	var cache = await caches.open(CACHE);
 	var hit = await cache.match(e.request.url);
 	if (hit && hit.headers.get('X-PT-Version') == entry.hash) return hit;
-	var r = await download(e.request.url, rel, entry, false);
+	var r = await download(e.request.url, rel, entry, quiet ? 'quiet' : false);
 	if (r instanceof Response) return r;
 	return new Response(r.body, { status: 200, statusText: 'OK', headers: r.headers });
 }
