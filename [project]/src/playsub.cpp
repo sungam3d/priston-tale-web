@@ -1065,7 +1065,23 @@ int FindFaceSkin( smCHAR *lpChar , char *lpHeadName , char ***lpSelFace , char *
 			break;
 	}
 
-	if ( !FindCount ) return -1;
+	if ( !FindCount ) {
+		// a fifth-rank head ("...d.inf", not in the tables): find it as the fourth rank's ("c")
+		// or the first rank's ("a") head of the same hair style. This also takes the bad
+		// "tmhC-01d.inf" an earlier build saved on Pikemen.
+		int len = lpHeadName ? lstrlen( lpHeadName ) : 0;
+		if ( len>5 && len<120 && lstrcmpi( lpHeadName+len-5 , "d.inf" )==0 ) {
+			char szAlt[128];
+			const char cAlt[2] = { 'c', 'a' };
+			for ( int k=0; k<2; k++ ) {
+				lstrcpy( szAlt , lpHeadName );
+				szAlt[len-5] = cAlt[k];
+				int r = FindFaceSkin( lpChar , szAlt , lpSelFace , lpSelFaceName );
+				if ( r>=0 ) return r;
+			}
+		}
+		return -1;
+	}
 
 
 	return (FaceCode<<8)|HairCode;
@@ -1209,10 +1225,24 @@ int	ChangeModelSkin( smCHAR *lpChar , int ComicArmor , int ComicHeadNum , char *
 	// tier 5: the fifth rank's head is the fourth rank's "...c.inf" as "...d.inf" (heads go
 	// none/a/b/c/d by rank; "t" is the big-head event head). Hair styles 01..03 have one in every
 	// class, loaded from its .inx (no .inf ships); the other styles keep the fourth rank's head.
-	if ( bRank5Head && HairCode<3 ) {
-		len = lstrlen( szHeadName );
-		if ( len>5 && lstrcmpi( szHeadName+len-5 , "c.inf" )==0 )
-			szHeadName[len-5] = 'd';
+	// Named from the first rank's head ("...01a.inf" -> "...01d.inf"): the fourth rank's names are
+	// not always "c.inf" (the Pikeman's are "tmhC-01c", so the old c->d swap gave "tmhC-01d", which
+	// does not exist, and the head failed to load, which also stopped armour showing). Every hair
+	// style that has one gets it (KPT has all 13 for most classes); otherwise the fourth rank's head.
+	if ( bRank5Head ) {
+		char *(*lpFaces)[HEAREPOTION_MAX] = GetClassFaceTable( jobNum );
+		if ( lpFaces && HairCode>=0 && HairCode<HEAREPOTION_MAX && lpFaces[1][HairCode] ) {
+			char szRank5[128], szInx[128];
+			lstrcpy( szRank5 , lpFaces[1][HairCode] );
+			len = lstrlen( szRank5 );
+			if ( len>5 && lstrcmpi( szRank5+len-5 , "a.inf" )==0 ) {
+				szRank5[len-5] = 'd';
+				lstrcpy( szInx , szRank5 );
+				lstrcpy( szInx+lstrlen(szInx)-4 , ".inx" );
+				if ( GetFileAttributes( szRank5 )!=INVALID_FILE_ATTRIBUTES || GetFileAttributes( szInx )!=INVALID_FILE_ATTRIBUTES )
+					lstrcpy( szHeadName , szRank5 );
+			}
+		}
 	}
 
 
