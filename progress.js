@@ -133,13 +133,39 @@
 		clearTimeout(showTimer);
 		showTimer = 0;
 		clearTimeout(hideTimer);
-		hideTimer = setTimeout(function () { if (!Object.keys(active).length) { burst = null; if (!starting) box.hidden = true; } }, 600);
+		hideTimer = setTimeout(function () {
+			if (!Object.keys(active).length) { burst = null; if (!starting) { if (Object.keys(waits).length) drawWait(); else box.hidden = true; } }
+		}, 600);
+	}
+	// ---- the game waiting for files (web\ptwin\src\ptwin_fs.cpp, any thread) ----
+	// Shown when the service worker's bar is not (no worker, or files coming from elsewhere),
+	// so a long wait - creating a character, changing maps - never looks like a crash.
+	var waits = {}, waitTimer = 0;
+	function drawWait() {
+		if (starting) return;
+		var names = Object.keys(waits);
+		if (!names.length) { if (!Object.keys(active).length) idle(); return; }
+		if (Object.keys(active).length) return;			// the download bar already shows them
+		show('small', 'Loading game files', null,
+			names[names.length - 1].split('/').pop() + (names.length > 1 ? ' · ' + names.length + ' files' : ''),
+			'Downloading what the game needs - the first time only.');
+	}
+	function onWait(m) {
+		if (m.on) waits[m.rel] = (waits[m.rel] || 0) + 1;
+		else if (waits[m.rel] && --waits[m.rel] <= 0) delete waits[m.rel];
+		if (Object.keys(waits).length) {
+			clearTimeout(hideTimer);
+			if (!waitTimer) waitTimer = setTimeout(function () { waitTimer = 0; drawWait(); }, 300);	// quick ones: no flash
+			else if (!box.hidden) drawWait();
+		}
+		else { clearTimeout(waitTimer); waitTimer = 0; drawWait(); }
 	}
 	if (window.BroadcastChannel) {
 		var channel = new BroadcastChannel('pt-downloads');
 		channel.onmessage = function (e) {
 			var m = e.data;
 			if (!m || !m.t) return;
+			if (m.t == 'gwait') { onWait(m); return; }
 			if (m.rel == 'data_startup.pack') {			// the start-up panel shows this one
 				if (m.t == 'start') pack = { size: m.size, got: 0, t0: Date.now() };
 				else if (m.t == 'bytes' && pack) pack.got = m.got;
@@ -180,4 +206,32 @@
 			if (pack && starting) drawStart();			// keeps speed and time left moving
 		}, 1000);
 	}
+
+	// A new build on the web server (version.txt, written at each deploy; the page loaded
+	// window.PT_BUILD): say so, with a button to reload - a plain reload gets it (web\shell.html).
+	var notice = null;
+	function checkBuild() {
+		if (!window.PT_BUILD || notice) return;
+		fetch('version.txt', { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
+			t = (t || '').trim();
+			if (!t || t == window.PT_BUILD || notice) return;
+			notice = document.createElement('div');
+			notice.style.cssText = 'position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:5;' +
+				'background:rgba(11,11,16,.92);border:1px solid #9a7430;border-radius:8px;color:#d8d4c8;' +
+				'font:13px/1.4 system-ui,sans-serif;padding:8px 12px;display:flex;gap:10px;align-items:center';
+			notice.innerHTML = '<span>A new version of the game is ready.</span>';
+			var b = document.createElement('button');
+			b.textContent = 'Reload';
+			b.style.cssText = 'background:#2a2620;color:#e8cf8e;border:1px solid #9a7430;border-radius:4px;padding:3px 10px;cursor:pointer;font:inherit';
+			b.onclick = function () { location.reload(); };
+			var x = document.createElement('button');
+			x.textContent = 'Later';
+			x.style.cssText = 'background:none;color:#807a6c;border:0;cursor:pointer;font:inherit';
+			x.onclick = function () { notice.remove(); };		// stays dismissed until the next page load
+			notice.appendChild(b); notice.appendChild(x);
+			stage.appendChild(notice);
+		}, function () {});
+	}
+	setInterval(checkBuild, 60000);
+	document.addEventListener('visibilitychange', function () { if (!document.hidden) checkBuild(); });
 })();
