@@ -5185,8 +5185,10 @@ int sinDoubleClick()
 {
 	//소환수의 상태를 바꾼다
 	int Cnt = 0;
+	// not over a skill icon (index 0): it read TempContinueSkill[-1] (found by the AddressSanitizer test page)
+	if ( ContinueSkillMouseIndex<=0 ) return FALSE;
 	while(1){
-		if(SummonSkillCode[Cnt] == 0)break; 
+		if(SummonSkillCode[Cnt] == 0)break;
 		if(SummonSkillCode[Cnt] == TempContinueSkill[ContinueSkillMouseIndex-1].CODE){
 			SummonSkillCodeIndex[Cnt] ^= 1;
 			SendUpdateSkillToServer(TempContinueSkill[ContinueSkillMouseIndex-1].CODE,SummonSkillCodeIndex[Cnt] ,

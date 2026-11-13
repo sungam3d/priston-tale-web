@@ -22,7 +22,16 @@ void HoSkyDrawInfo::LoadRes()
 #ifdef PT_WEB
 			PtWeb_Crumb( "sky: load %s", buffer );
 #endif
+			// No skeleton for a sky: the model reader links what it reads to the "current"
+			// one (smASE_SetPhysique), and that is still the last character loaded. The web
+			// build loads a sky when it is first shown, during play: the sky was tied to some
+			// player's bones, and drew through freed memory after that player left the area
+			// (heap-use-after-free in smPAT3D::SetFrame from HoSky::Draw - the crash while
+			// running between maps; found by the AddressSanitizer test page).
+			smPAT3D *physique = smASE_GetPhysique();
+			smASE_SetPhysique( 0 );
 			smPAT3D *stageSky = smASE_Read(buffer);
+			smASE_SetPhysique( physique );
 			if(stageSky)
 			{
  				stageSky->ZeroNormals();
