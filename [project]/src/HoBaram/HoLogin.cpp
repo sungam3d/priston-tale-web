@@ -25,15 +25,16 @@ char JobSelectCharacterName1[4][500];
 char JobSelectCharacterName2[4][500];
 
 
-// where an account's characters stand on the select screen: a shallow arc, two to a row
+// where an account's characters stand on the select screen: a shallow arc, two to a row,
+// all on the floor (past about 75 to either side the room's raised stonework starts)
 static int UserCharacterPos[CHARACTER_USER_MAX][2] =
 {
-	{ -25 ,-110 },
-	{  25 ,-110 },
-	{ -65 ,-90 },
-	{  65 ,-90 },
-	{ -100 ,-60 },
-	{ 100 ,-60 }
+	{ -15 ,-112 },
+	{  15 ,-112 },
+	{ -44 ,-100 },
+	{  44 ,-100 },
+	{ -70 ,-78 },
+	{  70 ,-78 }
 };
 
 // where the job screen's classes stand: a shallow arc, set for the race's class count by

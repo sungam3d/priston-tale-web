@@ -4391,14 +4391,29 @@ int CloseEachPlayer()
 	return TRUE;
 }
 
-//확대 캐릭터 메인
-int EachPlayerMain()
+// The close-up is a copy of another character and borrows its models. When that character's
+// models change, the old ones may be freed: take its current weapons (changed often), and close
+// the close-up when its body or head changed (the animation comes with the body). Run before each use of the copy - a
+// close-up left pointing at a freed weapon crashed the game (smPAT3D::SetPosi in Draw).
+static int EachPlayerStale()
 {
 	if ( !chrEachMaster || !chrEachMaster->Flag || chrEachMaster->dwObjectSerial!=chrEachPlayer.dwObjectSerial ||
-		chrEachMaster->Pattern!=chrEachPlayer.Pattern ) {
+		chrEachMaster->Pattern!=chrEachPlayer.Pattern || chrEachMaster->Pattern2!=chrEachPlayer.Pattern2 ||
+		chrEachMaster->lpDinaPattern!=chrEachPlayer.lpDinaPattern || chrEachMaster->lpDinaPattern2!=chrEachPlayer.lpDinaPattern2 ) {
 		CloseEachPlayer();
 		return TRUE;
 	}
+	chrEachPlayer.HvLeftHand = chrEachMaster->HvLeftHand;
+	chrEachPlayer.HvRightHand = chrEachMaster->HvRightHand;
+	chrEachPlayer.lpDinaLeftPattern = chrEachMaster->lpDinaLeftPattern;
+	chrEachPlayer.lpDinaRightPattern = chrEachMaster->lpDinaRightPattern;
+	return FALSE;
+}
+
+//확대 캐릭터 메인
+int EachPlayerMain()
+{
+	if ( EachPlayerStale() ) return TRUE;
 
 	if ( chrEachPlayer.Flag ) {
 
@@ -4478,6 +4493,8 @@ int DrawEachPlayer( float fx , float fy , int SizeMode )
 	int		ObjSizeBack;
 	int		ModeFlag;
 	int		ClanX,ClanY,ClanLen;
+
+	if ( chrEachPlayer.Flag && EachPlayerStale() ) return FALSE;
 
 	if ( chrEachPlayer.Flag && chrEachMaster && chrEachMaster->Flag ) {
 
