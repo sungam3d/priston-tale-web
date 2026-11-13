@@ -93,8 +93,9 @@ LPSTR WINAPI lstrcpynA( LPSTR a, LPCSTR b, int n )
 }
 LPSTR WINAPI lstrcatA( LPSTR a, LPCSTR b ) { return strcat( a, b ); }
 int WINAPI lstrlenA( LPCSTR a ) { return a ? (int)strlen( a ) : 0; }
-int WINAPI lstrcmpA( LPCSTR a, LPCSTR b ) { return strcmp( a, b ); }
-int WINAPI lstrcmpiA( LPCSTR a, LPCSTR b ) { return strcasecmp( a, b ); }
+// as on Windows, a NULL string compares as an empty one (smConfigDecode passes one)
+int WINAPI lstrcmpA( LPCSTR a, LPCSTR b ) { return strcmp( a ? a : "", b ? b : "" ); }
+int WINAPI lstrcmpiA( LPCSTR a, LPCSTR b ) { return strcasecmp( a ? a : "", b ? b : "" ); }
 
 LPSTR WINAPI CharLowerA( LPSTR s )
 {

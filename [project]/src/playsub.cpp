@@ -208,9 +208,20 @@ int	Mix_CodeVram()
 
 //////////////// 프로그래밍 코드 보호 /////////////
 /////////////// ( 디스어셈블 조작방지 ) ///////////
+// The AddressSanitizer test build (web\build_web.py --asan): these checksums read the Windows
+// program's code at fixed addresses - in the browser, memory ASan rightly reports. Skipped there only.
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define PT_ASAN_BUILD
+#endif
+#endif
+
 //코드보호
 DWORD Check_CodeSafe( DWORD dwStartFunc )
 {
+#ifdef PT_ASAN_BUILD
+	return 0;
+#endif
 	BYTE	*lpFunc;
 	//int		cnt;
 	DWORD	PointMin,PointMax;
@@ -311,6 +322,9 @@ DWORD Check_CodeSafe( DWORD dwStartFunc )
 //코드보호2
 DWORD Check_CodeSafe2()
 {
+#ifdef PT_ASAN_BUILD
+	return TRUE;
+#endif
 	//DWORD	dwCode,dwCnt;
 	DWORD	*lpdwFunc;
 	DWORD	dwCode;

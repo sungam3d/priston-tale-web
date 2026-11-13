@@ -41,9 +41,13 @@ def main():
     jobs = os.cpu_count() or 8
     release = '--release' in args
     link_only = '--link-only' in args
+    # --asan: a test build with AddressSanitizer (web\out\game_asan.*, beside the normal game):
+    # every bad memory access is reported with where it happened, and the game keeps going.
+    # Slower and bigger; for hunting memory corruption, not for players.
+    asan = '--asan' in args
     if '-j' in args:
         jobs = int(args[args.index('-j') + 1])
-    config = 'release' if release else 'debug'
+    config = 'asan' if asan else 'release' if release else 'debug'
     objdir = os.path.join(HERE, 'obj', config)
     env = emsdk_env()
     emxx = os.path.join(EMSDK, 'upstream', 'emscripten', 'em++.exe')
@@ -51,7 +55,8 @@ def main():
     # extra defines for a test build, e.g. PT_DEFINES=PT_SERVER_PORT=10008 (a server beside the live one);
     # a changed define is not a changed file: delete web\obj to rebuild with it
     flags += ['-D' + d for d in os.environ.get('PT_DEFINES', '').split()]
-    opt = ['-O2'] if release else ['-O1', '-g2']
+    opt = ['-O1', '-fsanitize=address', '-fsanitize-recover=address'] if asan else ['-O2'] if release else ['-O1', '-g2']
+    out_name = 'game_asan' if asan else 'game'
     incs = ['-I' + os.path.join(PTWIN, 'include'), '-I' + SRC] + ['-I' + os.path.join(SRC, d) for d in
             ['smLib3d', 'sinbaram', 'HoBaram', r'HoBaram\NewEffect\HoEffect\Script']] + ['-idirafter', MINGW]
 
@@ -116,11 +121,12 @@ def main():
         '-sPTHREAD_POOL_SIZE=8', '-sALLOW_MEMORY_GROWTH', '-sINITIAL_MEMORY=256MB', '-sMAXIMUM_MEMORY=4GB',
         '-sSTACK_SIZE=4MB', '--pre-js', os.path.join(HERE, 'pre.js'), '--shell-file', os.path.join(HERE, 'shell.html'),
         '-sEXPORTED_RUNTIME_METHODS=addRunDependency,removeRunDependency,FS', '-sEXPORTED_FUNCTIONS=_main,_malloc,_free,_PtNet_Receive', '-sFORCE_FILESYSTEM', '-sERROR_ON_UNDEFINED_SYMBOLS=1', '-Wl,--error-limit=0',
-        '-o', os.path.join(outdir, 'game.html')] + ([] if release else ['-sASSERTIONS=1']) + [
+        '-o', os.path.join(outdir, out_name + '.html')] + ([] if release or asan else ['-sASSERTIONS=1']) + [
         # crash reports players can read: function names in the stack (not wasm-function[1234]),
         # a stack overflow stops with "stack overflow" instead of silently wrecking memory,
         # and a name list per build (web\out\game.html.symbols) for older reports
-        '--profiling-funcs', '-sSTACK_OVERFLOW_CHECK=2', '--emit-symbol-map']
+        '--profiling-funcs', '-sSTACK_OVERFLOW_CHECK=2', '--emit-symbol-map'] + \
+        (['-fsanitize=address'] if asan else [])
     # extra link flags for a test build, e.g. PT_LINK_FLAGS=--profiling-funcs (function names in crash stacks)
     link += os.environ.get('PT_LINK_FLAGS', '').split()
     rsp = os.path.join(objdir, 'link.rsp')

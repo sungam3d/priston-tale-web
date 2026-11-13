@@ -21,6 +21,26 @@ void PtWin_Log( const char *szFormat, ... )
 	printf( "[ptwin] %s\n", buf );
 }
 
+// The AddressSanitizer test build (web\build_web.py --asan): report every bad memory
+// access (into the page's log, with its call stack) and keep playing; each place once.
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+extern "C" const char *__asan_default_options()
+{
+	return "halt_on_error=0:detect_leaks=0:suppress_equal_pcs=1:malloc_context_size=16:print_summary=1:"
+		"fast_unwind_on_fatal=0:fast_unwind_on_malloc=0:symbolize=1";
+}
+// ASan's own stack walk does not get past the first function here: before each report,
+// print the browser's call stack, which has every function's name
+extern "C" void __asan_on_error()
+{
+	static char stack[16384];
+	emscripten_get_callstack( EM_LOG_C_STACK | EM_LOG_FUNC_PARAMS, stack, sizeof(stack) );
+	printf( "[asan] where (newest first):\n%s\n", stack );
+}
+#endif
+#endif
+
 // The trail: what the game did last (map and sky changes, models, file waits), kept by the
 // page (web\progress.js Module.ptCrumb, the last 40) and printed with a crash. Held in the
 // page, not in the game's memory, so a crash that wrecked that memory still shows it.
