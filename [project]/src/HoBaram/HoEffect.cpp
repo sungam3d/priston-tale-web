@@ -13817,6 +13817,10 @@ int MainEffect()
 	MenuFlame.Main();
 	
 	float timeDelta = 1.f/70.f;
+	{
+		extern void T5Fx_Main();		// character.cpp: tier 5 effects that follow a character
+		T5Fx_Main();
+	}
 	g_NewParticleMgr.Main(0.0f, timeDelta);
 	MainSky();
 	g_MainPetSystem();

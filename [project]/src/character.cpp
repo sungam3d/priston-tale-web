@@ -11719,14 +11719,181 @@ int smCHAR::SendCharInfo( smWINSOCK *lpsmsock )
 }
 
 //스킬시작
+/*----------------------------------------------------------------------------*
+*	The tier 5 skills' own effects (Effect\Particle\Script\*.part; which one on which
+*	moment: the Etervale project's effect data, facts only).
+*	Many of these scripts have no "loops" line, so they emit until stopped: every start
+*	here is timed.
+*	T5Fx: at a place, stopped after ms (the short ones end by themselves anyway).
+*	T5FxFollow: a lasting one (a buff's aura, a hand's glow) that follows its character
+*	and stops when the time is up or the character dies or leaves; EndName: started where
+*	it ends when the time runs out.
+*	T5Fx_Main runs them each frame (HoEffect.cpp, next to the particles' own Main).
+*-----------------------------------------------------------------------------*/
+#define T5F_BODY	0		// at the body
+#define T5F_FEET	1		// on the ground under it
+#define T5F_RHAND	2		// the right hand (the body when it has nothing there)
+#define T5F_MAX		96
+
+struct sT5FOLLOW {
+	int		Used, Part, Where;
+	smCHAR	*Ch;					// NULL: stays where it started
+	DWORD	Serial, End;
+	char	Name[48];
+	const char *EndName;
+	int		Shot;					// T5FxShot: flies From→To between Start and End
+	POINT3D	From, To;
+	DWORD	Start;
+};
+static sT5FOLLOW T5Follow[T5F_MAX];
+
+static void T5FollowPos( smCHAR *ch , int where , int *x, int *y, int *z )
+{
+	*x = ch->pX; *y = ch->pY; *z = ch->pZ;
+	if ( where==T5F_FEET ) return;
+	if ( where==T5F_RHAND && ch->HvRightHand.ObjBip && ch->GetToolBipPoint( &ch->HvRightHand , x,y,z ) ) return;
+	*y += 8*fONE;
+}
+
+static sT5FOLLOW *T5FxSlot()
+{
+	int slot = 0;
+	DWORD soonest = 0xFFFFFFFF;
+	for( int i=0;i<T5F_MAX;i++ ) {
+		if ( !T5Follow[i].Used ) { slot = i; break; }
+		if ( T5Follow[i].End<soonest ) { soonest = T5Follow[i].End; slot = i; }
+	}
+	sT5FOLLOW *f = &T5Follow[slot];
+	if ( f->Used ) g_NewParticleMgr.SetStop( f->Part );	// full: the one ending soonest goes
+	f->Used = 0;
+	return f;
+}
+
+static sT5FOLLOW *T5FxStart( const char *name , int x, int y, int z , int ms )
+{
+	if ( !name ) return 0;
+	POINT3D pos;
+	pos.x = x; pos.y = y; pos.z = z;
+	int part = g_NewParticleMgr.Start( (char *)name , pos );
+	if ( part<0 ) return 0;
+	sT5FOLLOW *f = T5FxSlot();
+	f->Used = 1;
+	f->Part = part;
+	f->Where = 0;
+	f->Ch = 0;
+	f->Serial = 0;
+	f->End = dwPlayTime + ms;
+	f->Name[0] = 0;
+	f->EndName = 0;
+	f->Shot = 0;
+	return f;
+}
+
+static int T5Fx( const char *name , int x, int y, int z , int ms=3000 )
+{
+	sT5FOLLOW *f = T5FxStart( name , x,y,z , ms );
+	return f ? f->Part : -1;
+}
+
+// A shot: name flies from (x,y,z) to (tx,ty,tz) in ms; HitName starts where it lands.
+static void T5FxShot( const char *name , int x,int y,int z , int tx,int ty,int tz , int ms , const char *HitName )
+{
+	sT5FOLLOW *f = T5FxStart( name , x,y,z , ms );
+	if ( !f ) {
+		if ( HitName ) T5Fx( HitName , tx,ty,tz );
+		return;
+	}
+	f->Shot = 1;
+	f->From.x = x;  f->From.y = y;  f->From.z = z;
+	f->To.x = tx;   f->To.y = ty;   f->To.z = tz;
+	f->Start = dwPlayTime;
+	f->EndName = HitName;
+}
+
 // The new classes' skills (NcSkills, NewClassSkill_Data.h): the cast's effect and sound.
 static void NC_StartFx( const char *name , int x, int y, int z )
 {
-	if ( !name ) return;
+	T5Fx( name , x,y,z );
+}
+
+static void T5FxStop( smCHAR *ch , const char *name )
+{
+	for( int i=0;i<T5F_MAX;i++ ) {
+		sT5FOLLOW &f = T5Follow[i];
+		if ( f.Used && f.Ch==ch && (!name || !lstrcmpi( f.Name , name )) ) {
+			g_NewParticleMgr.SetStop( f.Part );
+			f.Used = 0;
+		}
+	}
+}
+
+static void T5FxFollow( const char *name , smCHAR *ch , int sec , int where , const char *EndName=0 )
+{
+	if ( !name || !ch || sec<=0 ) return;
+	T5FxStop( ch , name );							// cast again: the new one replaces it
+
+	int x,y,z;
+	T5FollowPos( ch , where , &x,&y,&z );
 	POINT3D pos;
 	pos.x = x; pos.y = y; pos.z = z;
-	g_NewParticleMgr.Start( (char *)name , pos );
+	int part = g_NewParticleMgr.Start( (char *)name , pos );
+	if ( part<0 ) return;
+
+	sT5FOLLOW *f = T5FxSlot();
+	f->Used = 1;
+	f->Part = part;
+	f->Where = where;
+	f->Ch = ch;
+	f->Serial = ch->dwObjectSerial;
+	f->End = dwPlayTime + (DWORD)sec*1000;
+	lstrcpyn( f->Name , name , sizeof(f->Name) );
+	f->EndName = EndName;
 }
+
+void T5Fx_Main()
+{
+	for( int i=0;i<T5F_MAX;i++ ) {
+		sT5FOLLOW &f = T5Follow[i];
+		if ( !f.Used ) continue;
+		if ( !f.Shot && !g_NewParticleMgr.GetRunning( f.Part ) ) { f.Used = 0; continue; }	// a shot still lands
+		smCHAR *ch = f.Ch;
+		if ( f.Shot ) {
+			BOOL alive = g_NewParticleMgr.GetRunning( f.Part );
+			if ( dwPlayTime>=f.End ) {
+				if ( alive ) g_NewParticleMgr.SetStop( f.Part );
+				f.Used = 0;
+				if ( f.EndName ) T5Fx( f.EndName , f.To.x, f.To.y, f.To.z );
+				continue;
+			}
+			DWORD len = f.End-f.Start;
+			int k = len ? (int)( (dwPlayTime-f.Start)*256/len ) : 256;
+			D3DVECTOR pos;
+			pos.x = (float)( f.From.x + (f.To.x-f.From.x)*k/256 );
+			pos.y = (float)( f.From.y + (f.To.y-f.From.y)*k/256 );
+			pos.z = (float)( f.From.z + (f.To.z-f.From.z)*k/256 );
+			if ( alive ) g_NewParticleMgr.SetPos( f.Part , pos );
+			continue;
+		}
+		if ( !ch ) {
+			if ( dwPlayTime>=f.End ) { g_NewParticleMgr.SetStop( f.Part ); f.Used = 0; }
+			continue;
+		}
+		if ( !ch->Flag || ch->dwObjectSerial!=f.Serial || dwPlayTime>=f.End ||
+			(ch->MotionInfo && ch->MotionInfo->State==CHRMOTION_STATE_DEAD) ) {
+			g_NewParticleMgr.SetStop( f.Part );
+			f.Used = 0;
+			if ( f.EndName && ch->Flag && ch->dwObjectSerial==f.Serial && dwPlayTime>=f.End )
+				T5Fx( f.EndName , ch->pX, ch->pY, ch->pZ );
+			continue;
+		}
+		int x,y,z;
+		T5FollowPos( ch , f.Where , &x,&y,&z );
+		D3DVECTOR pos;
+		pos.x = (float)x; pos.y = (float)y; pos.z = (float)z;
+		g_NewParticleMgr.SetAttachPos( f.Part , pos );
+	}
+}
+
 /*----------------------------------------------------------------------------*
 *	The new classes' tier 5 skills, as the later game shows them (the Etervale project's
 *	skill and effect data: facts only): where a skill has a row here, it replaces the
@@ -12345,25 +12512,34 @@ int smCHAR::BeginSkill( int SkilCode , int Level , smCHAR *lpTarChar , int x, in
 		SkillPlaySound( SKILL_SOUND_SKILL_BERSERKER	 , pX,pY,pZ );
 		break;
 
-	//Mechanician tier 5 (the older skills' effects for now)
+	//Mechanician tier 5 (their own effects; the older skills' sounds)
 	case SKILL_PLAY_LAND_MINING:
 		SkillPlaySound( SKILL_SOUND_SKILL_MAXIMIZE2 , pX,pY,pZ );
 		break;
 	case SKILL_PLAY_HYPER_SONIC:
-		if ( point ) AssaParticle_SwiftAxe( this , Hyper_Sonic_Time[point-1] );
+		if ( point ) {
+			T5FxFollow( "Skill5_Mecanician_HyperSonic1" , this , Hyper_Sonic_Time[point-1] , T5F_RHAND );
+			T5FxFollow( "Skill5_Mecanician_HyperSonic2" , this , Hyper_Sonic_Time[point-1] , T5F_RHAND );
+		}
 		SkillPlaySound( SKILL_SOUND_SKILL_SWIFT_AXE1 , pX,pY,pZ );
 		break;
 	case SKILL_PLAY_ROLLING_SMASH:
 		break;
 	case SKILL_PLAY_POWER_ENHANCEMENT:
-		dwDispAppSkill |= SKILL_APPMASK_AUTOMATION;
-		StartSkill( pX,pY,pZ, Angle.x , Angle.y , Angle.z , SKILL_MAXIMIZE );
+		T5Fx( "Skill5_Meca_PowerEnhance_Start" , pX,pY,pZ );
+		if ( point ) {
+			T5FxFollow( "Skill5_Mecanician_PowerEnhance1" , this , Power_Enhancement_Time[point-1] , T5F_RHAND );
+			T5FxFollow( "Skill5_Mecanician_PowerEnhance2" , this , Power_Enhancement_Time[point-1] , T5F_RHAND );
+		}
 		SkillPlaySound( SKILL_SOUND_SKILL_MAXIMIZE2 , pX,pY,pZ );
 		break;
 
-	//Priestess and Magician tier 5 (the older skills' effects for now)
-	case SKILL_PLAY_SPIRIT_IMPACT:
+	//Priestess and Magician tier 5 (their own effects where they have them)
 	case SKILL_PLAY_PIERCING_ICE:
+		T5Fx( "Skill5PriestessPiercingIce2" , pX,pY+8*fONE,pZ );
+		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_PRIEST , pX,pY,pZ );
+		break;
+	case SKILL_PLAY_SPIRIT_IMPACT:
 		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_PRIEST , pX,pY,pZ );
 		pos.x = pX;	pos.y = pY;	pos.z = pZ;
 		sinEffect_StartMagic( &pos , 1 );
@@ -12380,10 +12556,14 @@ int smCHAR::BeginSkill( int SkilCode , int Level , smCHAR *lpTarChar , int x, in
 		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_MAGICIAN , pX,pY,pZ );
 		break;
 	case SKILL_PLAY_SUMMON_RAMIEL:
-	case SKILL_PLAY_BLESSING_KRISHNA:
+		T5Fx( "Skill5PriestessRamielStart" , pX,pY,pZ );
+		T5FxFollow( "Skill5PriestessRamielHand" , this , 1 , T5F_RHAND );
 		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_PRIEST , pX,pY,pZ );
-		pos.x = pX;	pos.y = pY;	pos.z = pZ;
-		sinEffect_StartMagic( &pos , 1 );
+		break;
+	case SKILL_PLAY_BLESSING_KRISHNA:
+		T5Fx( "S5_Pr_BlessingKrishna_Effect" , pX,pY,pZ );
+		T5FxFollow( "S5_Pr_BlessingKrishna" , this , point ? Blessing_Krishna_Time[point-1] : 120 , T5F_FEET );
+		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_PRIEST , pX,pY,pZ );
 		break;
 	case SKILL_PLAY_THIRD_ANIMA:
 		SkillPlaySound( SKILL_SOUND_SKILL_CASTING_MAGICIAN , pX,pY,pZ );
@@ -12391,12 +12571,15 @@ int smCHAR::BeginSkill( int SkilCode , int Level , smCHAR *lpTarChar , int x, in
 		sinEffect_StartMagic( &pos , 2 );
 		break;
 
-	//Atalanta tier 5 (the older skills' effects for now)
+	//Atalanta tier 5 (their own effects; the older skills' sounds)
 	case SKILL_PLAY_TALARIA:
-		SkillValhallaHallOfValhallaHandEffect( this , (float)(point ? Talaria_Time[point-1] : 120) );
+		T5Fx( "Skill5_Atalanta_Talaria_StartEffect" , pX,pY,pZ );
+		T5FxFollow( "Skill5_Atalanta_Talaria_KeepEffect" , this , point ? Talaria_Time[point-1] : 120 , T5F_FEET ,
+			"Skill5_Atalanta_Talaria_EndEffect" );
 		SkillPlaySound( SKILL_SOUND_SKILL_HALL_OF_VALHALLA , pX,pY,pZ );
 		break;
 	case SKILL_PLAY_SUMMON_ARCUDA:
+		T5Fx( "Skill5_Atalanta_SummonArcuda_Effect" , pX,pY,pZ , 5000 );
 		SkillPlaySound( SKILL_SOUND_SKILL_RECALL_WOLVERIN , pX,pY,pZ );
 		break;
 	case SKILL_PLAY_GALAXY_COUP:
@@ -12404,30 +12587,37 @@ int smCHAR::BeginSkill( int SkilCode , int Level , smCHAR *lpTarChar , int x, in
 		SkillPlaySound( SKILL_SOUND_SKILL_FROST_JAVELIN , pX,pY,pZ );
 		break;
 
-	//Knight tier 5 (the older skills' effects for now)
+	//Knight tier 5 (their own effects; the older skills' sounds)
 	case SKILL_PLAY_SOUL_BREAKER:
+		SkillPlaySound( SKILL_SOUND_SKILL_SWING2 , pX,pY,pZ );
+		break;
 	case SKILL_PLAY_CRESCENT_MOON:
+		T5FxFollow( "Skill5_Knight_CrescentMoon1" , this , 2 , T5F_RHAND );		// the blade's glow while it swings
 		SkillPlaySound( SKILL_SOUND_SKILL_SWING2 , pX,pY,pZ );
 		break;
 	case SKILL_PLAY_SAINT_BLADE:
-		sinSkillEffect_Piercing( this );
+		T5Fx( "Skill5_Knight_SaintBlade2" , pX,pY+8*fONE,pZ );
 		SkillPlaySound( SKILL_SOUND_SKILL_PIERCING , pX,pY,pZ );
 		break;
 	case SKILL_PLAY_HOLY_BENEDIC:
-		AssaParticle_HolyValor_Jang( this , point ? Holy_Benedic_Time[point-1] : 120 );
+		T5FxFollow( "Skill5KnightHolyBenedicHand2" , this , 2 , T5F_RHAND );
+		T5Fx( "Skill5_Knight_HolyBenedic2" , pX,pY,pZ , 5000 );
+		T5FxFollow( "Skill5_Knight_HolyBenedic" , this , point ? Holy_Benedic_Time[point-1] : 120 , T5F_FEET );
 		SkillPlaySound( SKILL_SOUND_SKILL_HOLY_VALOR1 , pX,pY,pZ );
 		break;
 
-	//Pikeman tier 5 (the older skills' effects for now)
+	//Pikeman tier 5 (their own effects where they have them; the older skills' sounds)
 	case SKILL_PLAY_DANCING_REAPER:
 		AssaParticle_VeonmSpearPike( this );
 		SkillPlaySound( SKILL_SOUND_JUMPING_CRASH1 , pX,pY,pZ );
 		break;
 	case SKILL_PLAY_FINAL_SPEAR:
+		T5FxFollow( "Skill5_PikeMan_FinalSpear1" , this , 2 , T5F_RHAND );		// the spear's glow while it charges
+		T5FxFollow( "Skill5_PikeMan_FinalSpear2" , this , 2 , T5F_RHAND );
 		SkillPlaySound( SKILL_SOUND_SKILL_EXPANSION1 , pX,pY,pZ );
 		break;
 	case SKILL_PLAY_AMPLIFIED:
-		SkillWarriorBetserker( this , (float)(point ? Amplified_Time[point-1] : 120) );
+		T5Fx( "Skill5PikemanAmplified" , pX,pY,pZ , 4000 );
 		SkillPlaySound( SKILL_SOUND_SKILL_BERSERKER , pX,pY,pZ );
 		break;
 	case SKILL_PLAY_SIDE_SPIN_ATTACK:
@@ -15071,8 +15261,8 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 		//three strikes: the cast's, then one on each of the clip's first two events
 		if ( chrAttackTarget ) {
 			if ( AttackCritcal>=0 ) {
+				T5Fx( "Skill5_Fighter_DownHit" , chrAttackTarget->pX,chrAttackTarget->pY+16*fONE,chrAttackTarget->pZ );
 				GetAttackPoint( &Pos2.x,&Pos2.y,&Pos2.z );
-				SkillWarriorDestroyerHit(&Pos2);
 				SetDynLight( Pos2.x,Pos2.y,Pos2.z , 100, 0,0,0, 400 );
 				SkillPlaySound( MotionEvent<3 ? SKILL_SOUND_SKILL_AVANGING_CRASH : SKILL_SOUND_SKILL_EXPANSION2 , pX,pY,pZ );
 			}
@@ -15090,6 +15280,7 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 		if ( chrAttackTarget && AttackCritcal>=0 ) {
 			GetAttackPoint( &Pos2.x,&Pos2.y,&Pos2.z );
 			SkillWarriorDestroyerHit(&Pos2);
+			T5Fx( "Skill3PriestessExtinction2" , chrAttackTarget->pX,chrAttackTarget->pY+16*fONE,chrAttackTarget->pZ );
 			SetDynLight( Pos2.x,Pos2.y,Pos2.z , 120, 0,0,0, 400 );
 			SkillPlaySound( SKILL_SOUND_SKILL_EXPANSION2 , pX,pY,pZ );
 		}
@@ -15113,7 +15304,7 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 				dm_AddRangeDamage( chrAttackTarget );
 			}
 			if ( MotionEvent==1 ) {
-				AssaParticle_GrandSmash( this );
+				T5Fx( "Skill5_Mecanician_LandMining" , chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ );
 				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 150, 100,0,0, 500 );
 				SkillPlaySound( SKILL_SOUND_SKILL_SPARK2 , pX,pY,pZ );
 			}
@@ -15127,7 +15318,9 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 		//four strikes: the cast's, then one on each of the clip's first three events
 		if ( chrAttackTarget ) {
 			if ( AttackCritcal>=0 ) {
-				AssaParticle_GrandSmash( this );
+				//each strike's hit; the last one knocks down
+				T5Fx( MotionEvent>=3 ? "Skill5_Meca_RollingSmash_Down" : "Skill5_Meca_RollingSmash_Hit" ,
+					chrAttackTarget->pX,chrAttackTarget->pY+16*fONE,chrAttackTarget->pZ );
 				GetAttackPoint( &Pos2.x,&Pos2.y,&Pos2.z );
 				SetDynLight( Pos2.x,Pos2.y,Pos2.z , 100, 0,0,0, 400 );
 				SkillPlaySound( SKILL_SOUND_SKILL_SWING2 , pX,pY,pZ );
@@ -15153,11 +15346,17 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 		if ( chrAttackTarget && MotionEvent==1 ) {
 			int t5code = AttackSkil&0xFF;
 			GetMoveLocation( 0 , 24*fONE, 24*fONE , 0, Angle.y , 0 );
-			StartEffectMonsterDest( pX+GeoResult_X,pY+GeoResult_Y,pZ+GeoResult_Z,
-				chrAttackTarget->pX , chrAttackTarget->pY+20*fONE , chrAttackTarget->pZ ,
-				(t5code==SKILL_PLAY_SILRAPHIM || t5code==SKILL_PLAY_PRIMA_IGNIS) ? MONSTER_IMP_SHOT2 : MONSTER_MEPHIT_SHOT2 );
-			if ( t5code==SKILL_PLAY_PRIMA_IGNIS )
+			if ( t5code==SKILL_PLAY_PIERCING_ICE )		//its own ice spear and hit
+				T5FxShot( "Skill5PriestessPiercingIce1" , pX+GeoResult_X,pY+GeoResult_Y,pZ+GeoResult_Z ,
+					chrAttackTarget->pX , chrAttackTarget->pY+20*fONE , chrAttackTarget->pZ , 300 , "Skill5PriestessPiercingIceHit" );
+			else
+				StartEffectMonsterDest( pX+GeoResult_X,pY+GeoResult_Y,pZ+GeoResult_Z,
+					chrAttackTarget->pX , chrAttackTarget->pY+20*fONE , chrAttackTarget->pZ ,
+					(t5code==SKILL_PLAY_SILRAPHIM || t5code==SKILL_PLAY_PRIMA_IGNIS) ? MONSTER_IMP_SHOT2 : MONSTER_MEPHIT_SHOT2 );
+			if ( t5code==SKILL_PLAY_PRIMA_IGNIS ) {
+				T5Fx( "Skill5MagicianPrimaIgnisShot" , chrAttackTarget->pX,chrAttackTarget->pY+20*fONE,chrAttackTarget->pZ );
 				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 200, 100,0,0, 500 );
+			}
 			else if ( t5code==SKILL_PLAY_PIERCING_ICE )
 				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 0, 100,200,0, 500 );
 			SkillPlaySound( (t5code==SKILL_PLAY_SILRAPHIM || t5code==SKILL_PLAY_PRIMA_IGNIS) ? SKILL_SOUND_SKILL_FIREBOLT1 : SKILL_SOUND_SKILL_HOLYBOLT , pX,pY,pZ );
@@ -15174,6 +15373,8 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 	//Atalanta tier 5
 	case SKILL_PLAY_SNIPPY_FEAR:
 		if ( chrAttackTarget && AttackCritcal>=0 && GetAttackPoint( &x,&y,&z )==TRUE ) {
+			T5FxShot( "Skill5AtalantaSnippyFearShot" , x,y,z ,
+				chrAttackTarget->pX,chrAttackTarget->pY+(24*fONE),chrAttackTarget->pZ , 250 , 0 );
 			StartSkill( chrAttackTarget->pX,chrAttackTarget->pY+(24*fONE),chrAttackTarget->pZ, 0,0,0, SKILL_TRIPLE_IMPACT );
 			SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 120, 0,0,0, 400 );
 		}
@@ -15186,7 +15387,8 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 				dm_AddRangeDamage( chrAttackTarget );
 			}
 			if ( MotionEvent==1 ) {
-				StartSkill( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ, 0,0,0, SKILL_GREAT_SMASH );
+				T5Fx( "Skill5AtalantaGalaxyCoup" , chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ );
+				T5Fx( "Skill5_Atalanta_Galaxy_CoupEffect" , chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ );
 				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 100, 100,200,0, 500 );
 			}
 			for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
@@ -15203,20 +15405,37 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 			Pos1.x = x;
 			Pos1.y = y;
 			Pos1.z = z;
-			if ( MotionEvent==1 ) AssaParticle_GrandCrossHorz( &Pos1 , Angle.y );
-			else AssaParticle_GrandCrossVert( &Pos1 , Angle.y );
+			switch( AttackSkil&0xFF ) {
+			case SKILL_PLAY_CRESCENT_MOON:
+				T5Fx( "Skill5_Knight_CrescentMoon2" , chrAttackTarget->pX,chrAttackTarget->pY+16*fONE,chrAttackTarget->pZ );
+				break;
+			case SKILL_PLAY_SAINT_BLADE:
+				T5Fx( "Skill5_Knight_SaintBlade1" , chrAttackTarget->pX,chrAttackTarget->pY+16*fONE,chrAttackTarget->pZ );
+				break;
+			default:		//Soul Breaker: no effect of its own
+				if ( MotionEvent==1 ) AssaParticle_GrandCrossHorz( &Pos1 , Angle.y );
+				else AssaParticle_GrandCrossVert( &Pos1 , Angle.y );
+				break;
+			}
 			SetDynLight( x,y,z , 100, 100,100,0, 400 );
 			SkillPlaySound( SKILL_SOUND_SKILL_SWING2 , pX,pY,pZ );
 		}
 		break;
 
-	//Archer tier 5 (the older shots' effects for now)
+	//Archer tier 5 (their own shots; Nature Splash keeps the older one)
 	case SKILL_PLAY_EVADE_SHOT:
 	case SKILL_PLAY_THUNDER_ROPE:
 		if ( chrAttackTarget && MotionEvent==1 && GetAttackPoint( &x,&y,&z )==TRUE ) {
-			StartSkillDest( x,y,z , chrAttackTarget->pX,chrAttackTarget->pY+(24*fONE),chrAttackTarget->pZ , SKILL_PERFECT_AIM );
-			if ( (AttackSkil&0xFF)==SKILL_PLAY_THUNDER_ROPE )
+			if ( (AttackSkil&0xFF)==SKILL_PLAY_THUNDER_ROPE ) {
+				T5FxShot( "Skill5ArcherThubderRoopShot1" , x,y,z ,
+					chrAttackTarget->pX,chrAttackTarget->pY+(24*fONE),chrAttackTarget->pZ , 250 , "Skill5ArcherThubderRoopShot2" );
 				SetDynLight( chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 60, 60,200,0, 500 );
+			}
+			else {
+				T5Fx( "Skill5_Acher_Evade_ShotEffect" , pX,pY,pZ );
+				T5FxShot( "Skill5_Acher_EvadeShot3" , x,y,z ,
+					chrAttackTarget->pX,chrAttackTarget->pY+(24*fONE),chrAttackTarget->pZ , 250 , "Skill5_Acher_EvadeShot4" );
+			}
 			SkillPlaySound( SKILL_SOUND_PERFECT_AIM , pX,pY,pZ );
 		}
 		break;
@@ -15229,12 +15448,19 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 					(AttackSkil&0xFF)==SKILL_PLAY_NATURE_SPLASH ? Nature_Splash_Area[point-1] : Circle_Trap_Area[point-1] , TRUE , 12 );
 				dm_AddRangeDamage( chrAttackTarget );
 			}
+			int t5trap = (AttackSkil&0xFF)==SKILL_PLAY_CIRCLE_TRAP;
 			if ( MotionEvent==1 && GetAttackPoint( &x,&y,&z )==TRUE ) {
-				StartSkillDest( x,y,z, chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ, SKILL_ARROW_OF_RAGE , point );
+				if ( t5trap )
+					T5Fx( "Skill5ArcherCircleTrap1" , chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ , 2000 );
+				else
+					StartSkillDest( x,y,z, chrAttackTarget->pX,chrAttackTarget->pY,chrAttackTarget->pZ, SKILL_ARROW_OF_RAGE , point );
 				SkillPlaySound( SKILL_SOUND_WIND_ARROW , pX,pY,pZ );
 			}
 			for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
-				StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
+				if ( t5trap )
+					T5Fx( "Skill5ArcherCircleTrapHit" , lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ );
+				else
+					StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
 			}
 		}
 		break;
@@ -15257,19 +15483,19 @@ int A_Rage_Area[10]	  = {60,65,70,75,80,85,90,95,100,110};
 			}
 			if ( MotionEvent==1 ) {
 				GetMoveLocation( 0 , 0, 32*fONE , 0, Angle.y , 0 );
-				StartSkill( pX+GeoResult_X,pY,pZ+GeoResult_Z, 0, Angle.y,0, SKILL_GROUND_PIKE , point );
+				T5Fx( "Skill5_PikeMan_FinalSpear4" , pX+GeoResult_X,pY,pZ+GeoResult_Z );
 				SetDynLight( pX,pY,pZ, 0, 0,100,0, 700 );
 				SkillPlaySound( SKILL_SOUND_SKILL_GROUND_PIKE , pX,pY,pZ );
 			}
 			for(cnt=0;cnt<dmSelected_CharCnt;cnt++) {
-				StartEffect( lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ , EFFECT_NORMAL_HIT1 );
+				T5Fx( "Skill5_PikeMan_FinalSpear3" , lpSelected_Char[cnt]->pX,lpSelected_Char[cnt]->pY+16*fONE,lpSelected_Char[cnt]->pZ );
 			}
 		}
 		break;
 
 	case SKILL_PLAY_BLOODY_BERSERKER:
  		if ( point ) {
-			SkillWarriorBetserker( this , (float)Bloody_Berserker_Time[point-1] );
+			T5FxFollow( "Skill5_Fighter_BloodyBerserker" , this , Bloody_Berserker_Time[point-1] , T5F_FEET );
 			AttackAnger = 200;
 		}
 		break;
