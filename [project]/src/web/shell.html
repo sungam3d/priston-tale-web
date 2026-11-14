@@ -8,7 +8,7 @@
 	:root { --bg: #0b0b10; --fg: #d8d4c8; --dim: #807a6c; --panel: #15151c; }
 	html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 13px/1.4 system-ui, sans-serif; }
 	#wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; }
-	#canvas { background: #000; display: block; max-width: 100%; height: auto; outline: none; }
+	#canvas { background: #000; display: block; outline: none; }	/* web\display.js sizes it exactly, for every scaling mode */
 	#status { color: var(--dim); min-height: 1.4em; }
 	#bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: min(1024px, 100%); }
 	#bar button { background: var(--panel); color: var(--fg); border: 1px solid #34323c; border-radius: 4px;
@@ -107,6 +107,7 @@
 	window.onerror = function (msg) { Module.setStatus('Error: ' + msg); };
 </script>
 <script src="progress.js"></script>
+<script src="display.js"></script>
 <script src="fulldl.js"></script>
 <script src="settings.js"></script>
 <script src="admin.js"></script>

@@ -20,13 +20,49 @@
 	if (!window.Module) return;
 	var KEY = 'pt-settings';
 	var DEF = { quality: 'max', shadows: true, shadowDark: 0.6, shadowQuality: 4096, view: 38, music: 70, musicOn: true, effects: 80, effectsOn: true,
-		wxOwn: false, wxKind: 2, lang: 0 };
+		wxOwn: false, wxKind: 2, lang: 0, resolution: 'auto' };
 	// weather.h PTWX_* order
 	var WEATHER = ['Clear', 'Cloudy', 'Rain', 'Storm', 'Fog', 'Snow', 'Blizzard', 'Dust haze'];
 	// lang\pt_lang.h PT_LANG_* order, each in its own language
 	var LANGS = ['English', '한국어 (Korean)', '日本語 (Japanese)', '简体中文 (Chinese, simplified)', '繁體中文 (Chinese, traditional)',
 		'ไทย (Thai)', 'Tiếng Việt (Vietnamese)', 'Português (Brazil)', 'Español (Argentina)'];
 	var VIEW_MIN = 16, VIEW_GAME = 38, VIEW_MAX = 110;		// map cells (64 world units); 110 = unlimited
+	// Resolutions the engine can be started at (hotuk.ini *SCREENSIZE: any w/h, not just these -
+	// these are the common ones web\display.js's scaling then fits/fills/stretches to the screen).
+	var RES_LIST = [
+		{ w: 800, h: 600, note: 'legacy' }, { w: 1024, h: 768 },
+		{ w: 1280, h: 720 }, { w: 1366, h: 768 }, { w: 1600, h: 900 }, { w: 1920, h: 1080 }, { w: 2560, h: 1440 }, { w: 3840, h: 2160, note: '4K' },
+		{ w: 1280, h: 800 }, { w: 1440, h: 900 }, { w: 1680, h: 1050 }, { w: 1920, h: 1200 },
+		{ w: 2560, h: 1080 }, { w: 3440, h: 1440 }, { w: 3840, h: 1600 }
+	];
+	function aspectLabel(w, h) {
+		var r = w / h;
+		if (Math.abs(r - 4 / 3) < 0.02) return '4:3';
+		if (Math.abs(r - 16 / 10) < 0.02) return '16:10';
+		if (Math.abs(r - 16 / 9) < 0.02) return '16:9';
+		if (r > 2) return '21:9 ultrawide';
+		return r.toFixed(2) + ':1';
+	}
+	// the display's own size (not just the browser window): resolution is a restart setting,
+	// so it should match what the screen can do, not just how big the window happens to be now
+	function pickAutoRes() {
+		var dpr = window.devicePixelRatio || 1;
+		var scr = window.screen || {};
+		var tw = (scr.width || window.innerWidth) * dpr, th = (scr.height || window.innerHeight) * dpr;
+		var targetAspect = tw / th;
+		var fits = RES_LIST.filter(function (r) { return r.w <= tw + 20 && r.h <= th + 20; });
+		var pool = (fits.length ? fits : RES_LIST).slice();
+		pool.sort(function (a, b) {
+			var da = Math.abs(a.w / a.h - targetAspect), db = Math.abs(b.w / b.h - targetAspect);
+			if (Math.abs(da - db) > 0.02) return da - db;
+			return (b.w * b.h) - (a.w * a.h);		// tie: prefer the bigger one
+		});
+		return pool[0];
+	}
+	function resolveRes(value) {
+		var m = /^(\d+)x(\d+)$/.exec(value || '');
+		return m ? { w: +m[1], h: +m[2] } : pickAutoRes();
+	}
 	var s = {};
 	try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) {}
 	for (var k in DEF) if (!(k in s)) s[k] = DEF[k];
@@ -63,6 +99,21 @@
 		var path = '/game/ptReg.rgx';
 		var lines = readText(path).split(/\r?\n/).filter(function (l) { return l && !/^"(ColorBPP|Graphic)"/i.test(l); });
 		if (s.quality == 'max') lines.push('"ColorBPP" "32"', '"Graphic" "0"');
+		writeText(path, lines.join('\r\n') + '\r\n');
+	});
+	Module.ptFilePatches.push(function () {
+		// the engine's own backbuffer size, read once at start-up (hotuk.ini *SCREENSIZE);
+		// "Auto" is resolved fresh every start, so it follows the screen the game is on now.
+		// How the result is then shown (windowed/fullscreen, fit/fill/stretch/integer): web\display.js.
+		var path = '/game/hotuk.ini';
+		var res = resolveRes(s.resolution == 'auto' ? null : s.resolution);
+		var found = false;
+		var lines = readText(path).split(/\r?\n/).map(function (l) {
+			if (!/^\s*\*SCREENSIZE\b/i.test(l)) return l;
+			found = true;
+			return '*SCREENSIZE\t' + res.w + '\t' + res.h;
+		});
+		if (!found) lines.push('*SCREENSIZE\t' + res.w + '\t' + res.h);
 		writeText(path, lines.join('\r\n') + '\r\n');
 	});
 	// hotuk.ini and ptReg.rgx arrive in the start-up pack, which web\pre.js unpacks in
@@ -137,6 +188,17 @@
 		'<p class="note">Menus, messages, skills and quests change straight away. Names of monsters and items, NPC chat and server messages stay in English. ' +
 			'Text the game already put on screen changes when it is shown again.</p>' +
 
+		'<h3>Display</h3>' +
+		'<div class="pt-row"><label for="setResolution">Resolution</label><div class="ctl"><select id="setResolution">' +
+			buildResOptions() + '</select></div></div>' +
+		'<p class="note" id="setResolutionN"></p>' +
+		'<div class="pt-row"><label>Scaling</label><div class="ctl"><span class="pt-seg" id="setScaleMode">' +
+			'<button type="button" data-v="fit">Fit</button><button type="button" data-v="fill">Fill</button>' +
+			'<button type="button" data-v="stretch">Stretch</button><button type="button" data-v="integer">Integer</button></span></div></div>' +
+		'<p class="note">Fit shows the whole game, with black bars if the shape does not match your screen. Fill covers the screen and may crop the edges. ' +
+			'Stretch fills it exactly, which can distort the picture. Integer keeps it sharp at whole-number sizes, with bigger bars. ' +
+			'Changes straight away. The Fullscreen button under the game toggles fullscreen (also F11 in some browsers).</p>' +
+
 		'<h3>Graphics</h3>' +
 		'<div class="pt-row"><label>Image quality</label><div class="ctl"><span class="pt-seg" id="setQuality">' +
 			'<button type="button" data-v="standard">Standard</button><button type="button" data-v="max">Max</button></span></div></div>' +
@@ -172,7 +234,24 @@
 	document.body.appendChild(panel);
 
 	function $(id) { return document.getElementById(id); }
-	var start = { quality: s.quality, shadows: s.shadows };
+	function buildResOptions() {
+		var groups = {}, order = [];
+		RES_LIST.forEach(function (r) {
+			var g = aspectLabel(r.w, r.h);
+			if (!groups[g]) { groups[g] = []; order.push(g); }
+			groups[g].push(r);
+		});
+		var html = '<option value="auto">Auto (matches your screen)</option>';
+		order.forEach(function (g) {
+			html += '<optgroup label="' + g + '">';
+			groups[g].forEach(function (r) {
+				html += '<option value="' + r.w + 'x' + r.h + '">' + r.w + '×' + r.h + (r.note ? ' (' + r.note + ')' : '') + '</option>';
+			});
+			html += '</optgroup>';
+		});
+		return html;
+	}
+	var start = { quality: s.quality, shadows: s.shadows, resolution: s.resolution };
 	function viewText(v) {
 		if (v >= VIEW_MAX) return 'Unlimited';
 		if (v == VIEW_GAME) return 'Normal';
@@ -183,6 +262,12 @@
 	}
 	function render() {
 		$('setLang').value = s.lang|0;
+		$('setResolution').value = s.resolution;
+		var auto = pickAutoRes();
+		$('setResolutionN').textContent = s.resolution == 'auto' ?
+			'Auto currently picks ' + auto.w + '×' + auto.h + ' for your screen. Changes need a restart.' :
+			'Very high resolutions use more graphics memory and can run slower on some computers. Changes need a restart.';
+		seg('setScaleMode', window.ptDisplay ? window.ptDisplay.getScaleMode() : 'fit');
 		seg('setQuality', s.quality);
 		seg('setShadows', s.shadows ? 1 : 0);
 		$('setShadowDark').value = Math.round(s.shadowDark*100);
@@ -202,7 +287,7 @@
 		$('setEffectsOn').checked = s.effectsOn;
 		$('setEffects').value = s.effects; $('setEffects').disabled = !s.effectsOn;
 		$('setEffectsV').textContent = s.effectsOn ? s.effects + '%' : 'Off';
-		$('setRestart').hidden = s.quality == start.quality && s.shadows == start.shadows;
+		$('setRestart').hidden = s.quality == start.quality && s.shadows == start.shadows && s.resolution == start.resolution;
 	}
 	function change() { save(); pushLive(); render(); }
 	// the server's weather where you are now (weather.cpp writes Module.ptWeatherNow)
@@ -232,6 +317,11 @@
 	$('setWxMode').addEventListener('click', function (e) { var v = e.target.dataset && e.target.dataset.v; if (v) { s.wxOwn = v == '1'; change(); } });
 	$('setWeather').addEventListener('change', function () { s.wxKind = +this.value; change(); });
 	$('setLang').addEventListener('change', function () { s.lang = +this.value; change(); });
+	$('setResolution').addEventListener('change', function () { s.resolution = this.value; change(); });
+	$('setScaleMode').addEventListener('click', function (e) {
+		var v = e.target.dataset && e.target.dataset.v;
+		if (v && window.ptDisplay) { window.ptDisplay.setScaleMode(v); render(); }
+	});
 	$('setMusicOn').addEventListener('change', function () { s.musicOn = this.checked; change(); });
 	$('setEffectsOn').addEventListener('change', function () { s.effectsOn = this.checked; change(); });
 	$('setRestartBtn').addEventListener('click', function () { this.disabled = true; location.reload(); });
