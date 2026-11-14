@@ -1598,6 +1598,26 @@ int smCHAR::Close()
 }
 
 
+// The bone the right-hand item hangs from. The Martial Artist's skeleton (m8.smb) has no
+// "Bip weapon01" - with no bone, SetTool refused every right-hand item and her vambrace
+// never showed: her hand bone instead.
+static smOBJ3D *RightToolBone( smPAT3D *AnimPat )
+{
+	smOBJ3D *o = AnimPat->GetObjectFromName( szBipName_RightHand );
+	if ( !o ) o = AnimPat->GetObjectFromName( "Bip01 R Hand" );
+	return o;
+}
+// One item, shown in both hands: the Assassin's dagger and the Martial Artist's vambrace are
+// one item and model, worn as a pair - the copy's bone in the left hand (0: no copy)
+static smOBJ3D *LeftCopyBone( smPAT3D *AnimPat, DWORD dwItemCode )
+{
+	smOBJ3D *o = 0;
+	if ( (dwItemCode&sinITEM_MASK2)==sinWD1 ) o = AnimPat->GetObjectFromName( "Bip weapon02" );	// the left-hand weapon bone
+	else if ( (dwItemCode&sinITEM_MASK2)!=sinWV1 ) return 0;
+	if ( !o ) o = AnimPat->GetObjectFromName( "Bip01 L Hand" );
+	return o;
+}
+
 //패턴설정
 int smCHAR::SetPattern( smPAT3D *pat )
 {
@@ -1608,7 +1628,7 @@ int smCHAR::SetPattern( smPAT3D *pat )
 	if ( pat->TmParent ) AnimPat = pat->TmParent;
 	else AnimPat = pat;
 
-	HvRightHand.ObjBip = AnimPat->GetObjectFromName(szBipName_RightHand) ;
+	HvRightHand.ObjBip = RightToolBone( AnimPat );
 
 	//왼쪽 도구
 	if ( (HvLeftHand.dwItemCode&sinITEM_MASK2)==sinDS1 )
@@ -1743,15 +1763,10 @@ int smCHAR::SetTool( DWORD dwItemCode , int hvPosi  )
 					HvRightHand.SizeMax = szX;
 					HvRightHand.SizeMin = szN;
 					HvRightHand.dwItemCode = dwItemCode;
-					//오른쪽 도구는 손에 붙임: a vambrace goes on the forearm, the Shaman's phantom
-					// hovers at the back; anything else in the weapon hand
-					HvRightHand.ObjBip = 0;
-					if ( (dwItemCode&sinITEM_MASK2)==sinWV1 )
-						HvRightHand.ObjBip = AnimPattern->GetObjectFromName("Bip01 R Forearm");
-					else if ( (dwItemCode&sinITEM_MASK2)==sinWN1 )
-						HvRightHand.ObjBip = AnimPattern->GetObjectFromName(szBipName_BackSpine);
-					if ( !HvRightHand.ObjBip )
-						HvRightHand.ObjBip = AnimPattern->GetObjectFromName(szBipName_RightHand) ;
+					//오른쪽 도구는 손에 붙임: every right-hand item in the weapon hand - the vambrace
+					// on the fist (a copy on the other one, smCHAR::Draw), the Shaman's phantom held
+					// (on the back in town, as weapons put away are)
+					HvRightHand.ObjBip = RightToolBone( AnimPattern );
 					dwActionItemCode = dwItemCode;
 
 					//wStickItems[smPLAYBUFF_ITEM_ACTION] = GetSinItemNumFromCode( dwActionItemCode );
@@ -1855,6 +1870,10 @@ int smCHAR::SetTool( DWORD dwItemCode , int hvPosi  )
 		// below: the claws added later (Legend Talon to Anima Talon) were put away instead -
 		// on a point meant for other weapons, which put a claw inside the player's head
 		if ( (dwActionItemCode&sinITEM_MASK2)==sinWC1 ) dwItemSetting = 0;
+		// the Martial Artist's vambraces stay on her fists; the Assassin's daggers go to her
+		// waist, one each side (4: smCHAR::Draw)
+		if ( (dwActionItemCode&sinITEM_MASK2)==sinWV1 ) dwItemSetting = 0;
+		if ( (dwActionItemCode&sinITEM_MASK2)==sinWD1 ) dwItemSetting = 4;
 
 		while(1) {
 			if ( dwItemCodeFromVillage[cnt]==0 ) break;
@@ -1910,7 +1929,10 @@ int smCHAR::SetTool( DWORD dwItemCode , int hvPosi  )
 			//양손 무기 첵크
 			for( cnt=0;cnt<MAX_ITEM;cnt++) {
 				if ( sItem[cnt].CODE==dwItemCode ) {
-					if ( sItem[cnt].Class==ITEM_CLASS_WEAPON_TWO && !ShootingMode )
+					// (not the dagger or the phantom: two-handed for the slots they fill, but not
+					// a heavy two-hander - no two-hander attack speed change, no tilted trail)
+					if ( sItem[cnt].Class==ITEM_CLASS_WEAPON_TWO && !ShootingMode &&
+						(dwItemCode&sinITEM_MASK2)!=sinWD1 && (dwItemCode&sinITEM_MASK2)!=sinWN1 )
 						dwActionItemTwoHand = TRUE;
 					else
 						dwActionItemTwoHand = FALSE;
@@ -7876,6 +7898,19 @@ int smCHAR::Draw()
 
 					pat->LinkParentObject( 0,0 );
 					pat->TmLastFrame = -1;
+
+					// the pair's other one (dagger, vambrace): the same model in the left hand
+					smOBJ3D *lpCopyBip = Rend_HvRightHand ? LeftCopyBone( AnimPattern , HvRightHand.dwItemCode ) : 0;
+					if ( lpCopyBip ) {
+						pat->LinkParentObject( AnimPattern , lpCopyBip );
+						pat->SetPosi( &Posi , &angle );
+						pat->Frame = frame;
+						SetRenderBlinkColor( &HvRightHand );
+						pat->RenderD3D( &CameraPosi , &CameraAngle );
+						RestoreRenderBlinkColor();
+						pat->LinkParentObject( 0,0 );
+						pat->TmLastFrame = -1;
+					}
 				//}
 			}
 		}
@@ -7922,7 +7957,12 @@ int smCHAR::Draw()
 					Rend_HvRightHand = FALSE;
 			}
 
-			pat->LinkParentObject( AnimPattern , BackObjBip[dwItemSetting-1] );
+			// where it is put away: on the back (1-3), or the Assassin's daggers at the waist (4:
+			// the right one here, the left one below)
+			smOBJ3D *lpPutBip = dwItemSetting==4 ? AnimPattern->GetObjectFromName( "Bip01 R Thigh" ) : BackObjBip[dwItemSetting-1];
+			if ( !lpPutBip ) lpPutBip = BackObjBip[0];
+
+			pat->LinkParentObject( AnimPattern , lpPutBip );
 			pat->SetPosi( &Posi , &angle );
 			pat->Frame = frame;
 
@@ -7938,23 +7978,36 @@ int smCHAR::Draw()
 
 			//행렬 복사
 			if ( HvLeftHand.dwItemCode==dwActionItemCode ) {
-				memcpy( &HvLeftHand_Matrix , &BackObjBip[dwItemSetting-1]->mWorld , sizeof(smMATRIX) );
+				memcpy( &HvLeftHand_Matrix , &lpPutBip->mWorld , sizeof(smMATRIX) );
 				if ( Rend_HvLeftHand ) {
 					pat->RenderD3D( &CameraPosi , &CameraAngle );
 					RestoreRenderBlinkColor();
 				}
 			}
 			else {
-				memcpy( &HvRightHand_Matrix , &BackObjBip[dwItemSetting-1]->mWorld , sizeof(smMATRIX) );
+				memcpy( &HvRightHand_Matrix , &lpPutBip->mWorld , sizeof(smMATRIX) );
 				if ( Rend_HvRightHand ) {
 					pat->RenderD3D( &CameraPosi , &CameraAngle );
 					RestoreRenderBlinkColor();
 				}
 			}
 
-			
+
 			pat->LinkParentObject( 0,0 );
 			pat->TmLastFrame = -1;
+
+			// the other dagger, at the left of the waist
+			smOBJ3D *lpPutBip2 = ( dwItemSetting==4 && Rend_HvRightHand ) ? AnimPattern->GetObjectFromName( "Bip01 L Thigh" ) : 0;
+			if ( lpPutBip2 ) {
+				pat->LinkParentObject( AnimPattern , lpPutBip2 );
+				pat->SetPosi( &Posi , &angle );
+				pat->Frame = frame;
+				SetRenderBlinkColor( &HvRightHand );
+				pat->RenderD3D( &CameraPosi , &CameraAngle );
+				RestoreRenderBlinkColor();
+				pat->LinkParentObject( 0,0 );
+				pat->TmLastFrame = -1;
+			}
 		}
 
 		if ( HvLeftHand.PatTool &&  dwActionItemCode!=HvLeftHand.dwItemCode ) {
