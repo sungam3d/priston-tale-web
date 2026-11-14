@@ -7333,7 +7333,7 @@ static PtToolPos s_ToolPos[] = {
 	{ "vamb_l",			"Bip01 L Hand",		0, 0, 0,	0,	0, 0, 0 },	// the Martial Artist's left vambrace (field; the Lit model)
 	{ "dagger_hip_r",	"Bip in07",			0, 0, 0,	0,	0, 0, 0 },	// the Assassin's daggers in town: her sheath bones
 	{ "dagger_hip_l",	"Bip in08",			0, 0, 0,	0,	0, 0, 0 },
-	{ "vamb_town_r",	"Bip01 R Hand",		90, 0, 0,	0,	0, 0, 0 },	// the Martial Artist's vambraces in town (palms to her sides)
+	{ "vamb_town_r",	"Bip01 R Hand",		270, 0, 0,	0,	0, 0, 0 },	// the Martial Artist's vambraces in town (palms to her sides)
 	{ "vamb_town_l",	"Bip01 L Hand",		90, 0, 0,	0,	0, 0, 0 },	// (the Lit model)
 	{ "vamb_l_mirror",	"Bip01 L Hand",		0, 0, 0,	3,	0, 0, 0 },	// no Lit model (WV131-137): the right one mirrored (field)
 	{ "vamb_town_l_mirror",	"Bip01 L Hand",	90, 0, 0,	3,	0, 0, 0 },	// (and in town)
