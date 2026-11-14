@@ -47,11 +47,14 @@ int dsMenuCursorPos( POINT *lpCursorPos , int Mode )
 		BackCursorPos.x = lpCursorPos->x;
 		BackCursorPos.y = lpCursorPos->y;
 
-		// the same bound as the matching draw offset (Winmain.cpp dsDrawOffset_X/Y): this
+		// the same formula as the matching draw offset (Winmain.cpp dsDrawOffset_X/Y): this
 		// turns a real cursor position back into "design space" for menu hit-testing, and
 		// must move the cursor by exactly as much as the menu itself was actually drawn by
-		x = (WinSizeX>1280?1280:WinSizeX)-800;
-		y = (WinSizeY>1024?1024:WinSizeY)-600;
+		{
+		int uiX=(WinSizeX>1280?1280:WinSizeX), uiY=(WinSizeY>1024?1024:WinSizeY);
+		x = (WinSizeX-uiX)/2 + (uiX-800);
+		y = (WinSizeY-uiY)/2 + (uiY-600);
+		}
 
 		if ( x>0 ) {
 			if ( lpCursorPos->x>=600 && lpCursorPos->y<=y+420 && ( !sSinWarpGate.ShowFlag || Mode!=1 ) ) {

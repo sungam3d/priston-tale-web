@@ -5092,10 +5092,14 @@ char *szClanName;
 		else {
 			DrawEachPlayer( 0.92f , 0.1f , 0 );					//확대 캐릭터 그리기
 
-			// bounded as in playsub.cpp's minimap: right/bottom-docked windows stay near the
-			// corner instead of sliding out to the true edge of a wide/tall screen
-			dsDrawOffset_X = (WinSizeX>1280?1280:WinSizeX)-800;
-			dsDrawOffset_Y = (WinSizeY>1024?1024:WinSizeY)-600;
+			// see playsub.cpp's minimap for why this needs the extra (WinSizeX-uiX)/2 term,
+			// not just a capped excess: right/bottom-docked windows stay near the corner of
+			// a 1280x1024-or-smaller "safe area" centered in the real window, at any size
+			{
+			int uiX=(WinSizeX>1280?1280:WinSizeX), uiY=(WinSizeY>1024?1024:WinSizeY);
+			dsDrawOffset_X = (WinSizeX-uiX)/2 + (uiX-800);
+			dsDrawOffset_Y = (WinSizeY-uiY)/2 + (uiY-600);
+			}
 			dsDrawOffsetArray = dsARRAY_RIGHT|dsARRAY_BOTTOM;
 			dsMenuCursorPos( &pCursorPos , 3 );				//메뉴커서 시물레이션
 			//파티 메뉴 그리기
@@ -5139,11 +5143,14 @@ char *szClanName;
 	//텍스쳐 옵션을 기본값으로
 	RestoreInterfaceTexture();
 
-	// bounded as above: sinDraw() is the whole "sin" HUD module (skill bar, inventory,
-	// status panels, ...) - whichever of its pieces opt into the right/bottom-docked offset
-	// get this capped value, so they stay near the corner at any window size
-	dsDrawOffset_X = (WinSizeX>1280?1280:WinSizeX)-800;
-	dsDrawOffset_Y = (WinSizeY>1024?1024:WinSizeY)-600;
+	// see the same formula above: sinDraw() is the whole "sin" HUD module (skill bar,
+	// inventory, status panels, ...) - whichever of its pieces opt into the right/bottom-
+	// docked offset get this value, so they stay near the corner at any window size
+	{
+	int uiX=(WinSizeX>1280?1280:WinSizeX), uiY=(WinSizeY>1024?1024:WinSizeY);
+	dsDrawOffset_X = (WinSizeX-uiX)/2 + (uiX-800);
+	dsDrawOffset_Y = (WinSizeY-uiY)/2 + (uiY-600);
+	}
 
 	if ( DispInterface ) sinDraw();
 
