@@ -44,12 +44,14 @@
 
 	function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
 
-	// the box the canvas scales into: the whole screen in fullscreen; otherwise a window-sized
-	// area under the page's own padding, below the status/button bar and the log panel (~260 px)
+	// the box the canvas scales into: the whole screen in fullscreen; otherwise the full browser
+	// window (less the page's own 12px side padding and, below, room for the status/button bar
+	// and the log panel, ~260 px) - no extra cap, so windowed play actually fills the window
+	// instead of sitting in a small box in the middle of it
 	function viewportBox() {
 		if (isFullscreen()) return { w: window.innerWidth, h: window.innerHeight };
-		var w = Math.max(320, Math.min(window.innerWidth - 24, 1200));
-		var h = Math.max(320, Math.min(window.innerHeight - 260, 1200));
+		var w = Math.max(320, window.innerWidth - 24);
+		var h = Math.max(320, window.innerHeight - 260);
 		return { w: w, h: h };
 	}
 

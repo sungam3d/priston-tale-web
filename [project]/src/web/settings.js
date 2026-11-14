@@ -43,22 +43,13 @@
 		if (r > 2) return '21:9 ultrawide';
 		return r.toFixed(2) + ':1';
 	}
-	// the display's own size (not just the browser window): resolution is a restart setting,
-	// so it should match what the screen can do, not just how big the window happens to be now
-	function pickAutoRes() {
-		var dpr = window.devicePixelRatio || 1;
-		var scr = window.screen || {};
-		var tw = (scr.width || window.innerWidth) * dpr, th = (scr.height || window.innerHeight) * dpr;
-		var targetAspect = tw / th;
-		var fits = RES_LIST.filter(function (r) { return r.w <= tw + 20 && r.h <= th + 20; });
-		var pool = (fits.length ? fits : RES_LIST).slice();
-		pool.sort(function (a, b) {
-			var da = Math.abs(a.w / a.h - targetAspect), db = Math.abs(b.w / b.h - targetAspect);
-			if (Math.abs(da - db) > 0.02) return da - db;
-			return (b.w * b.h) - (a.w * a.h);		// tie: prefer the bigger one
-		});
-		return pool[0];
-	}
+	// "Auto": the same 1024x768 the game has always started at here - never a guess at the
+	// screen's own shape. The game's own menus, HUD and floating name/HP labels were pixel-
+	// positioned for 4:3/5:4 screens (checked in game 2026-11): at a wide aspect ratio the HUD's
+	// pieces spread apart from each other and labels drift off their target. So nothing here
+	// picks a wide resolution on its own; a widescreen/ultrawide pick from the list below is an
+	// explicit, informed choice (and is marked as one), not something "Auto" ever lands on.
+	function pickAutoRes() { return { w: 1024, h: 768 }; }
 	function resolveRes(value) {
 		var m = /^(\d+)x(\d+)$/.exec(value || '');
 		return m ? { w: +m[1], h: +m[2] } : pickAutoRes();
@@ -241,9 +232,9 @@
 			if (!groups[g]) { groups[g] = []; order.push(g); }
 			groups[g].push(r);
 		});
-		var html = '<option value="auto">Auto (matches your screen)</option>';
+		var html = '<option value="auto">Auto (1024×768, the game\'s normal start-up size)</option>';
 		order.forEach(function (g) {
-			html += '<optgroup label="' + g + '">';
+			html += '<optgroup label="' + g + (g == '4:3' ? '' : ' - experimental') + '">';
 			groups[g].forEach(function (r) {
 				html += '<option value="' + r.w + 'x' + r.h + '">' + r.w + '×' + r.h + (r.note ? ' (' + r.note + ')' : '') + '</option>';
 			});
@@ -263,10 +254,11 @@
 	function render() {
 		$('setLang').value = s.lang|0;
 		$('setResolution').value = s.resolution;
-		var auto = pickAutoRes();
-		$('setResolutionN').textContent = s.resolution == 'auto' ?
-			'Auto currently picks ' + auto.w + '×' + auto.h + ' for your screen. Changes need a restart.' :
-			'Very high resolutions use more graphics memory and can run slower on some computers. Changes need a restart.';
+		var res = resolveRes(s.resolution == 'auto' ? null : s.resolution);
+		$('setResolutionN').textContent = (aspectLabel(res.w, res.h) == '4:3' ?
+			'Changes need a restart.' :
+			'Experimental: the game’s menus, HUD and floating name/HP labels were made for 4:3/5:4 screens and may not ' +
+			'line up correctly yet at this shape. Very high resolutions also use more graphics memory. Changes need a restart.');
 		seg('setScaleMode', window.ptDisplay ? window.ptDisplay.getScaleMode() : 'fit');
 		seg('setQuality', s.quality);
 		seg('setShadows', s.shadows ? 1 : 0);
