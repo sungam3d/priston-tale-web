@@ -7333,9 +7333,10 @@ static PtToolPos s_ToolPos[] = {
 	{ "vamb_l",			"Bip01 L Hand",		0, 0, 0,	0,	0, 0, 0 },	// the Martial Artist's left vambrace (field; the Lit model)
 	{ "dagger_hip_r",	"Bip in07",			0, 0, 0,	0,	0, 0, 0 },	// the Assassin's daggers in town: her sheath bones
 	{ "dagger_hip_l",	"Bip in08",			0, 0, 0,	0,	0, 0, 0 },
-	{ "vamb_town_r",	"Bip01 R Hand",		0, 0, 0,	0,	0, 0, 0 },	// the Martial Artist's vambraces in town
-	{ "vamb_town_l",	"Bip01 L Hand",		0, 0, 0,	0,	0, 0, 0 },	// (the Lit model)
-	{ "vamb_l_mirror",	"Bip01 L Hand",		180, 0, 0,	3,	0, 0, 0 },	// no Lit model (WV131-137): the right one mirrored
+	{ "vamb_town_r",	"Bip01 R Hand",		90, 0, 0,	0,	0, 0, 0 },	// the Martial Artist's vambraces in town (palms to her sides)
+	{ "vamb_town_l",	"Bip01 L Hand",		90, 0, 0,	0,	0, 0, 0 },	// (the Lit model)
+	{ "vamb_l_mirror",	"Bip01 L Hand",		0, 0, 0,	3,	0, 0, 0 },	// no Lit model (WV131-137): the right one mirrored (field)
+	{ "vamb_town_l_mirror",	"Bip01 L Hand",	90, 0, 0,	3,	0, 0, 0 },	// (and in town)
 };
 
 // The Martial Artist's left vambrace: its own model ("Lit" + the item's model name), loaded
@@ -7363,7 +7364,7 @@ static smPAT3D *LeftModelOf( DWORD dwItemCode, BOOL bLoad )
 	if ( !lpDPat ) printf( "[toolpos] vambrace %08X has no left-hand model (Lit): the right one is drawn mirrored (vamb_l_mirror)\n", dwItemCode );
 	return lpDPat ? lpDPat->Pat : 0;
 }
-enum { TP_PHANTOM, TP_DAGGER_L, TP_VAMB_L, TP_DAGGER_HIP_R, TP_DAGGER_HIP_L, TP_VAMB_TOWN_R, TP_VAMB_TOWN_L, TP_VAMB_L_MIRROR, TP_COUNT };
+enum { TP_PHANTOM, TP_DAGGER_L, TP_VAMB_L, TP_DAGGER_HIP_R, TP_DAGGER_HIP_L, TP_VAMB_TOWN_R, TP_VAMB_TOWN_L, TP_VAMB_L_MIRROR, TP_VAMB_TOWN_L_MIRROR, TP_COUNT };
 
 static int ToolPosAngle( int deg ) { return ( ( deg%360 + 360 )%360 * ANGLE_360/360 ) & ANGCLIP; }
 
@@ -7413,7 +7414,8 @@ static void RenderLeftVambrace( smPAT3D *AnimPat, smCHARTOOL *lpTool, int place,
 {
 	smPAT3D *lpLeft = LeftModelOf( lpTool->dwItemCode, FALSE );
 	if ( lpLeft ) RenderToolAtPlace( AnimPat, lpLeft, place, lpTool, lpPosi, lpAngle, lpCamPosi, lpCamAngle );
-	else RenderToolAtPlace( AnimPat, lpTool->PatTool, TP_VAMB_L_MIRROR, lpTool, lpPosi, lpAngle, lpCamPosi, lpCamAngle );
+	else RenderToolAtPlace( AnimPat, lpTool->PatTool, place==TP_VAMB_TOWN_L ? TP_VAMB_TOWN_L_MIRROR : TP_VAMB_L_MIRROR,
+							lpTool, lpPosi, lpAngle, lpCamPosi, lpCamAngle );
 }
 
 // /toolpos (SendChatMessageToServer: handled here, not sent). TRUE: it was this command.
