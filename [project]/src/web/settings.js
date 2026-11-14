@@ -20,7 +20,7 @@
 	if (!window.Module) return;
 	var KEY = 'pt-settings';
 	var DEF = { quality: 'max', shadows: true, shadowDark: 0.6, shadowQuality: 4096, view: 38, music: 70, musicOn: true, effects: 80, effectsOn: true,
-		wxOwn: false, wxKind: 2, lang: 0, resolution: 'auto' };
+		wxOwn: false, wxKind: 2, lang: 0, resolution: 'auto', cameraInvert: false };
 	// weather.h PTWX_* order
 	var WEATHER = ['Clear', 'Cloudy', 'Rain', 'Storm', 'Fog', 'Snow', 'Blizzard', 'Dust haze'];
 	// lang\pt_lang.h PT_LANG_* order, each in its own language
@@ -86,10 +86,12 @@
 		FS.writeFile(path, b);
 	}
 	Module.ptFilePatches.push(function () {
-		// image quality in ptReg.rgx (the game may have saved it: rewrite our lines each start)
+		// image quality and camera invert in ptReg.rgx (the game may have saved its own
+		// copy: rewrite our lines each start so this browser's choice always wins)
 		var path = '/game/ptReg.rgx';
-		var lines = readText(path).split(/\r?\n/).filter(function (l) { return l && !/^"(ColorBPP|Graphic)"/i.test(l); });
+		var lines = readText(path).split(/\r?\n/).filter(function (l) { return l && !/^"(ColorBPP|Graphic|CameraInvert)"/i.test(l); });
 		if (s.quality == 'max') lines.push('"ColorBPP" "32"', '"Graphic" "0"');
+		lines.push('"CameraInvert" "' + (s.cameraInvert ? 'true' : 'false') + '"');
 		writeText(path, lines.join('\r\n') + '\r\n');
 	});
 	Module.ptFilePatches.push(function () {
@@ -206,6 +208,9 @@
 		'<div class="pt-row"><label for="setView">Draw distance</label><div class="ctl">' +
 			'<input type="range" id="setView" min="' + VIEW_MIN + '" max="' + VIEW_MAX + '" step="2"><span class="val" id="setViewV"></span></div></div>' +
 		'<p class="note">Further is slower: the game draws everything on the CPU. Changes as you drag.</p>' +
+		'<div class="pt-row"><label>Invert camera</label><div class="ctl"><span class="pt-seg" id="setCameraInvert">' +
+			'<button type="button" data-v="0">Off</button><button type="button" data-v="1">On</button></span></div></div>' +
+		'<p class="note">Reverses the left/right camera rotation (arrow keys and drag). Needs a restart.</p>' +
 
 		'<h3>Weather</h3>' +
 		'<div class="pt-row"><label>Weather</label><div class="ctl"><span class="pt-seg" id="setWxMode">' +
@@ -243,7 +248,7 @@
 		});
 		return html;
 	}
-	var start = { quality: s.quality, shadows: s.shadows, resolution: s.resolution };
+	var start = { quality: s.quality, shadows: s.shadows, resolution: s.resolution, cameraInvert: s.cameraInvert };
 	function viewText(v) {
 		if (v >= VIEW_MAX) return 'Unlimited';
 		if (v == VIEW_GAME) return 'Normal';
@@ -270,6 +275,7 @@
 		Array.prototype.forEach.call($('setShadowQ').querySelectorAll('button'), function (b) { b.disabled = !s.shadows; });
 		$('setView').value = s.view;
 		$('setViewV').textContent = viewText(s.view);
+		seg('setCameraInvert', s.cameraInvert ? 1 : 0);
 		seg('setWxMode', s.wxOwn ? 1 : 0);
 		$('setWeather').value = s.wxKind;
 		$('setWeather').disabled = !s.wxOwn;
@@ -280,7 +286,8 @@
 		$('setEffectsOn').checked = s.effectsOn;
 		$('setEffects').value = s.effects; $('setEffects').disabled = !s.effectsOn;
 		$('setEffectsV').textContent = s.effectsOn ? s.effects + '%' : 'Off';
-		$('setRestart').hidden = s.quality == start.quality && s.shadows == start.shadows && s.resolution == start.resolution;
+		$('setRestart').hidden = s.quality == start.quality && s.shadows == start.shadows && s.resolution == start.resolution &&
+			s.cameraInvert == start.cameraInvert;
 	}
 	function change() { save(); pushLive(); render(); }
 	// the server's weather where you are now (weather.cpp writes Module.ptWeatherNow)
@@ -305,6 +312,7 @@
 	}
 	slider('setShadowDark', function (v) { s.shadowDark = v/100; });
 	slider('setView', function (v) { s.view = v; });
+	$('setCameraInvert').addEventListener('click', function (e) { var v = e.target.dataset && e.target.dataset.v; if (v) { s.cameraInvert = v == '1'; change(); } });
 	slider('setMusic', function (v) { s.music = v; });
 	slider('setEffects', function (v) { s.effects = v; });
 	$('setWxMode').addEventListener('click', function (e) { var v = e.target.dataset && e.target.dataset.v; if (v) { s.wxOwn = v == '1'; change(); } });
