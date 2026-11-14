@@ -1,4 +1,5 @@
-﻿#include "smlib3d\\smd3d.h"
+﻿#include <map>
+#include "smlib3d\\smd3d.h"
 #ifdef PT_GFX_GL
 #include "ptgfx\\ptgfx.h"			// real-time shadows replace the round ones (DrawShadow)
 #endif
@@ -1598,6 +1599,8 @@ int smCHAR::Close()
 }
 
 
+static smPAT3D *LeftModelOf( DWORD dwItemCode, BOOL bLoad );		// below: the Martial Artist's left vambrace model
+
 // The bone the right-hand item hangs from. The Martial Artist's skeleton (m8.smb) has no
 // "Bip weapon01" - with no bone, SetTool refused every right-hand item and her vambrace
 // never showed: her hand bone instead.
@@ -1757,6 +1760,7 @@ int smCHAR::SetTool( DWORD dwItemCode , int hvPosi  )
 					// on the fist (a copy on the other one, smCHAR::Draw), the Shaman's phantom held
 					// (on the back in town, as weapons put away are)
 					HvRightHand.ObjBip = RightToolBone( AnimPattern );
+					if ( (dwItemCode&sinITEM_MASK2)==sinWV1 ) LeftModelOf( dwItemCode, TRUE );	// its left-hand model, ready to draw
 					dwActionItemCode = dwItemCode;
 
 					//wStickItems[smPLAYBUFF_ITEM_ACTION] = GetSinItemNumFromCode( dwActionItemCode );
@@ -2593,8 +2597,24 @@ struct smMOTIONINFO {
 };
 */
 
+	// The Shaman's phantom floats on his back, his hands are empty: where his motion table
+	// has no clip for phantoms (standing and running in the field), the bare-hand ones -
+	// not some weapon's, picked at random below (his arms held round a weapon not there)
+	if ( FindCnt2==0 && (dwActItemCode&sinITEM_MASK2)==sinWN1 ) {
+		for( cnt=0;cnt<FindCnt;cnt++) {
+			itcnt = lpMotionInfo->MotionInfo[ FoundNum[cnt] ].ItemCodeCount;
+			if ( itcnt>MOTION_TOOL_MAX/2 ) itcnt = MOTION_TOOL_MAX/2;
+			for ( cnt2=0;cnt2<itcnt;cnt2++) {
+				if ( lpMotionInfo->MotionInfo[ FoundNum[cnt] ].ItemCodeList[cnt2]==0xFFFF ) {
+					FoundNum2[ FindCnt2++ ] = FoundNum[cnt];
+					break;
+				}
+			}
+		}
+	}
+
 	if ( FindCnt2==0 ) {
-		if ( FindCnt==1 ) 
+		if ( FindCnt==1 )
 			ChangeMotion( FoundNum[0] , AnimDispMode );
 		else
 			if ( FindCnt ) ChangeMotion( FoundNum[(rand()%FindCnt)] , AnimDispMode );
@@ -7305,15 +7325,42 @@ int RestoreRenderBlinkColor()
 *	"/toolpos <name> rx ry rz mirror x y z" changes one at once - to line them up by eye.
 *-----------------------------------------------------------------------------*/
 struct PtToolPos { const char *szName; const char *szBone; int rx, ry, rz, mirror, x, y, z; };
+// (the skeletons have bones for most of these: the Assassin's sheaths "Bip in07"/"Bip in08";
+// the Martial Artist's left vambrace is its own model, already mirrored: "Lit<item>")
 static PtToolPos s_ToolPos[] = {
-	{ "phantom",		"Bip in01",			180, 0, 0,	0,	0, 0, 0 },	// on the back, in town and the field
+	{ "phantom",		"Bip in01",			0, -198, 0,	0,	0, 0, -10 },	// on the back, hovering, in town and the field
 	{ "dagger_l",		"Bip01 L Hand",		0, 0, 0,	3,	0, 0, 0 },	// the Assassin's second dagger (field)
-	{ "vamb_l",			"Bip01 L Hand",		180, 0, 0,	3,	0, 0, 0 },	// the Martial Artist's left vambrace (field)
-	{ "dagger_hip_r",	"Bip01 Pelvis",		0, 0, 90,	0,	0, 0, 8 },	// the Assassin's daggers in town
-	{ "dagger_hip_l",	"Bip01 Pelvis",		0, 0, 90,	0,	0, 0, -8 },
+	{ "vamb_l",			"Bip01 L Hand",		0, 0, 0,	0,	0, 0, 0 },	// the Martial Artist's left vambrace (field; the Lit model)
+	{ "dagger_hip_r",	"Bip in07",			0, 0, 0,	0,	0, 0, 0 },	// the Assassin's daggers in town: her sheath bones
+	{ "dagger_hip_l",	"Bip in08",			0, 0, 0,	0,	0, 0, 0 },
 	{ "vamb_town_r",	"Bip01 R Hand",		0, 0, 0,	0,	0, 0, 0 },	// the Martial Artist's vambraces in town
-	{ "vamb_town_l",	"Bip01 L Hand",		180, 0, 0,	3,	0, 0, 0 },
+	{ "vamb_town_l",	"Bip01 L Hand",		0, 0, 0,	0,	0, 0, 0 },	// (the Lit model)
 };
+
+// The Martial Artist's left vambrace: its own model ("Lit" + the item's model name), loaded
+// with the right one (SetTool) and kept - drawing never waits for a file
+static std::map<DWORD, smDPAT *> s_LeftModels;
+static smPAT3D *LeftModelOf( DWORD dwItemCode, BOOL bLoad )
+{
+	auto it = s_LeftModels.find( dwItemCode );
+	if ( it!=s_LeftModels.end() ) return it->second ? it->second->Pat : 0;
+	if ( !bLoad ) return 0;
+	smDPAT *lpDPat = 0;
+	for ( int cnt=0; cnt<MAX_ITEM; cnt++ ) {
+		if ( sItem[cnt].CODE==dwItemCode ) {
+			char szName[128];
+			wsprintf( szName, "Image\\sinImage\\Items\\DropItem\\Lit%s.ASE", sItem[cnt].DorpItem );
+			lpDPat = smPattern.LoadCharactor( szName );
+			if ( lpD3DDevice && lpDPat && lpDPat->Pat && lpDPat->Pat->smMaterialGroup ) {
+				lpDPat->Pat->smMaterialGroup->ReadTextures();
+				lpDPat->Pat->smMaterialGroup->CheckMatreialTextureSwap();
+			}
+			break;
+		}
+	}
+	s_LeftModels[dwItemCode] = lpDPat;
+	return lpDPat ? lpDPat->Pat : 0;
+}
 enum { TP_PHANTOM, TP_DAGGER_L, TP_VAMB_L, TP_DAGGER_HIP_R, TP_DAGGER_HIP_L, TP_VAMB_TOWN_R, TP_VAMB_TOWN_L, TP_COUNT };
 
 static int ToolPosAngle( int deg ) { return ( ( deg%360 + 360 )%360 * ANGLE_360/360 ) & ANGCLIP; }
@@ -7345,7 +7392,13 @@ static int RenderToolAtPlace( smPAT3D *AnimPat, smPAT3D *pat, int place, smCHART
 	for ( int cnt=0; cnt<pat->nObj3d; cnt++ )
 		smMatrixMult( pat->obj3d[cnt]->mWorld, off, bip->mWorld );
 	if ( lpTool ) SetRenderBlinkColor( lpTool );
+#ifdef PT_GFX_GL
+	if ( t.mirror ) PtGfx_SetCullInvert( TRUE );		// mirrored: its triangles turn the other way
+#endif
 	pat->RenderD3D( lpCamPosi, lpCamAngle );
+#ifdef PT_GFX_GL
+	if ( t.mirror ) PtGfx_SetCullInvert( FALSE );
+#endif
 	if ( lpTool ) RestoreRenderBlinkColor();
 	pat->LinkParentObject( 0,0 );
 	pat->TmLastFrame = -1;
@@ -7939,7 +7992,7 @@ int smCHAR::Draw()
 						RenderToolAtPlace( AnimPattern, HvRightHand.PatTool, TP_PHANTOM, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
 					else {
 						RenderToolAtPlace( AnimPattern, HvRightHand.PatTool, TP_VAMB_TOWN_R, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
-						RenderToolAtPlace( AnimPattern, HvRightHand.PatTool, TP_VAMB_TOWN_L, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
+						RenderToolAtPlace( AnimPattern, LeftModelOf( HvRightHand.dwItemCode, FALSE ), TP_VAMB_TOWN_L, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
 					}
 				}
 				else
@@ -7990,7 +8043,7 @@ int smCHAR::Draw()
 						if ( (HvRightHand.dwItemCode&sinITEM_MASK2)==sinWD1 )
 							RenderToolAtPlace( AnimPattern, pat, TP_DAGGER_L, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
 						else if ( (HvRightHand.dwItemCode&sinITEM_MASK2)==sinWV1 )
-							RenderToolAtPlace( AnimPattern, pat, TP_VAMB_L, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
+							RenderToolAtPlace( AnimPattern, LeftModelOf( HvRightHand.dwItemCode, FALSE ), TP_VAMB_L, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
 					}
 				//}
 			}

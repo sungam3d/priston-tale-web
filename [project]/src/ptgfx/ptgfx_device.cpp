@@ -440,10 +440,15 @@ public:
 
 		// culling: our render targets keep D3D's top-down screen orientation, so
 		// a triangle D3D calls clockwise is counter-clockwise for OpenGL.
-		switch ( m_RS[D3DRENDERSTATE_CULLMODE] ) {
-		case D3DCULL_CW:	glEnable( GL_CULL_FACE ); glFrontFace( GL_CCW ); glCullFace( GL_FRONT ); break;
-		case D3DCULL_CCW:	glEnable( GL_CULL_FACE ); glFrontFace( GL_CCW ); glCullFace( GL_BACK ); break;
-		default:			glDisable( GL_CULL_FACE ); break;
+		{
+			extern int g_PtGfxCullInvert;		// a mirrored model (PtGfx_SetCullInvert): the other side
+			DWORD cull = m_RS[D3DRENDERSTATE_CULLMODE];
+			if ( g_PtGfxCullInvert ) cull = cull==D3DCULL_CW ? D3DCULL_CCW : cull==D3DCULL_CCW ? D3DCULL_CW : cull;
+			switch ( cull ) {
+			case D3DCULL_CW:	glEnable( GL_CULL_FACE ); glFrontFace( GL_CCW ); glCullFace( GL_FRONT ); break;
+			case D3DCULL_CCW:	glEnable( GL_CULL_FACE ); glFrontFace( GL_CCW ); glCullFace( GL_BACK ); break;
+			default:			glDisable( GL_CULL_FACE ); break;
+			}
 		}
 
 		// blending
@@ -788,6 +793,17 @@ void PtGfx_ScissorToViewport()
 void PtGfx_InvalidateDeviceState()
 {
 	if ( g_PtGL.pDevice ) g_PtGL.pDevice->m_bStateDirty = TRUE;
+}
+
+// A model drawn mirrored (a negative scale: the Martial Artist's left vambrace) has its
+// triangles' winding reversed: culling the usual side would show its inside. While on,
+// clockwise and counter-clockwise culling swap.
+int g_PtGfxCullInvert = 0;
+void PtGfx_SetCullInvert( BOOL bOn )
+{
+	if ( g_PtGfxCullInvert==( bOn ? 1 : 0 ) ) return;
+	g_PtGfxCullInvert = bOn ? 1 : 0;
+	PtGfx_InvalidateDeviceState();
 }
 
 //////////////////////////////////////////////////////////////////////////////

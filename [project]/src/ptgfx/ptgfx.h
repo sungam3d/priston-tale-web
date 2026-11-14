@@ -57,6 +57,7 @@ BOOL PtGfx_ShadowActive();
 // x/z extent (relative to origin) and the address of the material's texture
 // pointer (read when drawing: leaves and fences are cut out by its alpha).
 struct PtShadowMeshBatch { int First, Count; LPDIRECT3DTEXTURE2 *ppTex; float MinX, MinZ, MaxX, MaxZ; };
+void PtGfx_SetCullInvert( BOOL bOn );		// a mirrored model is drawn: cull the other side (ptgfx_device.cpp)
 BOOL PtGfx_ShadowHasMesh( int slot, const void *key, int keyN );		// TRUE: up to date (or shadows off)
 void PtGfx_ShadowSetMesh( int slot, const void *key, int keyN, const double origin[3],
 	const float *verts, int nVerts, const PtShadowMeshBatch *batches, int nBatches );
