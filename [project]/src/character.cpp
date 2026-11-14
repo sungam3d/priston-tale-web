@@ -7328,13 +7328,14 @@ struct PtToolPos { const char *szName; const char *szBone; int rx, ry, rz, mirro
 // (the skeletons have bones for most of these: the Assassin's sheaths "Bip in07"/"Bip in08";
 // the Martial Artist's left vambrace is its own model, already mirrored: "Lit<item>")
 static PtToolPos s_ToolPos[] = {
-	{ "phantom",		"Bip in01",			0, -198, 0,	0,	0, 0, -10 },	// on the back, hovering, in town and the field
+	{ "phantom",		"Bip in01",			0, 198, 0,	0,	0, 0, 10 },	// on the back, hovering, in town and the field
 	{ "dagger_l",		"Bip01 L Hand",		0, 0, 0,	3,	0, 0, 0 },	// the Assassin's second dagger (field)
 	{ "vamb_l",			"Bip01 L Hand",		0, 0, 0,	0,	0, 0, 0 },	// the Martial Artist's left vambrace (field; the Lit model)
 	{ "dagger_hip_r",	"Bip in07",			0, 0, 0,	0,	0, 0, 0 },	// the Assassin's daggers in town: her sheath bones
 	{ "dagger_hip_l",	"Bip in08",			0, 0, 0,	0,	0, 0, 0 },
 	{ "vamb_town_r",	"Bip01 R Hand",		0, 0, 0,	0,	0, 0, 0 },	// the Martial Artist's vambraces in town
 	{ "vamb_town_l",	"Bip01 L Hand",		0, 0, 0,	0,	0, 0, 0 },	// (the Lit model)
+	{ "vamb_l_mirror",	"Bip01 L Hand",		180, 0, 0,	3,	0, 0, 0 },	// no Lit model (WV131-137): the right one mirrored
 };
 
 // The Martial Artist's left vambrace: its own model ("Lit" + the item's model name), loaded
@@ -7359,9 +7360,10 @@ static smPAT3D *LeftModelOf( DWORD dwItemCode, BOOL bLoad )
 		}
 	}
 	s_LeftModels[dwItemCode] = lpDPat;
+	if ( !lpDPat ) printf( "[toolpos] vambrace %08X has no left-hand model (Lit): the right one is drawn mirrored (vamb_l_mirror)\n", dwItemCode );
 	return lpDPat ? lpDPat->Pat : 0;
 }
-enum { TP_PHANTOM, TP_DAGGER_L, TP_VAMB_L, TP_DAGGER_HIP_R, TP_DAGGER_HIP_L, TP_VAMB_TOWN_R, TP_VAMB_TOWN_L, TP_COUNT };
+enum { TP_PHANTOM, TP_DAGGER_L, TP_VAMB_L, TP_DAGGER_HIP_R, TP_DAGGER_HIP_L, TP_VAMB_TOWN_R, TP_VAMB_TOWN_L, TP_VAMB_L_MIRROR, TP_COUNT };
 
 static int ToolPosAngle( int deg ) { return ( ( deg%360 + 360 )%360 * ANGLE_360/360 ) & ANGCLIP; }
 
@@ -7403,6 +7405,15 @@ static int RenderToolAtPlace( smPAT3D *AnimPat, smPAT3D *pat, int place, smCHART
 	pat->LinkParentObject( 0,0 );
 	pat->TmLastFrame = -1;
 	return TRUE;
+}
+
+// The left vambrace: its own model where the data has one, else the right one mirrored
+static void RenderLeftVambrace( smPAT3D *AnimPat, smCHARTOOL *lpTool, int place,
+							   POINT3D *lpPosi, POINT3D *lpAngle, POINT3D *lpCamPosi, POINT3D *lpCamAngle )
+{
+	smPAT3D *lpLeft = LeftModelOf( lpTool->dwItemCode, FALSE );
+	if ( lpLeft ) RenderToolAtPlace( AnimPat, lpLeft, place, lpTool, lpPosi, lpAngle, lpCamPosi, lpCamAngle );
+	else RenderToolAtPlace( AnimPat, lpTool->PatTool, TP_VAMB_L_MIRROR, lpTool, lpPosi, lpAngle, lpCamPosi, lpCamAngle );
 }
 
 // /toolpos (SendChatMessageToServer: handled here, not sent). TRUE: it was this command.
@@ -7992,7 +8003,7 @@ int smCHAR::Draw()
 						RenderToolAtPlace( AnimPattern, HvRightHand.PatTool, TP_PHANTOM, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
 					else {
 						RenderToolAtPlace( AnimPattern, HvRightHand.PatTool, TP_VAMB_TOWN_R, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
-						RenderToolAtPlace( AnimPattern, LeftModelOf( HvRightHand.dwItemCode, FALSE ), TP_VAMB_TOWN_L, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
+						RenderLeftVambrace( AnimPattern, &HvRightHand, TP_VAMB_TOWN_L, &Posi, &angle, &CameraPosi, &CameraAngle );
 					}
 				}
 				else
@@ -8043,7 +8054,7 @@ int smCHAR::Draw()
 						if ( (HvRightHand.dwItemCode&sinITEM_MASK2)==sinWD1 )
 							RenderToolAtPlace( AnimPattern, pat, TP_DAGGER_L, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
 						else if ( (HvRightHand.dwItemCode&sinITEM_MASK2)==sinWV1 )
-							RenderToolAtPlace( AnimPattern, LeftModelOf( HvRightHand.dwItemCode, FALSE ), TP_VAMB_L, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
+							RenderLeftVambrace( AnimPattern, &HvRightHand, TP_VAMB_L, &Posi, &angle, &CameraPosi, &CameraAngle );
 					}
 				//}
 			}
