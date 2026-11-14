@@ -2910,8 +2910,11 @@ int	DrawMapNPC( int px, int py );
 //필드미니맵의 마우스 위치 확인
 int	GetFieldMapCursor()
 {
-	int px=656+(WinSizeX-800);
-	int py=426+(WinSizeY-600);
+	// anchored to the bottom-right corner, but never further from it than the game's two
+	// other previously-supported sizes (1280x1024) would put it: at a genuinely wide/tall
+	// window the minimap stays docked near the edge instead of sliding off to the true corner
+	int px=656+((WinSizeX>1280?1280:WinSizeX)-800);
+	int py=426+((WinSizeY>1024?1024:WinSizeY)-600);
 
 	if ( WinSizeX<=800 && cSkill.OpenFlag ) return FALSE;
 
@@ -2932,8 +2935,9 @@ int	GetFieldMapCursor()
 //필드 맵 그리기
 int DrawFieldMap()
 {
-	int px=656+(WinSizeX-800);
-	int py=426+(WinSizeY-600);
+	// see the same bound in GetFieldMapCursor() just above - keep the two in sync
+	int px=656+((WinSizeX>1280?1280:WinSizeX)-800);
+	int py=426+((WinSizeY>1024?1024:WinSizeY)-600);
 	int sz;
 	int flCode;
 	int	dSpe;

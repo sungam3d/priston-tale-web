@@ -5092,8 +5092,10 @@ char *szClanName;
 		else {
 			DrawEachPlayer( 0.92f , 0.1f , 0 );					//확대 캐릭터 그리기
 
-			dsDrawOffset_X = WinSizeX-800;
-			dsDrawOffset_Y = WinSizeY-600;
+			// bounded as in playsub.cpp's minimap: right/bottom-docked windows stay near the
+			// corner instead of sliding out to the true edge of a wide/tall screen
+			dsDrawOffset_X = (WinSizeX>1280?1280:WinSizeX)-800;
+			dsDrawOffset_Y = (WinSizeY>1024?1024:WinSizeY)-600;
 			dsDrawOffsetArray = dsARRAY_RIGHT|dsARRAY_BOTTOM;
 			dsMenuCursorPos( &pCursorPos , 3 );				//메뉴커서 시물레이션
 			//파티 메뉴 그리기
@@ -5137,8 +5139,11 @@ char *szClanName;
 	//텍스쳐 옵션을 기본값으로
 	RestoreInterfaceTexture();
 
-	dsDrawOffset_X = WinSizeX-800;
-	dsDrawOffset_Y = WinSizeY-600;
+	// bounded as above: sinDraw() is the whole "sin" HUD module (skill bar, inventory,
+	// status panels, ...) - whichever of its pieces opt into the right/bottom-docked offset
+	// get this capped value, so they stay near the corner at any window size
+	dsDrawOffset_X = (WinSizeX>1280?1280:WinSizeX)-800;
+	dsDrawOffset_Y = (WinSizeY>1024?1024:WinSizeY)-600;
 
 	if ( DispInterface ) sinDraw();
 
