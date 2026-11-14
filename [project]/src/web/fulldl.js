@@ -54,7 +54,11 @@
 		'.pt-dl .warn{color:#e0a060;font-size:12px}' +
 		'.pt-dl .bar{height:6px;border-radius:3px;background:#2a2620;overflow:hidden;position:relative}' +
 		'.pt-dl .bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#9a7430,#e2bb62);border-radius:3px;transition:width .3s}' +
+		'.pt-dl .live{display:flex;flex-direction:column;gap:6px}' +
 		'.pt-dl .d{color:#a8a294;font-variant-numeric:tabular-nums}' +
+		'.pt-dl .files{color:#807a6c;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+		'.pt-dl .fail{color:#e0a060;font-size:12px}' +
+		'.pt-dl .fail:empty{display:none}' +
 		'.pt-dl .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}' +
 		'.pt-dl .btn{background:#2a2620;color:#e8cf8e;border:1px solid #9a7430;border-radius:4px;padding:5px 12px;cursor:pointer;font:inherit}' +
 		'.pt-dl .btn.q{background:none;color:#a8a294;border-color:#34323c}' +
@@ -122,11 +126,11 @@
 	}
 
 	// ---- the download ----
-	var sync = null;				// { done, doneBytes, failed, files, bytes, t0, stop, playing }
+	var sync = null;				// { done, doneBytes, failed, files, bytes, t0, stop, playing, active }
 	function runSync(playing) {
 		if (sync) { sync.playing = sync.playing || playing; return sync.promise; }
-		var s = sync = { done: 0, doneBytes: 0, failed: 0, files: plan.todo.length, bytes: plan.todoBytes, t0: Date.now(), stop: false, playing: playing };
-		var queue = plan.todo.slice(), running = 0;
+		var s = sync = { done: 0, doneBytes: 0, failed: 0, files: plan.todo.length, bytes: plan.todoBytes, t0: Date.now(), stop: false, playing: playing, active: {} };
+		var queue = plan.todo.slice(), running = 0, nextId = 0;
 		var saver = setInterval(saveRecord, 15000);
 		s.promise = new Promise(function (finish) {
 			function one(e, tries) {
@@ -147,13 +151,17 @@
 				while (!s.stop && running < limit && queue.length) {
 					var e = queue.shift();
 					running++;
-					one(e, 0).then((function (e) { return function () {
+					var id = ++nextId;
+					s.active[id] = e.rel;
+					draw();
+					one(e, 0).then((function (e, id) { return function () {
 						running--;
+						delete s.active[id];
 						s.done++;
 						s.doneBytes += e.size;
 						draw();
 						pump();
-					}; })(e));
+					}; })(e, id));
 				}
 				if (!running && (s.stop || !queue.length)) {
 					clearInterval(saver);
@@ -168,8 +176,31 @@
 		});
 		return s.promise;
 	}
+	// what is downloading right now, as a short readable line
+	function activeText(s) {
+		var names = {};
+		for (var id in s.active) names[s.active[id]] = true;
+		names = Object.keys(names);
+		if (!names.length) return '';
+		var shown = names.slice(0, 5).map(function (n) { return n.split('/').pop(); });
+		return 'Now: ' + shown.join(', ') + (names.length > shown.length ? ' +' + (names.length - shown.length) + ' more' : '');
+	}
 
 	// ---- what is on screen ----
+	// The live progress block (bar, file/byte count, current files, failures): its own
+	// little group of elements, dropped into whichever panel is open - the sync panel while
+	// starting, and the choice panel too when reopened over a download already running in
+	// the background (the Downloads button's own full-game toggle).
+	function liveBlock() {
+		var wrap = el('div', 'live');
+		var bar = el('div', 'bar');
+		bar.appendChild(el('i'));
+		wrap.appendChild(bar);
+		wrap.appendChild(el('div', 'd', ''));
+		wrap.appendChild(el('div', 'files', ''));
+		wrap.appendChild(el('div', 'fail', ''));
+		return wrap;
+	}
 	var btn = null, gateDone = null, lastSync = null;
 	function draw() {
 		var s = sync || lastSync;
@@ -178,13 +209,17 @@
 			btn.textContent = sync ? 'Downloading game ' + Math.floor(100 * (sync.bytes ? sync.doneBytes / sync.bytes : 1)) + '%' :
 				mode == 'full' ? 'Downloads: full game' : 'Downloads: as you play';
 		}
-		if (panel.hidden || panel.dataset.view != 'sync' || !s) return;
+		if (panel.hidden || !s) return;
+		var live = card.querySelector('.live');
+		if (!live) return;
 		var frac = s.bytes ? s.doneBytes / s.bytes : 1;
-		card.querySelector('.bar i').style.width = Math.max(2, Math.min(100, frac * 100)) + '%';
+		live.querySelector('.bar i').style.width = Math.max(2, Math.min(100, frac * 100)) + '%';
 		var secs = (Date.now() - s.t0) / 1000, rate = s.doneBytes / Math.max(secs, 0.1), left = rate ? (s.bytes - s.doneBytes) / rate : 0;
-		card.querySelector('.d').textContent = num(s.done) + ' of ' + num(s.files) + ' files · ' + gb(s.doneBytes) + ' of ' + gb(s.bytes) +
+		live.querySelector('.d').textContent = num(s.done) + ' of ' + num(s.files) + ' files · ' + gb(s.doneBytes) + ' of ' + gb(s.bytes) +
 			(secs > 3 && rate ? ' · ' + gb(rate) + '/s' + (left > 5 ? ' · about ' + (left < 90 ? Math.round(left) + ' s' : Math.round(left / 60) + ' min') + ' left' : '') : '');
-		if (!sync && s.failed) card.querySelector('.n').textContent = num(s.failed) + ' file(s) could not be downloaded; the game downloads them when it needs them.';
+		live.querySelector('.files').textContent = sync ? activeText(s) : '';
+		live.querySelector('.fail').textContent = (!sync && s.failed) ?
+			num(s.failed) + ' file(s) could not be downloaded; the game downloads them when it needs them.' : '';
 	}
 	function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
@@ -216,6 +251,7 @@
 			var h = el('h2', null, running ? 'Downloads' : 'How should the game download?');
 			h.id = 'pt-dl-t';
 			card.appendChild(h);
+			if (sync) card.appendChild(liveBlock());		// a full download is running in the background: show it
 			var mode = getMode();
 			var a = el('button', 'opt' + (mode == 'stream' ? ' cur' : ''));
 			a.appendChild(el('b', null, 'Play now'));
@@ -253,6 +289,7 @@
 			b.onclick = function () { close(); answer('full'); };
 			panel.hidden = false;
 			(mode == 'full' ? b : a).focus();
+			draw();
 		});
 	}
 	// the download's progress; resolves when it is done or the player chose to play
@@ -264,10 +301,7 @@
 			var h = el('h2', null, update ? 'Updating the game' : 'Downloading the full game');
 			h.id = 'pt-dl-t';
 			card.appendChild(h);
-			var bar = el('div', 'bar');
-			bar.appendChild(el('i'));
-			card.appendChild(bar);
-			card.appendChild(el('div', 'd', ''));
+			card.appendChild(liveBlock());
 			card.appendChild(el('div', 'n', update ? 'Only the files that changed since your last visit.' :
 				'Only this once: later visits download just the files that change. You can play while it downloads.'));
 			card.appendChild(concRow());
