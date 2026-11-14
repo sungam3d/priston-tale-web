@@ -186,9 +186,10 @@
 		'<div class="pt-row"><label>Scaling</label><div class="ctl"><span class="pt-seg" id="setScaleMode">' +
 			'<button type="button" data-v="fit">Fit</button><button type="button" data-v="fill">Fill</button>' +
 			'<button type="button" data-v="stretch">Stretch</button><button type="button" data-v="integer">Integer</button></span></div></div>' +
-		'<p class="note">Fit shows the whole game, with black bars if the shape does not match your screen. Fill covers the screen and may crop the edges. ' +
-			'Stretch fills it exactly, which can distort the picture. Integer keeps it sharp at whole-number sizes, with bigger bars. ' +
-			'Changes straight away. The Fullscreen button under the game toggles fullscreen (also F11 in some browsers).</p>' +
+		'<p class="note">Fill (the default) covers the screen with no black bars - best on a widescreen monitor, since the game itself stays at its ' +
+			'normal 4:3 shape and this just blows the whole picture up to fit, cropping the top and bottom a little rather than leaving bars at the sides. ' +
+			'Fit shows the whole picture with black bars instead. Stretch fills it exactly but can distort it. Integer keeps it sharp at whole-number ' +
+			'sizes, with bigger bars. Changes straight away. The Fullscreen button under the game toggles fullscreen (also F11 in some browsers).</p>' +
 
 		'<h3>Graphics</h3>' +
 		'<div class="pt-row"><label>Image quality</label><div class="ctl"><span class="pt-seg" id="setQuality">' +

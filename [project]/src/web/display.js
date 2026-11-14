@@ -30,7 +30,14 @@
 	var MODES = ['fit', 'fill', 'stretch', 'integer'];
 	var ds = {};
 	try { ds = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) {}
-	if (MODES.indexOf(ds.scaleMode) < 0) ds.scaleMode = 'fit';
+	// default "fill": the engine's own resolution stays the safe 1024x768 it has always used
+	// (see settings.js) - its HUD and floating name/HP labels were pixel-positioned for a 4:3
+	// screen and come apart at a wide one - so a wide monitor is better served by blowing that
+	// whole picture, UI included, up to cover the window (cropped top/bottom) than by rendering
+	// at the monitor's own wide shape: no black bars, and the UI reads bigger instead of tiny
+	// in a sea of black, at zero risk to the game itself. "Fit" (unscaled, letterboxed) is still
+	// one click away for anyone who would rather see the whole picture with bars than lose edges.
+	if (MODES.indexOf(ds.scaleMode) < 0) ds.scaleMode = 'fill';
 	function saveDs() { try { localStorage.setItem(KEY, JSON.stringify(ds)); } catch (e) {} }
 
 	// ---- the stage: a fixed-size box, letterbox bars are its own black background ----
