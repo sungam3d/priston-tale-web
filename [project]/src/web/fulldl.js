@@ -12,6 +12,9 @@
 // with the Downloads button under the game.
 (function () {
 	var MODE_KEY = 'ptDownloadMode';				// 'stream' | 'full'
+	var CONC_KEY = 'ptDownloadConcurrency';		// how many files at once (many are tiny: more can be faster)
+	var CONC_OPTS = [4, 8, 16, 24, 32];
+	var CONC_DEFAULT = 8;
 	var CACHE = 'pt-data-1';						// web\sw.js CACHE
 	var RECORD_URL = new URL('__pt_full_record', location.href).href;
 	var DATA_BASE = new URL('data/', location.href).href;
@@ -20,6 +23,11 @@
 
 	function getMode() { try { return localStorage.getItem(MODE_KEY) || ''; } catch (e) { return ''; } }
 	function setMode(m) { try { localStorage.setItem(MODE_KEY, m); } catch (e) {} }
+	function getConcurrency() {
+		try { var n = +localStorage.getItem(CONC_KEY); return CONC_OPTS.indexOf(n) >= 0 ? n : CONC_DEFAULT; }
+		catch (e) { return CONC_DEFAULT; }
+	}
+	function setConcurrency(n) { try { localStorage.setItem(CONC_KEY, String(n)); } catch (e) {} }
 
 	function gb(n) { return n >= 1e9 ? (n / 1e9).toFixed(1) + ' GB' : n >= 1e7 ? Math.round(n / 1e6) + ' MB' : (n / 1e6).toFixed(1) + ' MB'; }
 	function num(n) { return n.toLocaleString('en'); }
@@ -41,6 +49,8 @@
 		'.pt-dl .opt span{color:#a8a294}' +
 		'.pt-dl .opt.cur{border-color:#6b5a32}' +
 		'.pt-dl .n{color:#807a6c;font-size:12px}' +
+		'.pt-dl .conc{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#a8a294;font-size:12px}' +
+		'.pt-dl .conc select{background:#1b1a21;color:#d8d4c8;border:1px solid #34323c;border-radius:4px;padding:3px 8px;font:inherit}' +
 		'.pt-dl .warn{color:#e0a060;font-size:12px}' +
 		'.pt-dl .bar{height:6px;border-radius:3px;background:#2a2620;overflow:hidden;position:relative}' +
 		'.pt-dl .bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#9a7430,#e2bb62);border-radius:3px;transition:width .3s}' +
@@ -131,8 +141,9 @@
 				});
 			}
 			function pump() {
-				// fewer at once while the game plays, so its own downloads come first
-				var limit = s.playing ? 3 : 8;
+				// fewer at once while the game plays, so its own downloads come first;
+				// read live so changing the setting (below) takes effect without restarting
+				var limit = s.playing ? Math.min(4, getConcurrency()) : getConcurrency();
 				while (!s.stop && running < limit && queue.length) {
 					var e = queue.shift();
 					running++;
@@ -177,6 +188,25 @@
 	}
 	function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
+	// "Files downloaded at once": most of them are tiny, so more at a time can finish sooner
+	// on a fast connection. Shown on the choice panel and while a download is running; pump()
+	// (above) reads the setting live, so a change here applies right away.
+	function concRow() {
+		var row = el('div', 'conc');
+		row.appendChild(el('span', null, 'Files downloaded at once:'));
+		var sel = document.createElement('select');
+		CONC_OPTS.forEach(function (n) {
+			var o = document.createElement('option');
+			o.value = n; o.textContent = n;
+			sel.appendChild(o);
+		});
+		sel.value = getConcurrency();
+		sel.onchange = function () { setConcurrency(+sel.value); };
+		row.appendChild(sel);
+		row.appendChild(el('span', null, 'Higher can be faster when there are many small files, on a fast connection.'));
+		return row;
+	}
+
 	// "How should the game download?" -> resolves 'stream' or 'full' (or null: closed)
 	function showChoice(running) {
 		return new Promise(function (answer) {
@@ -209,6 +239,7 @@
 			});
 			card.appendChild(el('div', 'n', running ? 'Files you already have are kept either way.' :
 				'You can change this later with the Downloads button under the game.'));
+			card.appendChild(concRow());
 			if (running) {
 				var row = el('div', 'row'), c = el('button', 'btn q', 'Close');
 				c.onclick = function () { close(); answer(null); };
@@ -239,6 +270,7 @@
 			card.appendChild(el('div', 'd', ''));
 			card.appendChild(el('div', 'n', update ? 'Only the files that changed since your last visit.' :
 				'Only this once: later visits download just the files that change. You can play while it downloads.'));
+			card.appendChild(concRow());
 			var row = el('div', 'row'), p = el('button', 'btn', 'Play while it downloads');
 			p.onclick = function () { panel.hidden = true; play(); };
 			row.appendChild(p);
