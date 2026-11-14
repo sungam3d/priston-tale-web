@@ -22,6 +22,7 @@ missing_models.txt
 /[[]project]/src/thirdparty/dl/
 
 # --- build output ---
+/widetest/
 /[[]project]/src/bin/
 /[[]project]/src/build/
 /[[]project]/src/web/obj/

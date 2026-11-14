@@ -3744,7 +3744,11 @@ int _stdcall InitD3D(HWND hWnd)
 	MidX = WinSizeX	/2;
 	MidY = WinSizeY	/2;
 	MidY -= 59;
-	viewdistZ = WinSizeX;
+	// the label/nameplate 2D projection's focal length (smRend3d.cpp GetRect2D): from the
+	// height, as it actually depends on (not "=WinSizeX", which drifts off the 3D camera's
+	// own aspect-correct projection at any non-4:3 shape; equal to WinSizeX exactly at 4:3,
+	// so 800x600/1024x768 draw exactly as before)
+	viewdistZ = WinSizeY*800/600;
 
 
 #ifdef PT_WEB
@@ -4043,7 +4047,8 @@ int GameInit()
 	smRender.SMMULT_PERSPECTIVE_HEIGHT = RENDCLIP_DEFAULT_MULT_PERSPECTIVE_HEIGHT;
 	MidX = WinSizeX	/2;
 	MidY = WinSizeY	/2;
-	viewdistZ = WinSizeX;
+	// see the other MidX/MidY/viewdistZ setup above: from the height, not "=WinSizeX"
+	viewdistZ = WinSizeY*800/600;
 
 	//######################################################################################
 	//작 성 자 : 오 영 석
