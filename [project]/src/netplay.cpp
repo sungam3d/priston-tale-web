@@ -4687,6 +4687,10 @@ int SendChatMessageToServer( char *szChatMessage )
 	char szBuff[256];
 	smWINSOCK	*lpsmSock;
 
+	// /toolpos: where the new classes' weapons sit, set in this game only (character.cpp)
+	extern int PtToolPos_Command( char *szMsg );
+	if ( PtToolPos_Command( szChatMessage ) ) return TRUE;
+
 	if ( szChatMessage[0]=='/' && ( szChatMessage[1]==';' || szChatMessage[1]==':' ) ) WhispFlag=TRUE;
 	else WhispFlag=FALSE;
 

@@ -1607,16 +1607,6 @@ static smOBJ3D *RightToolBone( smPAT3D *AnimPat )
 	if ( !o ) o = AnimPat->GetObjectFromName( "Bip01 R Hand" );
 	return o;
 }
-// One item, shown in both hands: the Assassin's dagger and the Martial Artist's vambrace are
-// one item and model, worn as a pair - the copy's bone in the left hand (0: no copy)
-static smOBJ3D *LeftCopyBone( smPAT3D *AnimPat, DWORD dwItemCode )
-{
-	smOBJ3D *o = 0;
-	if ( (dwItemCode&sinITEM_MASK2)==sinWD1 ) o = AnimPat->GetObjectFromName( "Bip weapon02" );	// the left-hand weapon bone
-	else if ( (dwItemCode&sinITEM_MASK2)!=sinWV1 ) return 0;
-	if ( !o ) o = AnimPat->GetObjectFromName( "Bip01 L Hand" );
-	return o;
-}
 
 //패턴설정
 int smCHAR::SetPattern( smPAT3D *pat )
@@ -1874,6 +1864,8 @@ int smCHAR::SetTool( DWORD dwItemCode , int hvPosi  )
 		// waist, one each side (4: smCHAR::Draw)
 		if ( (dwActionItemCode&sinITEM_MASK2)==sinWV1 ) dwItemSetting = 0;
 		if ( (dwActionItemCode&sinITEM_MASK2)==sinWD1 ) dwItemSetting = 4;
+		// the Shaman's phantom: on her back everywhere (drawn by offset with the held weapons)
+		if ( (dwActionItemCode&sinITEM_MASK2)==sinWN1 ) dwItemSetting = 0;
 
 		while(1) {
 			if ( dwItemCodeFromVillage[cnt]==0 ) break;
@@ -7303,6 +7295,83 @@ int RestoreRenderBlinkColor()
 	return TRUE;
 }
 
+/*----------------------------------------------------------------------------*
+*	The new classes' weapons: where they sit, as an offset from a bone. A weapon model
+*	is made to sit exactly on its bone ("Bip weapon01" in the hand); these are worn
+*	elsewhere or as a copy, so each place has a bone, a rotation (degrees about the
+*	bone's own X, Y, Z, in that order), a mirror (1-3: the X, Y or Z axis flipped) and
+*	a shift (game units, along the bone's axes after the rotation).
+*	GM-free chat command /toolpos (this browser only, nothing sent): "/toolpos" lists them,
+*	"/toolpos <name> rx ry rz mirror x y z" changes one at once - to line them up by eye.
+*-----------------------------------------------------------------------------*/
+struct PtToolPos { const char *szName; const char *szBone; int rx, ry, rz, mirror, x, y, z; };
+static PtToolPos s_ToolPos[] = {
+	{ "phantom",		"Bip in01",			180, 0, 0,	0,	0, 0, 0 },	// on the back, in town and the field
+	{ "dagger_l",		"Bip01 L Hand",		0, 0, 0,	3,	0, 0, 0 },	// the Assassin's second dagger (field)
+	{ "vamb_l",			"Bip01 L Hand",		180, 0, 0,	3,	0, 0, 0 },	// the Martial Artist's left vambrace (field)
+	{ "dagger_hip_r",	"Bip01 Pelvis",		0, 0, 90,	0,	0, 0, 8 },	// the Assassin's daggers in town
+	{ "dagger_hip_l",	"Bip01 Pelvis",		0, 0, 90,	0,	0, 0, -8 },
+	{ "vamb_town_r",	"Bip01 R Hand",		0, 0, 0,	0,	0, 0, 0 },	// the Martial Artist's vambraces in town
+	{ "vamb_town_l",	"Bip01 L Hand",		180, 0, 0,	3,	0, 0, 0 },
+};
+enum { TP_PHANTOM, TP_DAGGER_L, TP_VAMB_L, TP_DAGGER_HIP_R, TP_DAGGER_HIP_L, TP_VAMB_TOWN_R, TP_VAMB_TOWN_L, TP_COUNT };
+
+static int ToolPosAngle( int deg ) { return ( ( deg%360 + 360 )%360 * ANGLE_360/360 ) & ANGCLIP; }
+
+// pat drawn on the place's bone with its offset; the body's bones are posed for this frame
+// already (the body is drawn first). FALSE: no such bone on this skeleton.
+static int RenderToolAtPlace( smPAT3D *AnimPat, smPAT3D *pat, int place, smCHARTOOL *lpTool,
+							 POINT3D *lpPosi, POINT3D *lpAngle, POINT3D *lpCamPosi, POINT3D *lpCamAngle )
+{
+	PtToolPos &t = s_ToolPos[place];
+	smOBJ3D *bip = AnimPat ? AnimPat->GetObjectFromName( (char *)t.szBone ) : 0;
+	if ( !bip || !pat ) return FALSE;
+
+	smMATRIX off, rot, tmp;
+	smIdentityMatrix( off );
+	if ( t.mirror==1 ) off._11 = -fONE;
+	else if ( t.mirror==2 ) off._22 = -fONE;
+	else if ( t.mirror==3 ) off._33 = -fONE;
+	if ( t.rx ) { smIdentityMatrix( rot ); smRotateXMatrix( rot, ToolPosAngle( t.rx ) ); smMatrixMult( tmp, off, rot ); off = tmp; }
+	if ( t.ry ) { smIdentityMatrix( rot ); smRotateYMatrix( rot, ToolPosAngle( t.ry ) ); smMatrixMult( tmp, off, rot ); off = tmp; }
+	if ( t.rz ) { smIdentityMatrix( rot ); smRotateZMatrix( rot, ToolPosAngle( t.rz ) ); smMatrixMult( tmp, off, rot ); off = tmp; }
+	off._41 = t.x*fONE;
+	off._42 = t.y*fONE;
+	off._43 = t.z*fONE;
+
+	pat->LinkParentObject( AnimPat, bip );
+	pat->SetPosi( lpPosi, lpAngle );
+	pat->Frame = -1;					// not posed from the bone: from here
+	for ( int cnt=0; cnt<pat->nObj3d; cnt++ )
+		smMatrixMult( pat->obj3d[cnt]->mWorld, off, bip->mWorld );
+	if ( lpTool ) SetRenderBlinkColor( lpTool );
+	pat->RenderD3D( lpCamPosi, lpCamAngle );
+	if ( lpTool ) RestoreRenderBlinkColor();
+	pat->LinkParentObject( 0,0 );
+	pat->TmLastFrame = -1;
+	return TRUE;
+}
+
+// /toolpos (SendChatMessageToServer: handled here, not sent). TRUE: it was this command.
+int PtToolPos_Command( char *szMsg )
+{
+	if ( _strnicmp( szMsg, "/toolpos", 8 ) ) return FALSE;
+	char szName[64] = "";
+	int v[7] = { 0,0,0,0,0,0,0 };
+	int n = sscanf( szMsg+8, "%63s %d %d %d %d %d %d %d", szName, &v[0], &v[1], &v[2], &v[3], &v[4], &v[5], &v[6] );
+	char szBuff[160];
+	for ( int i=0; i<TP_COUNT; i++ ) {
+		PtToolPos &t = s_ToolPos[i];
+		if ( n>=1 && lstrcmpi( szName, t.szName ) ) continue;
+		if ( n>=8 ) { t.rx = v[0]; t.ry = v[1]; t.rz = v[2]; t.mirror = v[3]; t.x = v[4]; t.y = v[5]; t.z = v[6]; }
+		wsprintf( szBuff, "> %s: %d %d %d mirror %d move %d %d %d (%s)", t.szName, t.rx, t.ry, t.rz, t.mirror, t.x, t.y, t.z, t.szBone );
+		AddChatBuff( szBuff, 0 );
+		printf( "[toolpos] %s\n", szBuff+2 );
+	}
+	if ( n>=1 && n<8 && n!=1 ) AddChatBuff( "> /toolpos <name> rx ry rz mirror x y z  (mirror 0-3)", 0 );
+	return TRUE;
+}
+
 //가상으로 그린다 ( 실제로는 그리지 않고 값만 세팅 )
 int smCHAR::VirtualDraw()
 {
@@ -7860,6 +7929,22 @@ int smCHAR::Draw()
 			if ( (dwActionItemCode&sinITEM_MASK2)==sinWT1 && ShootingFlag  ) {
 
 			}
+			else if ( (HvRightHand.dwItemCode&sinITEM_MASK2)==sinWN1 ||
+				( (HvRightHand.dwItemCode&sinITEM_MASK2)==sinWV1 && OnStageField>=0 && StageField[OnStageField]->State==FIELD_STATE_VILLAGE ) ) {
+				// placed by offset (s_ToolPos): the Shaman's phantom always on her back; the Martial
+				// Artist's vambraces in town (her hands hang differently there)
+				memcpy( &HvRightHand_Matrix , &HvRightHand.ObjBip->mWorld , sizeof(smMATRIX) );	// (effects follow the hand)
+				if ( !HvRightHand.ColorBlink || !HvRightHand.sColors[SMC_A] ) {
+					if ( (HvRightHand.dwItemCode&sinITEM_MASK2)==sinWN1 )
+						RenderToolAtPlace( AnimPattern, HvRightHand.PatTool, TP_PHANTOM, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
+					else {
+						RenderToolAtPlace( AnimPattern, HvRightHand.PatTool, TP_VAMB_TOWN_R, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
+						RenderToolAtPlace( AnimPattern, HvRightHand.PatTool, TP_VAMB_TOWN_L, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
+					}
+				}
+				else
+					Rend_HvRightHand = FALSE;
+			}
 			else {
 				//if ( MotionInfo->State!=CHRMOTION_STATE_EAT ) {	//물약 화면 깨짐 땜방
 					pat = HvRightHand.PatTool;
@@ -7899,17 +7984,13 @@ int smCHAR::Draw()
 					pat->LinkParentObject( 0,0 );
 					pat->TmLastFrame = -1;
 
-					// the pair's other one (dagger, vambrace): the same model in the left hand
-					smOBJ3D *lpCopyBip = Rend_HvRightHand ? LeftCopyBone( AnimPattern , HvRightHand.dwItemCode ) : 0;
-					if ( lpCopyBip ) {
-						pat->LinkParentObject( AnimPattern , lpCopyBip );
-						pat->SetPosi( &Posi , &angle );
-						pat->Frame = frame;
-						SetRenderBlinkColor( &HvRightHand );
-						pat->RenderD3D( &CameraPosi , &CameraAngle );
-						RestoreRenderBlinkColor();
-						pat->LinkParentObject( 0,0 );
-						pat->TmLastFrame = -1;
+					// the pair's other one (dagger, vambrace): the same model in the left hand, by offset
+					// (s_ToolPos - mirrored for the vambrace)
+					if ( Rend_HvRightHand ) {
+						if ( (HvRightHand.dwItemCode&sinITEM_MASK2)==sinWD1 )
+							RenderToolAtPlace( AnimPattern, pat, TP_DAGGER_L, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
+						else if ( (HvRightHand.dwItemCode&sinITEM_MASK2)==sinWV1 )
+							RenderToolAtPlace( AnimPattern, pat, TP_VAMB_L, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
 					}
 				//}
 			}
@@ -7957,9 +8038,18 @@ int smCHAR::Draw()
 					Rend_HvRightHand = FALSE;
 			}
 
-			// where it is put away: on the back (1-3), or the Assassin's daggers at the waist (4:
-			// the right one here, the left one below)
-			smOBJ3D *lpPutBip = dwItemSetting==4 ? AnimPattern->GetObjectFromName( "Bip01 R Thigh" ) : BackObjBip[dwItemSetting-1];
+			if ( dwItemSetting==4 ) {
+				// the Assassin's daggers at her waist, one each side, by offset (s_ToolPos)
+				memcpy( &HvRightHand_Matrix , &HvRightHand.ObjBip->mWorld , sizeof(smMATRIX) );
+				if ( Rend_HvRightHand ) {
+					RestoreRenderBlinkColor();		// (set above; RenderToolAtPlace sets it for each)
+					RenderToolAtPlace( AnimPattern, pat, TP_DAGGER_HIP_R, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
+					RenderToolAtPlace( AnimPattern, pat, TP_DAGGER_HIP_L, &HvRightHand, &Posi, &angle, &CameraPosi, &CameraAngle );
+				}
+			}
+			else {
+			// where it is put away: on the back
+			smOBJ3D *lpPutBip = BackObjBip[dwItemSetting-1];
 			if ( !lpPutBip ) lpPutBip = BackObjBip[0];
 
 			pat->LinkParentObject( AnimPattern , lpPutBip );
@@ -7995,18 +8085,6 @@ int smCHAR::Draw()
 
 			pat->LinkParentObject( 0,0 );
 			pat->TmLastFrame = -1;
-
-			// the other dagger, at the left of the waist
-			smOBJ3D *lpPutBip2 = ( dwItemSetting==4 && Rend_HvRightHand ) ? AnimPattern->GetObjectFromName( "Bip01 L Thigh" ) : 0;
-			if ( lpPutBip2 ) {
-				pat->LinkParentObject( AnimPattern , lpPutBip2 );
-				pat->SetPosi( &Posi , &angle );
-				pat->Frame = frame;
-				SetRenderBlinkColor( &HvRightHand );
-				pat->RenderD3D( &CameraPosi , &CameraAngle );
-				RestoreRenderBlinkColor();
-				pat->LinkParentObject( 0,0 );
-				pat->TmLastFrame = -1;
 			}
 		}
 
