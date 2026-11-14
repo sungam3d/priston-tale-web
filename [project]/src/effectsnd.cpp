@@ -10,6 +10,7 @@
 #include "netplay.h"
 #include "effectsnd.h"
 #include "sinbaram\\NewClassSkill.h"		// the new classes' sound codes
+#include "sinbaram\\Tier5Sound.h"			// tier 5 skills' own sounds
 #include "field.h"
 
 
@@ -736,6 +737,7 @@ sSKILL_SOUND_FILE	SkillSoundWav[] = {
 	{	"wav\\Effects\\Skill\\Morion\\Vengeance 02.wav",				SKILL_SOUND_SKILL_VENGEANCE2		},
 
 #include "sinbaram\\NewClassSkill_Sounds.h"
+#include "sinbaram\\Tier5Sound_Table.h"
 	{	0,0 }
 };
 

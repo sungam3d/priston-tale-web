@@ -16,6 +16,7 @@
 #include "hobaram\\holinkheader.h"
 #include "hobaram\\HoNewParticleLinkHeader.h"
 #include "sinbaram\\sinlinkheader.h"
+#include "sinbaram\\Tier5Sound.h"			// tier 5 skills' own sounds
 
 #include "effectsnd.h"
 #include "playsub.h"
@@ -11726,10 +11727,52 @@ static void NC_StartFx( const char *name , int x, int y, int z )
 	pos.x = x; pos.y = y; pos.z = z;
 	g_NewParticleMgr.Start( (char *)name , pos );
 }
+/*----------------------------------------------------------------------------*
+*	The new classes' tier 5 skills, as the later game shows them (the Etervale project's
+*	skill and effect data: facts only): where a skill has a row here, it replaces the
+*	generated CastFx/HitFx/sounds. The generated data had some cast and hit effects the
+*	wrong way round (Rising Slash, Violent Stab, Ghostly Nail, Hunting Hawk, Line Break)
+*	and lacked the second effects and the skills' own sounds.
+*	EventFx[n]: the effect on event n+1 (several strikes: one each); bAtCaster: at the
+*	caster, not the target (Shadow Bomb's burst).
+*-----------------------------------------------------------------------------*/
+struct sNCLOOK {
+	int Play;
+	const char *CastFx, *CastFx2;
+	const char *EventFx[4], *EventFx2;		// EventFx2: also on the first event
+	unsigned int CastSound, EventSound;		// EventSound: on the first event
+	int bAtCaster;
+};
+static const sNCLOOK NcLooks[] = {
+	{ SKILL_PLAY_NC_SHADOW_BOMB,	0,0,					{ "ShadowBomb" },0,							NC_SOUND_SHADOW_BOMB_1,0,		TRUE },
+	{ SKILL_PLAY_NC_RISING_SLASH,	"RisingSlash1",0,		{ "RisingSlash2" },0,						NC_SOUND_RISING_SLASH_1,0,		0 },
+	{ SKILL_PLAY_NC_VIOLENT_STAB,	"ViolenceStab1",0,		{ "ViolenceStab2","ViolenceStab3" },0,		T5_SOUND_VIOLENT_STEP,0,		0 },
+	{ SKILL_PLAY_NC_STORM,			0,0,					{ "Storm" },0,								T5_SOUND_STORM,0,				0 },
+	{ SKILL_PLAY_NC_CREED,			"CreedStart","CreedKeep",	{ 0 },0,								NC_SOUND_CREED_1,0,				0 },
+	{ SKILL_PLAY_NC_PRESS_OF_DEITY,	0,0,					{ "PressOfDeity2" },"PressOfDeity1",		T5_SOUND_PRESS_OF_DEITY,0,		0 },
+	{ SKILL_PLAY_NC_GHOSTLY_NAIL,	"GhostyNail1",0,		{ "GhostyNail2" },0,						T5_SOUND_GHOSTLY_NAIL1,T5_SOUND_GHOSTLY_NAIL2,	0 },
+	{ SKILL_PLAY_NC_HUNTING_HAWK,	0,0,					{ "Skill5_MartialArtist_HuntingHawkHit1","Skill5_MartialArtist_HuntingHawkHit2","Skill5_MartialArtist_HuntingHawkHit3" },0,	0,T5_SOUND_HUNTING_HAWK,	0 },
+	{ SKILL_PLAY_NC_LINE_BREAK,		0,0,					{ "Skill5_MartialArtist_LineBreakingHit1","Skill5_MartialArtist_LineBreakingHit2" },0,	0,T5_SOUND_LINE_BREAK,	0 },
+	{ SKILL_PLAY_NC_HARD_TRAINING,	"Skill5_MartialArtist_HardTrainingStart","Skill5_MartialArtist_HardTrainingKeep",	{ 0 },0,	0,T5_SOUND_HARD_TRAINING,	0 },
+};
+static const sNCLOOK *NC_FindLook( int play )
+{
+	for ( int i=0; i<(int)(sizeof(NcLooks)/sizeof(NcLooks[0])); i++ )
+		if ( NcLooks[i].Play==play ) return &NcLooks[i];
+	return 0;
+}
+
 static int NC_BeginSkill( smCHAR *ch , int SkilCode )
 {
 	sNCSKILL *nc = NC_FindPlay( SkilCode&0xFF );
 	if ( !nc ) return FALSE;
+	const sNCLOOK *lk = NC_FindLook( SkilCode&0xFF );
+	if ( lk ) {
+		NC_StartFx( lk->CastFx , ch->pX, ch->pY+8*fONE, ch->pZ );
+		NC_StartFx( lk->CastFx2 , ch->pX, ch->pY+8*fONE, ch->pZ );
+		if ( lk->CastSound ) SkillPlaySound( lk->CastSound , ch->pX,ch->pY,ch->pZ );
+		return TRUE;
+	}
 	NC_StartFx( nc->CastFx , ch->pX, ch->pY+8*fONE, ch->pZ );
 	if ( nc->CastSound ) SkillPlaySound( nc->CastSound , ch->pX,ch->pY,ch->pZ );
 	return TRUE;
@@ -11743,6 +11786,27 @@ static int NC_EventSkill( smCHAR *ch )
 	smCHAR *tar = ch->chrAttackTarget;
 	int self = (nc->Kind==NCK_BUFF || nc->Kind==NCK_DEBUFF_SELF || nc->Kind==NCK_POISON_SELF || nc->Kind==NCK_MAGIC_AREA_SELF);
 
+	const sNCLOOK *lk = NC_FindLook( ch->AttackSkil&0xFF );
+	if ( lk ) {
+		// the tier 5 look (NcLooks): this event's effect, the first event's sound
+		int ev = ch->MotionEvent;
+		const char *fx = ( ev>=1 && ev<=4 ) ? lk->EventFx[ev-1] : 0;
+		const char *fx2 = ev==1 ? lk->EventFx2 : 0;
+		if ( ev==1 && lk->EventSound ) SkillPlaySound( lk->EventSound , ch->pX,ch->pY,ch->pZ );
+		if ( self || lk->bAtCaster ) {
+			NC_StartFx( fx , ch->pX, ch->pY+8*fONE, ch->pZ );
+			NC_StartFx( fx2 , ch->pX, ch->pY+8*fONE, ch->pZ );
+		}
+		else if ( tar && ch->AttackCritcal>=0 ) {
+			NC_StartFx( fx , tar->pX, tar->pY+16*fONE, tar->pZ );
+			NC_StartFx( fx2 , tar->pX, tar->pY+16*fONE, tar->pZ );
+			if ( ch==lpCurPlayer && ev==1 && fx ) {
+				for( int i=0; i<dmSelected_CharCnt; i++ )		// around the target: everyone struck
+					if ( lpSelected_Char[i]!=tar ) NC_StartFx( fx , lpSelected_Char[i]->pX, lpSelected_Char[i]->pY+16*fONE, lpSelected_Char[i]->pZ );
+			}
+		}
+	}
+	else {
 	if ( ch->MotionEvent==1 && nc->HitSound ) SkillPlaySound( nc->HitSound , ch->pX,ch->pY,ch->pZ );
 	if ( self ) {
 		if ( ch->MotionEvent==1 ) NC_StartFx( nc->HitFx , ch->pX, ch->pY+8*fONE, ch->pZ );
@@ -11753,6 +11817,7 @@ static int NC_EventSkill( smCHAR *ch )
 			for( int i=0; i<dmSelected_CharCnt; i++ )		// around the target: everyone struck
 				if ( lpSelected_Char[i]!=tar ) NC_StartFx( nc->HitFx , lpSelected_Char[i]->pX, lpSelected_Char[i]->pY+16*fONE, lpSelected_Char[i]->pZ );
 		}
+	}
 	}
 
 	// strikes after the first (sent at the cast): events 2..Hits
